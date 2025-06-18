@@ -1,0 +1,183 @@
+@import "tailwindcss";
+
+@import "@fontsource-variable/merriweather";
+@import "@fontsource-variable/roboto";
+
+@theme {
+  --font-sans: "Roboto", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Merriweather", ui-serif, serif;
+  --font-mono: Menlo, ui-monospace, monospace;
+
+  --color-green: #006c66;
+  --color-secondary-green: #005555;
+  --color-black: #000000;
+  --color-grey: #555555;
+  --color-darkgrey: #777777;
+  --color-mediumgrey: #a7a7a8;
+  --color-background-grey: #eeeeee;
+  --color-lightgrey: #f6f6f6;
+  --color-white: #ffffff;
+  --color-accent-yellow: #c6d325;
+  --color-accent-blue: #29485d;
+  --color-accent-lightblue: #00b1ea;
+  --color-accent-orange: #ef7c00;
+  --color-transparent: #ffffff00;
+}
+
+@layer base {
+  html {
+    width: 100vw;
+    height: 100vh;
+    background:
+      linear-gradient(var(--color-background-grey) 2px, transparent 2px),
+      linear-gradient(90deg, var(--color-background-grey) 2px, transparent 2px),
+      linear-gradient(var(--color-background-grey) 1px, transparent 1px),
+      linear-gradient(
+        90deg,
+        var(--color-background-grey) 1px,
+        var(--color-transparent) 1px
+      );
+    background-size:
+      50px 50px,
+      50px 50px,
+      10px 10px,
+      10px 10px;
+    background-position:
+      -2px -2px,
+      -2px -2px,
+      -1px -1px,
+      -1px -1px;
+    z-index: -1;
+  }
+
+  body {
+    @apply bg-green/5;
+  }
+
+  h1 {
+    font-family: "Merriweather", serif;
+    font-weight: 400;
+    font-size: 34px;
+    line-height: 40px;
+    color: var(--color-green);
+    margin: 0 0 12px 0;
+  }
+
+  h2 {
+    font-family: "Merriweather", serif;
+    font-weight: 400;
+    font-size: 22px;
+    line-height: 30px;
+    color: var(--color-green);
+    margin: 0 0 8px 0;
+  }
+
+  h3 {
+    font-family: "Merriweather", serif;
+    font-weight: 400;
+    font-size: 19px;
+    line-height: 26px;
+    color: var(--color-green);
+    margin: 0 0 8px 0;
+  }
+
+  h4 {
+    font-family: "Merriweather", serif;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 22px;
+    color: var(--color-green);
+    margin: 0 0 8px 0;
+  }
+
+  h5 {
+    font-family: "Merriweather", serif;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--color-green);
+    margin: 0 0 8px 0;
+  }
+
+  h6 {
+    font-family: "Merriweather", serif;
+    font-weight: 400;
+    font-size: 13px;
+    line-height: 18px;
+    color: var(--color-green);
+    margin: 0 0 8px 0;
+  }
+
+  p {
+    font-family: "Roboto", sans-serif;
+    font-weight: 300;
+    font-size: 16px;
+    line-height: 27px;
+    color: var(--color-black);
+    margin: 0 0 10px 0;
+  }
+
+  blockquote {
+    font-family: "Roboto", sans-serif;
+    font-weight: 300;
+    font-size: 20px;
+    line-height: 28px;
+    color: var(--color-black);
+    margin: 0 0 12px 0;
+  }
+
+  blockquote footer {
+    font-family: "Roboto", sans-serif;
+    font-weight: 300;
+    font-size: 16px;
+    line-height: 22px;
+    color: var(--color-darkgrey);
+    margin: 0;
+  }
+
+  time {
+    font-family: "Roboto", sans-serif;
+    font-weight: 900;
+    font-size: 12px;
+    line-height: 16px;
+    color: #49494b;
+    margin: 0 0 10px 0;
+    letter-spacing: 0.24px;
+  }
+}
+
+@layer components {
+  .hide-scrollbar {
+    scrollbar-width: 0px;
+    scrollbar-color: transparent;
+  }
+
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .lead {
+    font-family: "Roboto", sans-serif;
+    font-weight: 300;
+    font-size: 24px;
+    line-height: 34px;
+    color: var(--color-black);
+    margin: 0 0 24px 0;
+  }
+
+  .glass {
+    @apply bg-white/5 backdrop-blur-[2px] border-2 border-white/50;
+  }
+
+  .floating {
+    @apply shadow-xl;
+  }
+
+  .round-box {
+    @apply p-1 rounded-xl ring-1 ring-black/5;
+  }
+
+  .bouncy {
+    @apply transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-2xl;
+  }
+}

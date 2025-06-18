@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="images/logo.svg"
+    />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+    <title>Vitax</title>
+  </head>
+
+  <body
+    id="app"
+    class="h-full w-full"
+  >
+    <script
+      type="module"
+      src="/src/icons.ts"
+    ></script>
+    <main class="h-full w-full">
+      <div
+        id="menu-overlay"
+        class="flex h-full w-full flex-col justify-between gap-6 p-6"
+      >
+        <header
+          id="menu-header"
+          class="flex h-full w-full flex-initial basis-1/24 flex-row items-center justify-between gap-4"
+        >
+          <div
+            id="menu-header-title"
+            class="round-box floating glass bouncy flex h-fit w-fit shrink-0 flex-row items-center gap-2"
+          >
+            <img
+              src="images/logo.svg"
+              alt="Vitax Logo"
+              class="h-8"
+            />
+            <hgroup>
+              <h1 class="!mb-0">Vitax</h1>
+              <!-- <span>Visualizing the NCBI Taxonomy</span> -->
+            </hgroup>
+          </div>
+          <search
+            id="taxonomy-search"
+            class="floating relative mx-auto flex h-full w-1/2 items-center rounded-xl transition-all duration-300 ease-in-out focus-within:scale-105 focus-within:shadow-2xl hover:scale-105 hover:shadow-2xl"
+          >
+            <fieldset
+              title="Search Taxonomy"
+              class="relative flex h-full flex-grow items-center rounded-xl p-0"
+            >
+              <icon-material-symbols-search-rounded
+                class="text-grey absolute left-3 z-10"
+              ></icon-material-symbols-search-rounded>
+              <input
+                id="taxonomy-search-input"
+                type="search"
+                placeholder="Search taxon..."
+                class="h-full flex-grow rounded-l-xl border-y-2 border-l-2 border-white/50 bg-white/5 p-1 pr-25 pl-10 backdrop-blur-[2px] outline-none"
+              />
+              <div
+                class="bg-green/30 pointer-events-none absolute top-1/2 right-22 z-10 flex -translate-y-1/2 items-center space-x-1 rounded-lg p-1 inset-shadow-sm"
+              >
+                <kbd
+                  class="rounded-md border border-gray-300 bg-gray-100 px-1.5 py-0.5 font-sans text-xs font-semibold text-gray-500 shadow-sm"
+                  >Ctrl</kbd
+                >
+                <span class="text-xs font-semibold text-gray-500">+</span>
+                <kbd
+                  class="rounded-md border border-gray-300 bg-gray-100 px-1.5 py-0.5 font-sans text-xs font-semibold text-gray-500 shadow-sm"
+                  >K</kbd
+                >
+              </div>
+              <button
+                id="taxonomy-search-button"
+                class="bg-green border-green/50 h-full cursor-pointer rounded-r-xl border-y-2 border-r-2 p-1 px-3 text-white shadow-xl transition-transform duration-75 active:scale-90"
+              >
+                Search
+              </button>
+            </fieldset>
+            <div
+              id="autocomplete-results"
+              class="round-box floating glass absolute top-full z-50 mt-1 hidden w-full transition-all duration-300 ease-in-out"
+            >
+              <ul
+                id="autocomplete-list"
+                class="hide-scrollbar max-h-60 overflow-y-auto"
+              >
+                <!-- Suggestions will be populated here -->
+              </ul>
+            </div>
+          </search>
+          <fieldset
+            id="taxonomy-type"
+            title="Taxonomy Type"
+            class="round-box floating glass bouncy flex flex-row flex-wrap gap-2"
+          >
+            <div>
+              <input
+                type="radio"
+                name="taxonomy-option"
+                id="neighbors"
+                value="neighbors"
+                class="peer hidden"
+                checked=""
+              />
+              <label
+                for="neighbors"
+                class="peer-checked:bg-green block cursor-pointer rounded-lg p-2 text-center select-none peer-checked:text-white peer-checked:shadow-xl"
+                >Neighbors</label
+              >
+            </div>
+            <div>
+              <input
+                type="radio"
+                name="taxonomy-option"
+                id="descendants"
+                value="descendants"
+                class="peer hidden"
+              />
+              <label
+                for="descendants"
+                class="peer-checked:bg-green block cursor-pointer rounded-lg p-2 text-center select-none peer-checked:text-white peer-checked:shadow-xl"
+                >Descendants</label
+              >
+            </div>
+            <div>
+              <input
+                type="radio"
+                name="taxonomy-option"
+                id="mrca"
+                value="mrca"
+                class="peer hidden"
+              />
+              <label
+                for="mrca"
+                class="peer-checked:bg-green block cursor-pointer rounded-lg p-2 text-center select-none peer-checked:text-white peer-checked:shadow-xl"
+                >MRCA</label
+              >
+            </div>
+          </fieldset>
+        </header>
+        <div
+          id="menu-middle"
+          class="flex w-full flex-auto shrink-3 flex-row items-center justify-end"
+        >
+          <fieldset
+            id="display-type"
+            title="Display Type"
+            class="round-box floating glass bouncy flex flex-col flex-wrap gap-2"
+          >
+            <div>
+              <input
+                type="radio"
+                name="display-option"
+                id="tree"
+                value="tree"
+                class="peer hidden"
+                checked=""
+              />
+              <label
+                for="tree"
+                class="peer-checked:bg-green block cursor-pointer rounded-lg p-2 text-center select-none peer-checked:text-white peer-checked:shadow-xl"
+                >Tree</label
+              >
+            </div>
+            <div>
+              <input
+                type="radio"
+                name="display-option"
+                id="graph"
+                value="graph"
+                class="peer hidden"
+              />
+              <label
+                for="graph"
+                class="peer-checked:bg-green block cursor-pointer rounded-lg p-2 text-center select-none peer-checked:text-white peer-checked:shadow-xl"
+                >Graph</label
+              >
+            </div>
+            <div>
+              <input
+                type="radio"
+                name="display-option"
+                id="cluster"
+                value="cluster"
+                class="peer hidden"
+              />
+              <label
+                for="cluster"
+                class="peer-checked:bg-green block cursor-pointer rounded-lg p-2 text-center select-none peer-checked:text-white peer-checked:shadow-xl"
+                >Cluster</label
+              >
+            </div>
+            <div>
+              <input
+                type="radio"
+                name="display-option"
+                id="partition"
+                value="partition"
+                class="peer hidden"
+              />
+              <label
+                for="partition"
+                class="peer-checked:bg-green block cursor-pointer rounded-lg p-2 text-center select-none peer-checked:text-white peer-checked:shadow-xl"
+                >Partition</label
+              >
+            </div>
+            <div>
+              <input
+                type="radio"
+                name="display-option"
+                id="pack"
+                value="pack"
+                class="peer hidden"
+              />
+              <label
+                for="pack"
+                class="peer-checked:bg-green block cursor-pointer rounded-lg p-2 text-center select-none peer-checked:text-white peer-checked:shadow-xl"
+                >Pack</label
+              >
+            </div>
+            <div>
+              <input
+                type="radio"
+                name="display-option"
+                id="treemap"
+                value="treemap"
+                class="peer hidden"
+              />
+              <label
+                for="treemap"
+                class="peer-checked:bg-green block cursor-pointer rounded-lg p-2 text-center select-none peer-checked:text-white peer-checked:shadow-xl"
+                >Treemap</label
+              >
+            </div>
+          </fieldset>
+        </div>
+        <footer
+          id="menu-footer"
+          class="flex w-full flex-initial basis-1/24 flex-row justify-between"
+        ></footer>
+      </div>
+    </main>
+    <script
+      type="module"
+      src="/src/main.ts"
+    ></script>
+  </body>
+</html>
