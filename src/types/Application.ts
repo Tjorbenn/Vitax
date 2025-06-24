@@ -3,12 +3,13 @@ export interface Suggestion {
   name: string;
 }
 
-export type Status =
-  | "idle"
-  | "loading"
-  | "success"
-  | "error"
-  | "debouncing";
+export enum Status {
+  Idle,
+  Loading,
+  Success,
+  Error,
+  Debouncing
+}
 
 export type TaxonomyType =
   | "descendants"

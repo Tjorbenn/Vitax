@@ -22,7 +22,7 @@
       type="module"
       src="/src/icons.ts"
     ></script>
-    <main class="h-full w-full">
+    <main class="h-full w-full relative">
       <div
         id="menu-overlay"
         class="flex h-full w-full flex-col justify-between gap-6 p-6"
@@ -77,21 +77,24 @@
               </div>
               <button
                 id="taxonomy-search-button"
+                type="submit"
                 class="bg-green border-green/50 h-full cursor-pointer rounded-r-xl border-y-2 border-r-2 p-1 px-3 text-white shadow-xl transition-transform duration-75 active:scale-90"
               >
                 Search
               </button>
             </fieldset>
             <div
-              id="autocomplete-results"
-              class="round-box floating glass absolute top-full z-50 mt-1 hidden w-full transition-all duration-300 ease-in-out"
+              id="suggestions-container"
+              class="hidden absolute top-full z-50 mt-1 w-full transition-all duration-300 ease-in-out"
             >
               <ul
-                id="autocomplete-list"
-                class="hide-scrollbar max-h-60 overflow-y-auto"
-              >
-                <!-- Suggestions will be populated here -->
-              </ul>
+                id="selected-list"
+                class="hidden round-box floating glass w-fit max-w-full flex-row flex-wrap mb-1 p-2 gap-2"
+              ></ul>
+              <ul
+                id="suggestions-list"
+                class="round-box floating glass w-full max-h-60 z-50 overflow-y-auto hide-scrollbar"
+              ></ul>
             </div>
           </search>
           <fieldset
@@ -245,6 +248,10 @@
           class="flex w-full flex-initial basis-1/24 flex-row justify-between"
         ></footer>
       </div>
+      <div
+        id="visualization-container"
+        class="absolute -z-10 inset-0 flex h-full w-full items-center justify-center"
+      ></div>
     </main>
     <script
       type="module"
