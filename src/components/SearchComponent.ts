@@ -1,10 +1,13 @@
 import { Vitax } from "../main";
-import type { Suggestion } from "../types/Application";
+import type { TaxonomyType, Suggestion } from "../types/Application";
 import { SuggestionsService } from "../services/SuggestionsService";
 
 export class SearchComponent {
     private suggestionsService: SuggestionsService = new SuggestionsService();
+    private taxonomyType: TaxonomyType = "neighbors";
     searchElement: HTMLElement;
+    taxonomyTypeButton: HTMLButtonElement;
+    taxonomyTypeList: HTMLUListElement;
     inputElement: HTMLInputElement;
     searchButton: HTMLButtonElement;
     suggestionsContainer: HTMLDivElement;
@@ -15,22 +18,30 @@ export class SearchComponent {
 
     constructor(searchElement: HTMLElement, suggestionsContainer: HTMLDivElement) {
         this.searchElement = searchElement;
+        this.taxonomyTypeButton = searchElement.querySelector("#taxonomy-type-dropdown") as HTMLButtonElement;
+        this.taxonomyTypeList = searchElement.querySelector("#taxonomy-type-options") as HTMLUListElement;
         this.inputElement = searchElement.querySelector("input[type='search']") as HTMLInputElement;
         this.searchButton = searchElement.querySelector("button[type='submit']") as HTMLButtonElement;
         this.suggestionsContainer = suggestionsContainer;
         this.suggestionsList = suggestionsContainer.querySelector("#suggestions-list") as HTMLUListElement;
         this.selectedList = suggestionsContainer.querySelector("#selected-list") as HTMLUListElement;
+        this.taxonomyTypeButton.addEventListener("click", () => {
+            this.taxonomyTypeList.classList.toggle("hidden");
+        });
         this.inputElement.addEventListener("input", this.handleInput.bind(this));
         this.inputElement.addEventListener("keydown", (event) => {
             if (event.key === "Enter") {
                 this.selectInput(event);
             }
             else if (event.key === "Escape") {
-                this.clearSuggestions(event);
+                this.clearSuggestions();
             }
         });
         this.searchButton.addEventListener("click", this.handleSearch.bind(this));
         this.suggestionsList.addEventListener("scroll", this.handleScroll.bind(this));
+        for (const option of this.taxonomyTypeList.children) {
+            option.addEventListener("click", this.setTaxonomyType.bind(this));
+        }
     }
 
     public getSearchTerm(): string {
@@ -41,7 +52,11 @@ export class SearchComponent {
         return this.selected;
     }
 
-    private async handleInput(event: Event) {
+    public getTaxonomyType(): TaxonomyType {
+        return this.taxonomyType;
+    }
+
+    private async handleInput() {
         this.suggestions = [];
         this.updateSuggestionsList();
 
@@ -66,7 +81,7 @@ export class SearchComponent {
         }
     }
 
-    private clearSuggestions(event: Event) {
+    private clearSuggestions() {
         this.suggestions = [];
         this.updateSuggestionsList();
     }
@@ -143,7 +158,7 @@ export class SearchComponent {
                 const itemId = document.createElement("span");
                 listItem.classList.add("rounded-xl", "p-1", "flex", "flex-row", "bg-green", "text-xs", "text-white", "hover:bg-darkgrey", "hover:cursor-pointer");
                 itemName.textContent = suggestion.name;
-                itemName.classList.add("selected-name", "mr-2");
+                itemName.classList.add("selected-name", "mr-1");
                 itemId.classList.add("selected-id");
                 itemId.textContent = `(${suggestion.id})`;
                 listItem.appendChild(itemName);
@@ -164,5 +179,15 @@ export class SearchComponent {
             this.selected = this.selected.filter(s => s.name !== suggestionName);
             this.updateSelected();
         }
+    }
+
+    private async setTaxonomyType(event: Event) {
+        const target = event.target as HTMLLIElement;
+        if (target) {
+            this.taxonomyType = target.dataset.type as TaxonomyType;
+            this.taxonomyTypeButton.querySelector("span")!.textContent = target.textContent;
+            this.taxonomyTypeList.classList.add("hidden");
+        }
+        console.log(`Taxonomy type set to: ${this.taxonomyType}`);
     }
 }

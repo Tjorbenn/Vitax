@@ -1,4 +1,4 @@
-import type { Taxon, TaxonomyTree } from "../types/Taxonomy";
+import type { TaxonomyTree } from "../types/Taxonomy";
 import * as d3 from "d3";
 
 export abstract class D3Visualization {

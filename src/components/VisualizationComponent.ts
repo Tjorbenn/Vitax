@@ -1,5 +1,5 @@
 export class VisualizationComponent {
-    private canvas: HTMLDivElement;
+    public canvas: HTMLDivElement;
 
     constructor(canvas: HTMLDivElement) {
         this.canvas = canvas;

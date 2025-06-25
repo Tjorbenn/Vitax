@@ -29,7 +29,7 @@
       >
         <header
           id="menu-header"
-          class="flex h-full w-full flex-initial basis-1/24 flex-row items-center justify-between gap-4"
+          class="relative flex h-full w-full flex-initial basis-1/24 flex-row items-start justify-start gap-4"
         >
           <div
             id="menu-header-title"
@@ -47,23 +47,34 @@
           </div>
           <search
             id="taxonomy-search"
-            class="floating relative mx-auto flex h-full w-1/2 items-center rounded-xl transition-all duration-300 ease-in-out focus-within:scale-105 focus-within:shadow-2xl hover:scale-105 hover:shadow-2xl"
+            class="floating absolute left-1/2 top-0 -translate-x-1/2 mx-auto flex h-full w-1/2 items-center rounded-xl transition-all duration-300 ease-in-out focus-within:scale-105 focus-within:shadow-2xl hover:scale-105 hover:shadow-2xl"
           >
             <fieldset
               title="Search Taxonomy"
               class="relative flex h-full flex-grow items-center rounded-xl p-0"
             >
-              <icon-material-symbols-search-rounded
-                class="text-grey absolute left-3 z-10"
-              ></icon-material-symbols-search-rounded>
-              <input
-                id="taxonomy-search-input"
-                type="search"
-                placeholder="Search taxon..."
-                class="h-full flex-grow rounded-l-xl border-y-2 border-l-2 border-white/50 bg-white/5 p-1 pr-25 pl-10 backdrop-blur-[2px] outline-none"
-              />
+              <button
+                id="taxonomy-type-dropdown"
+                class="bg-green border-green/50 h-full cursor-pointer rounded-l-xl border-y-2 border-l-2 p-1 pl-6 pr-3 text-white shadow-xl transition-transform duration-75 active:scale-90 z-9"
+              >
+                <icon-material-symbols-arrow-drop-down-rounded
+                  class="text-white absolute left-1 z-10 text-center top-1/2 -translate-y-1/2"
+                ></icon-material-symbols-arrow-drop-down-rounded>
+                <span id="taxonomy-type"> Neighbors </span>
+              </button>
+              <div class="relative flex-grow h-full">
+                <icon-material-symbols-search-rounded
+                  class="text-grey absolute left-3 top-1/2 -translate-y-1/2 z-10 pointer-events-none"
+                ></icon-material-symbols-search-rounded>
+                <input
+                  id="taxonomy-search-input"
+                  type="search"
+                  placeholder="Search taxon..."
+                  class="h-full w-full border-y-2 border-white/50 bg-white/5 p-1 pr-25 pl-10 backdrop-blur-[2px] outline-none z-9"
+                />
+              </div>
               <div
-                class="bg-green/30 pointer-events-none absolute top-1/2 right-22 z-10 flex -translate-y-1/2 items-center space-x-1 rounded-lg p-1 inset-shadow-sm"
+                class="bg-green/30 pointer-events-none absolute top-1/2 right-26 z-10 flex -translate-y-1/2 items-center space-x-1 rounded-lg p-1 inset-shadow-sm"
               >
                 <kbd
                   class="rounded-md border border-gray-300 bg-gray-100 px-1.5 py-0.5 font-sans text-xs font-semibold text-gray-500 shadow-sm"
@@ -78,11 +89,34 @@
               <button
                 id="taxonomy-search-button"
                 type="submit"
-                class="bg-green border-green/50 h-full cursor-pointer rounded-r-xl border-y-2 border-r-2 p-1 px-3 text-white shadow-xl transition-transform duration-75 active:scale-90"
+                class="bg-green border-green/50 h-full cursor-pointer rounded-r-xl border-y-2 border-r-2 p-1 px-3 text-white shadow-xl transition-transform duration-75 active:scale-90 z-9"
               >
-                Search
+                Visualize
               </button>
             </fieldset>
+            <ul
+              id="taxonomy-type-options"
+              class="hidden round-box floating glass absolute top-full z-60 mt-1 w-fit max-h-60 overflow-y-auto hide-scrollbar flex-col gap-2 p-2 transition-all duration-300 ease-in-out"
+            >
+              <li
+                class="cursor-pointer rounded-lg p-2 text-center select-none hover:bg-green hover:text-white"
+                data-type="neighbors"
+              >
+                Neighbors
+              </li>
+              <li
+                class="cursor-pointer rounded-lg p-2 text-center select-none hover:bg-green hover:text-white"
+                data-type="descendants"
+              >
+                Descendants
+              </li>
+              <li
+                class="cursor-pointer rounded-lg p-2 text-center select-none hover:bg-green hover:text-white"
+                data-type="mrca"
+              >
+                MRCA
+              </li>
+            </ul>
             <div
               id="suggestions-container"
               class="hidden absolute top-full z-50 mt-1 w-full transition-all duration-300 ease-in-out"
@@ -97,55 +131,6 @@
               ></ul>
             </div>
           </search>
-          <fieldset
-            id="taxonomy-type"
-            title="Taxonomy Type"
-            class="round-box floating glass bouncy flex flex-row flex-wrap gap-2"
-          >
-            <div>
-              <input
-                type="radio"
-                name="taxonomy-option"
-                id="neighbors"
-                value="neighbors"
-                class="peer hidden"
-                checked=""
-              />
-              <label
-                for="neighbors"
-                class="peer-checked:bg-green block cursor-pointer rounded-lg p-2 text-center select-none peer-checked:text-white peer-checked:shadow-xl"
-                >Neighbors</label
-              >
-            </div>
-            <div>
-              <input
-                type="radio"
-                name="taxonomy-option"
-                id="descendants"
-                value="descendants"
-                class="peer hidden"
-              />
-              <label
-                for="descendants"
-                class="peer-checked:bg-green block cursor-pointer rounded-lg p-2 text-center select-none peer-checked:text-white peer-checked:shadow-xl"
-                >Descendants</label
-              >
-            </div>
-            <div>
-              <input
-                type="radio"
-                name="taxonomy-option"
-                id="mrca"
-                value="mrca"
-                class="peer hidden"
-              />
-              <label
-                for="mrca"
-                class="peer-checked:bg-green block cursor-pointer rounded-lg p-2 text-center select-none peer-checked:text-white peer-checked:shadow-xl"
-                >MRCA</label
-              >
-            </div>
-          </fieldset>
         </header>
         <div
           id="menu-middle"
@@ -163,7 +148,7 @@
                 id="tree"
                 value="tree"
                 class="peer hidden"
-                checked=""
+                checked
               />
               <label
                 for="tree"

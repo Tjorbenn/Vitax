@@ -13,20 +13,19 @@ import { NeighborsService } from "../services/NeighborsService";
 
 // Singleton Application orchestrator class
 export class Application {
-    private static instance: Application;
+    tree: TaxonomyTree | null = null;
+    status: Status = Status.Loading;
+    displayType: Visualization | null = null;
+    taxonomyType: TaxonomyType | null = null;
 
-    private tree: TaxonomyTree | null = null;
-    private status: Status = Status.Loading;
-    private displayType: Visualization | null = null;
+    searchComponent: SearchComponent;
+    taxonomyTypeComponent: TaxonomyTypeComponent;
+    displayTypeComponent: DisplayTypeComponent;
+    visualizationComponent: VisualizationComponent;
 
-    private searchComponent: SearchComponent;
-    private taxonomyTypeComponent: TaxonomyTypeComponent;
-    private displayTypeComponent: DisplayTypeComponent;
-    private visualizationComponent: VisualizationComponent;
-
-    private descendantsService: DescendantsService = new DescendantsService();
-    private mrcaService: MRCAService = new MRCAService();
-    private neighborsService: NeighborsService = new NeighborsService();
+    descendantsService: DescendantsService = new DescendantsService();
+    mrcaService: MRCAService = new MRCAService();
+    neighborsService: NeighborsService = new NeighborsService();
 
     constructor(searchComponent: SearchComponent, taxonomyTypeComponent: TaxonomyTypeComponent, displayTypeComponent: DisplayTypeComponent, visualizationComponent: VisualizationComponent) {
         this.searchComponent = searchComponent;
@@ -43,7 +42,7 @@ export class Application {
     public async search(): Promise<void> {
         this.status = Status.Loading;
         const query = this.searchComponent.getSelected()[0].name;
-        const taxonomyType = this.taxonomyTypeComponent.getValue();
+        const taxonomyType = this.searchComponent.getTaxonomyType();
         switch (taxonomyType) {
             case "descendants":
                 this.tree = await this.descendantsService.getTree(query);

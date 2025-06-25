@@ -1,4 +1,4 @@
-import type { Taxon, TaxonomyTree } from "../types/Taxonomy";
+import type { TaxonomyTree } from "../types/Taxonomy";
 import { NeverAPI } from "../api/ApiClient"
 
 export class DescendantsService {

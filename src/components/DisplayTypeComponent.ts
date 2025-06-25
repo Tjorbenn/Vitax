@@ -19,7 +19,7 @@ export class DisplayTypeComponent {
         throw new Error("No display type selected.");
     }
 
-    handleChange(event: Event): void {
+    handleChange(): void {
         const newValue = this.getValue() as Visualization;
         Vitax.setDisplayType(newValue);
     }

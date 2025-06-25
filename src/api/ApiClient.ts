@@ -90,7 +90,6 @@ export class NeverAPI {
         const response = await request.Send();
         const taxa = await this.getNamesByTaxonIds(response.filter(entry => entry.taxid !== undefined).map(entry => entry.taxid as number));
 
-        // Add the parentId to each taxon in taxa from the response
         for (const taxon of taxa) {
             taxon.parentId = response.find(entry => entry.taxid === taxon.id)?.parent;
         }
@@ -127,6 +126,7 @@ function TaxaToTree(taxa: Taxon[]): TaxonomyTree {
     }
 
     const root = taxa.find(taxon => taxon.parentId === taxon.id);
+    taxa = taxa.filter(taxon => taxon.id !== root?.id);
     if (!root) {
         throw new Error("No root taxon found in: " + JSON.stringify(taxa));
     }
