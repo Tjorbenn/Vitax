@@ -1,25 +1,31 @@
+import type { GenomeCount } from "../types/Taxonomy";
+
 export enum Endpoint {
   Accessions = "accessions",
   Children = "children",
   Levels = "levels",
   MRCA = "mrca",
   Names = "names",
+  GenomeCount = "num_genomes",
+  GenomeCountRecursive = "num_genomes_rec",
   Parent = "parent",
   Ranks = "ranks",
   Subtree = "subtree",
   Taxon = "taxi",
-  TaxonID = "taxid"
+  TaxonID = "taxid",
+  TaxonInfo = "taxa_info"
 };
 
 export type Response = Entry[]
 
 export type Entry = {
   accession?: string;
-  level?: string;
   name?: string;
   parent?: number;
   rank?: string;
   taxid?: number;
+  raw_genome_counts?: GenomeCount[];
+  rec_genome_counts?: GenomeCount[];
 };
 
 export enum ParameterKey {

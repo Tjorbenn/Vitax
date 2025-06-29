@@ -1,27 +1,33 @@
 import { Vitax } from "../main";
 import type { TaxonomyType, Suggestion } from "../types/Application";
+import { Status } from "../types/Application";
 import { SuggestionsService } from "../services/SuggestionsService";
 
 export class SearchComponent {
     private suggestionsService: SuggestionsService = new SuggestionsService();
     private taxonomyType: TaxonomyType = "neighbors";
+    private debounceTime: number = 0;
+    private inputChangeTimer?: number;
+    private suggestionsStatus: Status = Status.Success;
+    private highlightedIndex: number = -1;
+    private suggestions: Suggestion[] = [];
+    private selected: Suggestion[] = [];
+
     searchElement: HTMLElement;
+    inputElement: HTMLInputElement;
     taxonomyTypeButton: HTMLButtonElement;
     taxonomyTypeList: HTMLUListElement;
-    inputElement: HTMLInputElement;
-    searchButton: HTMLButtonElement;
+    visualizeButton: HTMLButtonElement;
     suggestionsContainer: HTMLDivElement;
     suggestionsList: HTMLUListElement;
     selectedList: HTMLUListElement;
-    suggestions: Suggestion[] = [];
-    selected: Suggestion[] = [];
 
     constructor(searchElement: HTMLElement, suggestionsContainer: HTMLDivElement) {
         this.searchElement = searchElement;
         this.taxonomyTypeButton = searchElement.querySelector("#taxonomy-type-dropdown") as HTMLButtonElement;
         this.taxonomyTypeList = searchElement.querySelector("#taxonomy-type-options") as HTMLUListElement;
         this.inputElement = searchElement.querySelector("input[type='search']") as HTMLInputElement;
-        this.searchButton = searchElement.querySelector("button[type='submit']") as HTMLButtonElement;
+        this.visualizeButton = searchElement.querySelector("button[type='submit']") as HTMLButtonElement;
         this.suggestionsContainer = suggestionsContainer;
         this.suggestionsList = suggestionsContainer.querySelector("#suggestions-list") as HTMLUListElement;
         this.selectedList = suggestionsContainer.querySelector("#selected-list") as HTMLUListElement;
@@ -31,14 +37,35 @@ export class SearchComponent {
         this.inputElement.addEventListener("input", this.handleInput.bind(this));
         this.inputElement.addEventListener("keydown", (event) => {
             if (event.key === "Enter") {
-                this.selectInput(event);
+                if (this.highlightedIndex > -1) {
+                    this.selectSuggestion();
+                }
+                else {
+                    this.selectInput(event);
+                }
             }
             else if (event.key === "Escape") {
                 this.clearSuggestions();
             }
+            else if (event.key === "ArrowDown") {
+                event.preventDefault();
+                this.highlightedIndex = Math.min(this.highlightedIndex + 1, this.suggestions.length - 1);
+                this.handleNavigation();
+            }
+            else if (event.key === "ArrowUp") {
+                event.preventDefault();
+                this.highlightedIndex = Math.max(this.highlightedIndex - 1, 0);
+                this.handleNavigation();
+            }
         });
-        this.searchButton.addEventListener("click", this.handleSearch.bind(this));
+        this.visualizeButton.addEventListener("click", this.handleVisualize.bind(this));
         this.suggestionsList.addEventListener("scroll", this.handleScroll.bind(this));
+        document.addEventListener("keydown", (event) => {
+            if (event.ctrlKey && event.key === "k") {
+                event.preventDefault();
+                this.inputElement.focus();
+            }
+        })
         for (const option of this.taxonomyTypeList.children) {
             option.addEventListener("click", this.setTaxonomyType.bind(this));
         }
@@ -56,29 +83,124 @@ export class SearchComponent {
         return this.taxonomyType;
     }
 
-    private async handleInput() {
-        this.suggestions = [];
-        this.updateSuggestionsList();
-
+    private handleInput() {
         const query = this.getSearchTerm();
-        this.suggestionsService.getSuggestions(query).then(suggestions => {
-            this.suggestions = suggestions;
-            this.updateSuggestionsList();
+        window.clearTimeout(this.inputChangeTimer);
+        this.highlightedIndex = -1;
+        this.suggestionsList.scrollTop = 0;
+        this.suggestions = [];
+
+        if (!query) {
+            this.clearSuggestions();
+            return;
+        }
+
+        this.clearSuggestions();
+        this.inputChangeTimer = window.setTimeout(() => {
+            this.suggestionsService.getSuggestions(query).then(suggestions => {
+                this.suggestions = this.sortSuggestions(suggestions, query);
+                this.updateSuggestionsList();
+            });
+        }, this.debounceTime);
+    }
+
+    private handleNavigation() {
+        if (this.highlightedIndex > -1 && this.highlightedIndex < this.suggestions.length) {
+            this.highlightSuggestion(this.highlightedIndex);
+            const item = this.suggestionsList.querySelectorAll("li")[this.highlightedIndex];
+            item.scrollIntoView({ block: "nearest" });
+            if (this.highlightedIndex === this.suggestions.length - 1) {
+                this.getMoreSuggestions();
+            }
+        }
+    }
+
+    private handleMouseHighlight(event: MouseEvent) {
+        const target = event.target as HTMLLIElement;
+        if (target && target.tagName.toLowerCase() === "li") {
+            const items = this.suggestionsList.querySelectorAll("li");
+            items.forEach((item, index) => {
+                if (item === target) {
+                    this.highlightedIndex = index;
+                }
+            });
+        }
+    }
+
+    private highlightSuggestion(index: number) {
+        const items = this.suggestionsList.querySelectorAll("li");
+        items.forEach((item, i) => {
+            if (i === index) {
+                item.classList.add("highlighted");
+                item.scrollIntoView({ block: "nearest" });
+            } else {
+                item.classList.remove("highlighted");
+            }
         });
     }
 
-    private handleSearch(event: Event) {
+    private handleVisualize(event: Event) {
         event.preventDefault();
-        Vitax.search();
+        Vitax.visualize();
     }
 
-    private async handleScroll(event: Event) {
-        const target = event.target as HTMLDivElement;
-        if (target.scrollTop + target.clientHeight >= target.scrollHeight) {
-            const moreSuggestions = await this.suggestionsService.nextSuggestions();
-            this.suggestions = this.suggestions.concat(moreSuggestions);
-            this.updateSuggestionsList();
+    private sortSuggestions(suggestions: Suggestion[], query: string): Suggestion[] {
+        if (suggestions.length <= 1) {
+            return suggestions;
         }
+        const lowerCaseQuery = query.toLowerCase();
+
+        const mapped = suggestions.map(suggestion => {
+            const lowerCaseName = suggestion.name.toLowerCase();
+            return {
+                suggestion,
+                isPrefix: lowerCaseName.startsWith(lowerCaseQuery),
+                hasWordPrefix: lowerCaseName.split(' ').some(word => word.startsWith(lowerCaseQuery)),
+                indexOfQuery: lowerCaseName.indexOf(lowerCaseQuery),
+            };
+        });
+
+        mapped.sort((a, b) => {
+            if (a.isPrefix && !b.isPrefix) return -1;
+            if (!a.isPrefix && b.isPrefix) return 1;
+
+            if (a.hasWordPrefix && !b.hasWordPrefix) return -1;
+            if (!a.hasWordPrefix && b.hasWordPrefix) return 1;
+
+            if (a.indexOfQuery !== -1 && b.indexOfQuery === -1) return -1;
+            if (a.indexOfQuery === -1 && b.indexOfQuery !== -1) return 1;
+            if (a.indexOfQuery !== -1 && b.indexOfQuery !== -1) {
+                if (a.indexOfQuery < b.indexOfQuery) return -1;
+                if (a.indexOfQuery > b.indexOfQuery) return 1;
+            }
+
+            if (a.suggestion.name.length < b.suggestion.name.length) return -1;
+            if (a.suggestion.name.length > b.suggestion.name.length) return 1;
+
+            return a.suggestion.name.localeCompare(b.suggestion.name);
+        });
+
+        return mapped.map(item => item.suggestion);
+    }
+
+    private async handleScroll() {
+        const target = this.suggestionsList;
+        if (target.scrollTop + target.clientHeight >= target.scrollHeight - 5 && this.suggestionsStatus != Status.Success) {
+            this.getMoreSuggestions();
+        }
+    }
+
+    private async getMoreSuggestions() {
+        const query = this.getSearchTerm();
+        const moreSuggestions = await this.suggestionsService.nextSuggestions();
+        const newSuggestions = moreSuggestions.filter(s => !this.suggestions.some(existing => existing.id === s.id));
+        if (moreSuggestions.length < 1) {
+            return;
+        } else if (moreSuggestions.length < 10) {
+            this.suggestionsStatus = Status.Success;
+        }
+        this.suggestions = this.sortSuggestions(this.suggestions.concat(newSuggestions), query);
+        this.updateSuggestionsList();
     }
 
     private clearSuggestions() {
@@ -105,30 +227,33 @@ export class SearchComponent {
                 listItem.appendChild(itemId)
                 this.suggestionsList.appendChild(listItem);
                 listItem.addEventListener("click", this.selectSuggestion.bind(this));
+                listItem.addEventListener("mouseover", this.handleMouseHighlight.bind(this));
             });
         }
         else {
+            this.suggestionsList.innerHTML = "";
             this.suggestionsList.style.display = "none";
         }
     }
 
-    private selectSuggestion(event: Event) {
-        const listItem = event.currentTarget as HTMLLIElement;
-        const suggestionName = listItem.querySelector(".suggestion-name")?.textContent;
-        const suggestionId = listItem.querySelector(".suggestion-id")?.textContent;
+    private selectSuggestion() {
+        const suggestionName = this.suggestions[this.highlightedIndex].name;
+        const suggestionId = this.suggestions[this.highlightedIndex].id;
         if (suggestionName && suggestionId) {
             const suggestion: Suggestion = {
                 name: suggestionName,
-                id: parseInt(suggestionId, 10)
+                id: suggestionId
             };
             if (this.selected.some(s => s.id === suggestion.id)) {
                 return;
             }
             this.selected.push(suggestion);
             this.inputElement.value = "";
+            this.highlightedIndex = -1;
             this.updateSelected();
             this.suggestions = [];
             this.updateSuggestionsList();
+            this.suggestionsList.scrollTop = 0;
         }
     }
 
@@ -156,11 +281,11 @@ export class SearchComponent {
                 const listItem = document.createElement("li");
                 const itemName = document.createElement("span");
                 const itemId = document.createElement("span");
-                listItem.classList.add("rounded-xl", "p-1", "flex", "flex-row", "bg-green", "text-xs", "text-white", "hover:bg-darkgrey", "hover:cursor-pointer");
+                listItem.classList.add("rounded-xl", "p-1", "py-2", "flex", "flex-row", "bg-green", "text-xs", "text-white", "hover:bg-darkgrey", "hover:cursor-pointer");
                 itemName.textContent = suggestion.name;
                 itemName.classList.add("selected-name", "mr-1");
                 itemId.classList.add("selected-id");
-                itemId.textContent = `(${suggestion.id})`;
+                itemId.textContent = `[${suggestion.id}]`;
                 listItem.appendChild(itemName);
                 listItem.appendChild(itemId);
                 listItem.addEventListener("click", this.removeSelected.bind(this));
@@ -174,10 +299,13 @@ export class SearchComponent {
 
     private removeSelected(event: Event) {
         const listItem = event.currentTarget as HTMLLIElement;
-        const suggestionName = listItem.querySelector(".selected-name")?.textContent;
-        if (suggestionName) {
-            this.selected = this.selected.filter(s => s.name !== suggestionName);
-            this.updateSelected();
+        const suggestionIdText = listItem.querySelector(".selected-id")?.textContent;
+        if (suggestionIdText) {
+            const suggestionId = parseInt(suggestionIdText.replace(/[[]]/g, ''));
+            if (!isNaN(suggestionId)) {
+                this.selected = this.selected.filter(s => s.id !== suggestionId);
+                this.updateSelected();
+            }
         }
     }
 

@@ -32,11 +32,9 @@
       linear-gradient(var(--color-background-grey) 2px, transparent 2px),
       linear-gradient(90deg, var(--color-background-grey) 2px, transparent 2px),
       linear-gradient(var(--color-background-grey) 1px, transparent 1px),
-      linear-gradient(
-        90deg,
+      linear-gradient(90deg,
         var(--color-background-grey) 1px,
-        var(--color-transparent) 1px
-      );
+        var(--color-transparent) 1px);
     background-size:
       50px 50px,
       50px 50px,
@@ -179,5 +177,9 @@
 
   .bouncy {
     @apply transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-2xl;
+  }
+
+  .highlighted {
+    @apply bg-green text-white;
   }
 }

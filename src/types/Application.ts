@@ -7,8 +7,7 @@ export enum Status {
   Idle,
   Loading,
   Success,
-  Error,
-  Debouncing
+  Error
 }
 
 export type TaxonomyType =

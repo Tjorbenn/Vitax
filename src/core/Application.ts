@@ -11,6 +11,9 @@ import { DescendantsService } from "../services/DescendantsService";
 import { MRCAService } from "../services/MRCAService";
 import { NeighborsService } from "../services/NeighborsService";
 
+import { D3Visualization } from "../visualizations/d3Visualization";
+import { D3Tree } from "../visualizations/d3/d3Tree";
+
 // Singleton Application orchestrator class
 export class Application {
     tree: TaxonomyTree | null = null;
@@ -39,8 +42,14 @@ export class Application {
         this.displayType = value;
     }
 
-    public async search(): Promise<void> {
+    public async visualize(): Promise<void> {
         this.status = Status.Loading;
+        await this.getTree();
+        this.drawTree();
+        this.status = Status.Idle;
+    }
+
+    private async getTree(): Promise<void> {
         const query = this.searchComponent.getSelected()[0].name;
         const taxonomyType = this.searchComponent.getTaxonomyType();
         switch (taxonomyType) {
@@ -56,10 +65,34 @@ export class Application {
             default:
                 throw new Error("Taxonomy type is not set or invalid. Please select a valid taxonomy type.");
         }
-        console.log("Search completed with tree:", this.tree);
     }
 
-    public drawTree(): void {
-
+    private drawTree(): void {
+        let renderer
+        switch (this.displayType) {
+            case "tree":
+                renderer = new D3Tree(this.tree, this.visualizationComponent.getContainer())
+                break;
+            case "graph":
+                // Draw the tree using a graph visualization library
+                break;
+            case "cluster":
+                // Draw the tree using a cluster visualization library
+                break;
+            case "pack":
+                // Draw the tree using a pack layout visualization library
+                break;
+            case "partition":
+                // Draw the tree using a partition layout visualization library
+                break;
+            case "treemap":
+                // Draw the tree using a treemap visualization library
+                break;
+            default:
+                throw new Error("Display type is not set or invalid. Please select a valid display type.");
+        }
+        const svg = renderer!.render();
+        console.log("SVG rendered:", svg);
+        this.visualizationComponent.display(svg);
     }
 }

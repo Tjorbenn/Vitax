@@ -25,7 +25,7 @@
     <main class="h-full w-full relative">
       <div
         id="menu-overlay"
-        class="flex h-full w-full flex-col justify-between gap-6 p-6"
+        class="flex h-full w-full flex-col justify-between gap-6 p-6 pointer-events-none"
       >
         <header
           id="menu-header"
@@ -33,7 +33,7 @@
         >
           <div
             id="menu-header-title"
-            class="round-box floating glass bouncy flex h-fit w-fit shrink-0 flex-row items-center gap-2"
+            class="round-box floating glass bouncy flex h-fit w-fit shrink-0 flex-row items-center gap-2 cursor-default pointer-events-auto"
           >
             <img
               src="images/logo.svg"
@@ -47,7 +47,7 @@
           </div>
           <search
             id="taxonomy-search"
-            class="floating absolute left-1/2 top-0 -translate-x-1/2 mx-auto flex h-full w-1/2 items-center rounded-xl transition-all duration-300 ease-in-out focus-within:scale-105 focus-within:shadow-2xl hover:scale-105 hover:shadow-2xl"
+            class="floating absolute left-1/2 top-0 -translate-x-1/2 mx-auto flex h-full w-1/2 items-center rounded-xl transition-all duration-300 ease-in-out focus-within:scale-105 focus-within:shadow-2xl hover:scale-105 hover:shadow-2xl pointer-events-auto"
           >
             <fieldset
               title="Search Taxonomy"
@@ -87,7 +87,7 @@
                 >
               </div>
               <button
-                id="taxonomy-search-button"
+                id="taxonomy-visualize-button"
                 type="submit"
                 class="bg-green border-green/50 h-full cursor-pointer rounded-r-xl border-y-2 border-r-2 p-1 px-3 text-white shadow-xl transition-transform duration-75 active:scale-90 z-9"
               >
@@ -96,22 +96,22 @@
             </fieldset>
             <ul
               id="taxonomy-type-options"
-              class="hidden round-box floating glass absolute top-full z-60 mt-1 w-fit max-h-60 overflow-y-auto hide-scrollbar flex-col gap-2 p-2 transition-all duration-300 ease-in-out"
+              class="hidden round-box floating glass absolute top-full z-60 mt-1 w-fit max-h-60 overflow-y-auto hide-scrollbar flex-col gap-2 py-2 transition-all duration-300 ease-in-out"
             >
               <li
-                class="cursor-pointer rounded-lg p-2 text-center select-none hover:bg-green hover:text-white"
+                class="cursor-pointer rounded-lg px-1 py-2 text-start select-none hover:bg-green hover:text-white"
                 data-type="neighbors"
               >
                 Neighbors
               </li>
               <li
-                class="cursor-pointer rounded-lg p-2 text-center select-none hover:bg-green hover:text-white"
+                class="cursor-pointer rounded-lg px-1 py-2 text-start select-none hover:bg-green hover:text-white"
                 data-type="descendants"
               >
                 Descendants
               </li>
               <li
-                class="cursor-pointer rounded-lg p-2 text-center select-none hover:bg-green hover:text-white"
+                class="cursor-pointer rounded-lg px-1 py-2 text-start select-none hover:bg-green hover:text-white"
                 data-type="mrca"
               >
                 MRCA
@@ -139,7 +139,7 @@
           <fieldset
             id="display-type"
             title="Display Type"
-            class="round-box floating glass bouncy flex flex-col flex-wrap gap-2"
+            class="round-box floating glass bouncy flex flex-col flex-wrap gap-2 pointer-events-auto"
           >
             <div>
               <input

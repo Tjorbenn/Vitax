@@ -4,7 +4,7 @@ import { NeverAPI } from "../api/ApiClient";
 export class SuggestionsService {
     private api: NeverAPI = new NeverAPI();
     page: number = 1;
-    pageSize: number = 10;
+    pageSize: number = 500;
     term: string = "";
 
     setPage(page: number): this {
@@ -42,8 +42,7 @@ export class SuggestionsService {
                 return suggestions;
             }
         }
-        catch (error) {
-            console.warn(`Error fetching suggestions for ${this.term}:`, error);
+        catch {
             return [];
         }
     }

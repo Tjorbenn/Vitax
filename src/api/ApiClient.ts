@@ -37,6 +37,14 @@ export class NeverAPI {
         return EntryToTaxon(response[0]);
     }
 
+    public async getTaxaByTaxonIds(taxonIds: number[]): Promise<Taxon[]> {
+        const request = new Never.Request(Never.Endpoint.TaxonInfo);
+        request.addParameter(Never.ParameterKey.Term, taxonIds.join(","));
+
+        const response = await request.Send();
+        return response.map(EntryToTaxon);
+    }
+
     public async getNamesByTaxonIds(taxonIds: number[]): Promise<Taxon[]> {
         const request = new Never.Request(Never.Endpoint.Names);
         request.addParameter(Never.ParameterKey.Term, taxonIds.join(","));
@@ -88,11 +96,7 @@ export class NeverAPI {
         request.addParameter(Never.ParameterKey.Term, taxonId);
 
         const response = await request.Send();
-        const taxa = await this.getNamesByTaxonIds(response.filter(entry => entry.taxid !== undefined).map(entry => entry.taxid as number));
-
-        for (const taxon of taxa) {
-            taxon.parentId = response.find(entry => entry.taxid === taxon.id)?.parent;
-        }
+        const taxa = await this.getTaxaByTaxonIds(response.filter(entry => entry.taxid !== undefined).map(entry => entry.taxid as number));
 
         return TaxaToTree(taxa);
     }
@@ -107,6 +111,8 @@ function EntryToTaxon(entry: Never.Entry): Taxon {
         name: entry.name,
         parentId: entry.parent,
         rank: entry.rank ?? undefined,
+        genomeCount: entry.raw_genome_counts ?? [],
+        genomeCountRecursive: entry.rec_genome_counts ?? [],
     };
 }
 
@@ -125,8 +131,7 @@ function TaxaToTree(taxa: Taxon[]): TaxonomyTree {
         throw new Error("Cannot create tree from empty taxa array.");
     }
 
-    const root = taxa.find(taxon => taxon.parentId === taxon.id);
-    taxa = taxa.filter(taxon => taxon.id !== root?.id);
+    const root = taxa.find(taxon => !taxa.some(child => child.id === taxon.parentId));
     if (!root) {
         throw new Error("No root taxon found in: " + JSON.stringify(taxa));
     }
