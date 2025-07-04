@@ -1,7 +1,7 @@
-import type { Taxon, TaxonomyTree } from "../types/Taxonomy";
-import type { Suggestion } from "../types/Application"
+import type { Taxon, TaxonomyTree } from "../../types/Taxonomy";
+import type { Suggestion } from "../../types/Application"
 import * as Never from "./Never";
-import { TaxaToTree } from "../core/Utility";
+import { TaxaToTree } from "../../core/Utility";
 
 export class NeverAPI {
     public async getTaxonByName(name: string, exact: boolean = true): Promise<Taxon> {

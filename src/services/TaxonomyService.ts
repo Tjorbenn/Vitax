@@ -1,6 +1,6 @@
 import type { Taxon, TaxonomyTree } from "../types/Taxonomy";
 import type { Suggestion } from "../types/Application";
-import { NeverAPI } from "../api/NeverClient"
+import { NeverAPI } from "../api/Never/NeverClient"
 import { TaxaToTree, SuggestionsToTaxa } from "../core/Utility";
 
 export class TaxonomyService {

@@ -1,5 +1,5 @@
 import type { Suggestion } from "../types/Application";
-import { NeverAPI } from "../api/NeverClient";
+import { NeverAPI } from "../api/Never/NeverClient";
 
 export class SuggestionsService {
     private api: NeverAPI = new NeverAPI();

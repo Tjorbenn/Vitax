@@ -1,4 +1,4 @@
-import type { GenomeCount } from "../types/Taxonomy";
+import type { GenomeCount } from "../../types/Taxonomy";
 
 export enum Endpoint {
   Accessions = "accessions",
