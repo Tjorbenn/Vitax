@@ -1,6 +1,7 @@
 import type { Taxon, TaxonomyTree } from "../types/Taxonomy";
 import type { Suggestion } from "../types/Application"
 import * as Never from "./Never";
+import { TaxaToTree } from "../core/Utility";
 
 export class NeverAPI {
     public async getTaxonByName(name: string, exact: boolean = true): Promise<Taxon> {
@@ -15,25 +16,11 @@ export class NeverAPI {
     }
 
     public async getTaxonById(taxonId: number): Promise<Taxon> {
-        const request = new Never.Request(Never.Endpoint.Names);
+        const request = new Never.Request(Never.Endpoint.TaxonInfo);
         request.addParameter(Never.ParameterKey.Term, taxonId);
 
         const response = await request.Send();
 
-        const name = response[0].name;
-        if (!name) {
-            throw new Error("No name found for Taxon-ID: " + taxonId);
-        }
-        else {
-            return this.getTaxonByName(name, true);
-        }
-    }
-
-    public async getNameByTaxonId(taxonId: number): Promise<Taxon> {
-        const request = new Never.Request(Never.Endpoint.Names);
-        request.addParameter(Never.ParameterKey.Term, taxonId);
-
-        const response = await request.Send();
         return EntryToTaxon(response[0]);
     }
 
@@ -100,6 +87,24 @@ export class NeverAPI {
 
         return TaxaToTree(taxa);
     }
+
+    public async getSubtreeByTaxonIdAsArray(taxonId: number): Promise<Taxon[]> {
+        const request = new Never.Request(Never.Endpoint.Subtree);
+        request.addParameter(Never.ParameterKey.Term, taxonId);
+
+        const response = await request.Send();
+        return response.map(EntryToTaxon);
+    }
+
+    public async getMrcaByTaxonIds(taxonIds: number[]): Promise<Taxon> {
+        const request = new Never.Request(Never.Endpoint.MRCA);
+        request.addParameter(Never.ParameterKey.Term, taxonIds.join(","));
+
+        const response = await request.Send();
+        const mrca = await this.getTaxonById(response[0].taxid as number);
+
+        return mrca;
+    }
 }
 
 function EntryToTaxon(entry: Never.Entry): Taxon {
@@ -111,6 +116,7 @@ function EntryToTaxon(entry: Never.Entry): Taxon {
         name: entry.name,
         parentId: entry.parent,
         rank: entry.rank ?? undefined,
+        children: [],
         genomeCount: entry.raw_genome_counts ?? [],
         genomeCountRecursive: entry.rec_genome_counts ?? [],
     };
@@ -124,22 +130,4 @@ function EntryToSuggestion(entry: Never.Entry): Suggestion {
         id: entry.taxid,
         name: entry.name
     };
-}
-
-function TaxaToTree(taxa: Taxon[]): TaxonomyTree {
-    if (taxa.length === 0) {
-        throw new Error("Cannot create tree from empty taxa array.");
-    }
-
-    const root = taxa.find(taxon => !taxa.some(child => child.id === taxon.parentId));
-    if (!root) {
-        throw new Error("No root taxon found in: " + JSON.stringify(taxa));
-    }
-
-    for (const taxon of taxa) {
-        taxon.children = taxa.filter(child => child.parentId === taxon.id);
-    }
-
-    const tree: TaxonomyTree = { root };
-    return tree;
 }

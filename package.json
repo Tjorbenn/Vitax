@@ -28,6 +28,7 @@
   "dependencies": {
     "@fontsource-variable/merriweather": "^5.2.4",
     "@fontsource-variable/roboto": "^5.2.6",
-    "d3": "^7.9.0"
+    "d3": "^7.9.0",
+    "plain-draggable": "^2.5.15"
   }
 }

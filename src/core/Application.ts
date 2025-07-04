@@ -1,45 +1,75 @@
-import type { TaxonomyType, Visualization } from "../types/Application";
+import type { TaxonomyType, Visualization, Suggestion } from "../types/Application";
 import { Status } from "../types/Application";
 import type { TaxonomyTree } from "../types/Taxonomy";
 
 import { SearchComponent } from "../components/SearchComponent";
-import { TaxonomyTypeComponent } from "../components/TaxonomyTypeComponent";
 import { DisplayTypeComponent } from "../components/DisplayTypeComponent";
 import { VisualizationComponent } from "../components/VisualizationComponent";
 
-import { DescendantsService } from "../services/DescendantsService";
-import { MRCAService } from "../services/MRCAService";
-import { NeighborsService } from "../services/NeighborsService";
+import { TaxonomyService } from "../services/TaxonomyService";
 
-import { D3Visualization } from "../visualizations/d3Visualization";
+// import { D3Visualization } from "../visualizations/d3Visualization";
 import { D3Tree } from "../visualizations/d3/d3Tree";
 
 // Singleton Application orchestrator class
 export class Application {
-    tree: TaxonomyTree | null = null;
-    status: Status = Status.Loading;
-    displayType: Visualization | null = null;
-    taxonomyType: TaxonomyType | null = null;
+    private query?: Suggestion[];
+    private tree?: TaxonomyTree;
+    private status: Status = Status.Loading;
+    private displayType?: Visualization;
+    private taxonomyType: TaxonomyType = "neighbors";
 
-    searchComponent: SearchComponent;
-    taxonomyTypeComponent: TaxonomyTypeComponent;
-    displayTypeComponent: DisplayTypeComponent;
-    visualizationComponent: VisualizationComponent;
+    private searchComponent: SearchComponent;
+    private displayTypeComponent: DisplayTypeComponent;
+    private visualizationComponent: VisualizationComponent;
 
-    descendantsService: DescendantsService = new DescendantsService();
-    mrcaService: MRCAService = new MRCAService();
-    neighborsService: NeighborsService = new NeighborsService();
+    private taxonomyService: TaxonomyService = new TaxonomyService();
 
-    constructor(searchComponent: SearchComponent, taxonomyTypeComponent: TaxonomyTypeComponent, displayTypeComponent: DisplayTypeComponent, visualizationComponent: VisualizationComponent) {
+    constructor(searchComponent: SearchComponent, displayTypeComponent: DisplayTypeComponent, visualizationComponent: VisualizationComponent) {
         this.searchComponent = searchComponent;
-        this.taxonomyTypeComponent = taxonomyTypeComponent;
         this.displayTypeComponent = displayTypeComponent;
         this.visualizationComponent = visualizationComponent;
         this.displayType = this.displayTypeComponent.getValue();
     }
 
+    public getQuery(): Suggestion[] | undefined {
+        return this.query;
+    }
+
+    public setQuery(query: Suggestion[]): void {
+        this.query = query;
+    }
+
+    public getStatus(): Status {
+        return this.status;
+    }
+
+    public getDisplayType(): Visualization | undefined {
+        return this.displayType;
+    }
+
     public setDisplayType(value: Visualization) {
         this.displayType = value;
+    }
+
+    public getTaxonomyType(): TaxonomyType | undefined {
+        return this.taxonomyType;
+    }
+
+    public setTaxonomyType(value: TaxonomyType) {
+        this.taxonomyType = value;
+    }
+
+    public getSearchComponent(): SearchComponent {
+        return this.searchComponent;
+    }
+
+    public getDisplayTypeComponent(): DisplayTypeComponent {
+        return this.displayTypeComponent;
+    }
+
+    public getVisualizationComponent(): VisualizationComponent {
+        return this.visualizationComponent;
     }
 
     public async visualize(): Promise<void> {
@@ -50,49 +80,46 @@ export class Application {
     }
 
     private async getTree(): Promise<void> {
-        const query = this.searchComponent.getSelected()[0].name;
-        const taxonomyType = this.searchComponent.getTaxonomyType();
-        switch (taxonomyType) {
-            case "descendants":
-                this.tree = await this.descendantsService.getTree(query);
-                break;
-            case "neighbors":
-                this.tree = await this.neighborsService.getTree(query);
-                break;
-            case "mrca":
-                // this.tree = await this.mrcaService.getTree(query);
-                break;
-            default:
-                throw new Error("Taxonomy type is not set or invalid. Please select a valid taxonomy type.");
+        if (this.query) {
+            switch (this.taxonomyType) {
+                case "descendants":
+                    this.tree = await this.taxonomyService.getDescendantsTree(this.query[0]);
+                    break;
+                case "neighbors":
+                    this.tree = await this.taxonomyService.getNeighborsTree(this.query[0]);
+                    break;
+                case "mrca":
+                    this.tree = await this.taxonomyService.getMrcaTree(this.query);
+                    break;
+                default:
+                    throw new Error("Taxonomy type is not set or invalid. Please select a valid taxonomy type.");
+            }
         }
     }
 
-    private drawTree(): void {
+    private async drawTree(): Promise<void> {
         let renderer
+        if (!this.tree) {
+            throw new Error("Tree is not set when trying to draw the tree. Please ensure the tree is loaded before rendering.");
+        }
         switch (this.displayType) {
             case "tree":
-                renderer = new D3Tree(this.tree, this.visualizationComponent.getContainer())
+                renderer = new D3Tree(this.visualizationComponent.getContainer(), this.tree)
                 break;
             case "graph":
-                // Draw the tree using a graph visualization library
                 break;
             case "cluster":
-                // Draw the tree using a cluster visualization library
                 break;
             case "pack":
-                // Draw the tree using a pack layout visualization library
                 break;
             case "partition":
-                // Draw the tree using a partition layout visualization library
                 break;
             case "treemap":
-                // Draw the tree using a treemap visualization library
                 break;
             default:
                 throw new Error("Display type is not set or invalid. Please select a valid display type.");
         }
-        const svg = renderer!.render();
-        console.log("SVG rendered:", svg);
+        const svg = await renderer!.render();
         this.visualizationComponent.display(svg);
     }
 }

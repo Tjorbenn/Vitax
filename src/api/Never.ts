@@ -79,6 +79,11 @@ export class Request {
     }
     const json = await response.json();
 
+    // Workaround for the MRCA endpoint that does not return an array, but just an object that looks like this: { "taxid": 9606 } -> The endpoint will be changed later to return an array.
+    if (this.endpoint === Endpoint.MRCA && json.taxid) {
+      return [json];
+    }
+
     if (json.length < 1) {
       throw new Error(`Empty response to ${requestUrl} from Never-API`);
     }

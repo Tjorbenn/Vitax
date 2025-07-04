@@ -1,11 +1,9 @@
 export class VisualizationComponent {
     private container: HTMLDivElement;
+    private svg?: SVGElement;
 
     constructor(container: HTMLDivElement) {
-        if (!container) {
-            throw new Error("Visualization container not found");
-        }
-        this.container = container;
+        this.container = container
     }
 
     public getContainer(): HTMLDivElement {
@@ -13,7 +11,8 @@ export class VisualizationComponent {
     }
 
     public display(svg: SVGElement): void {
+        this.svg = svg;
         this.container.innerHTML = "";
-        this.container.appendChild(svg);
+        this.container.appendChild(this.svg);
     }
 }

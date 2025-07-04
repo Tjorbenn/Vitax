@@ -5,7 +5,6 @@ import { SuggestionsService } from "../services/SuggestionsService";
 
 export class SearchComponent {
     private suggestionsService: SuggestionsService = new SuggestionsService();
-    private taxonomyType: TaxonomyType = "neighbors";
     private debounceTime: number = 0;
     private inputChangeTimer?: number;
     private suggestionsStatus: Status = Status.Success;
@@ -38,7 +37,7 @@ export class SearchComponent {
         this.inputElement.addEventListener("keydown", (event) => {
             if (event.key === "Enter") {
                 if (this.highlightedIndex > -1) {
-                    this.selectSuggestion();
+                    this.selectSuggestionByIndex(this.highlightedIndex);
                 }
                 else {
                     this.selectInput(event);
@@ -58,6 +57,12 @@ export class SearchComponent {
                 this.handleNavigation();
             }
         });
+        this.searchElement.addEventListener("focusin", () => this.showSuggestions());
+        this.searchElement.addEventListener("focusout", (event: FocusEvent) => {
+            if (event.relatedTarget === null || !this.searchElement.contains(event.relatedTarget as Node)) {
+                this.hideSuggestions();
+            }
+        });
         this.visualizeButton.addEventListener("click", this.handleVisualize.bind(this));
         this.suggestionsList.addEventListener("scroll", this.handleScroll.bind(this));
         document.addEventListener("keydown", (event) => {
@@ -71,35 +76,23 @@ export class SearchComponent {
         }
     }
 
-    public getSearchTerm(): string {
-        return this.inputElement.value.trim();
-    }
-
-    public getSelected(): Suggestion[] {
-        return this.selected;
-    }
-
-    public getTaxonomyType(): TaxonomyType {
-        return this.taxonomyType;
-    }
-
     private handleInput() {
         const query = this.getSearchTerm();
         window.clearTimeout(this.inputChangeTimer);
         this.highlightedIndex = -1;
         this.suggestionsList.scrollTop = 0;
-        this.suggestions = [];
 
         if (!query) {
             this.clearSuggestions();
             return;
         }
 
-        this.clearSuggestions();
         this.inputChangeTimer = window.setTimeout(() => {
             this.suggestionsService.getSuggestions(query).then(suggestions => {
-                this.suggestions = this.sortSuggestions(suggestions, query);
-                this.updateSuggestionsList();
+                if (query === this.getSearchTerm()) {
+                    this.suggestions = this.sortSuggestions(suggestions, query);
+                    this.updateSuggestionsList();
+                }
             });
         }, this.debounceTime);
     }
@@ -141,6 +134,11 @@ export class SearchComponent {
 
     private handleVisualize(event: Event) {
         event.preventDefault();
+        if (this.selected.length < 1) {
+            alert("Please select at least one suggestion to visualize.");
+            return;
+        }
+        Vitax.setQuery(this.selected);
         Vitax.visualize();
     }
 
@@ -203,9 +201,20 @@ export class SearchComponent {
         this.updateSuggestionsList();
     }
 
+    private hideSuggestions() {
+        this.suggestionsList.style.display = "none";
+    }
+
+    private showSuggestions() {
+        if (this.suggestions.length > 0) {
+            this.suggestionsList.style.display = "block";
+        }
+    }
+
     private clearSuggestions() {
         this.suggestions = [];
         this.updateSuggestionsList();
+        this.hideSuggestions();
     }
 
     private updateSuggestionsList() {
@@ -214,11 +223,12 @@ export class SearchComponent {
         if (this.suggestions.length > 0) {
             this.suggestionsContainer.style.display = "block";
             this.suggestionsList.style.display = "block";
-            this.suggestions.forEach(suggestion => {
+            this.suggestions.forEach((suggestion, index) => {
                 const listItem = document.createElement("li");
                 const itemName = document.createElement("span");
                 const itemId = document.createElement("span");
                 listItem.classList.add("w-full", "rounded-md", "p-1", "my-1", "flex", "flex-row", "justify-between", "hover:bg-green", "hover:text-white", "hover:cursor-pointer");
+                listItem.setAttribute("tabindex", "-1");
                 itemName.innerText = suggestion.name
                 itemId.innerText = suggestion.id.toString()
                 itemName.classList.add("table-cell", "suggestion-name")
@@ -226,7 +236,7 @@ export class SearchComponent {
                 listItem.appendChild(itemName)
                 listItem.appendChild(itemId)
                 this.suggestionsList.appendChild(listItem);
-                listItem.addEventListener("click", this.selectSuggestion.bind(this));
+                listItem.addEventListener("click", () => this.selectSuggestionByIndex(index));
                 listItem.addEventListener("mouseover", this.handleMouseHighlight.bind(this));
             });
         }
@@ -234,26 +244,25 @@ export class SearchComponent {
             this.suggestionsList.innerHTML = "";
             this.suggestionsList.style.display = "none";
         }
+        this.showSuggestions();
     }
 
-    private selectSuggestion() {
-        const suggestionName = this.suggestions[this.highlightedIndex].name;
-        const suggestionId = this.suggestions[this.highlightedIndex].id;
-        if (suggestionName && suggestionId) {
-            const suggestion: Suggestion = {
-                name: suggestionName,
-                id: suggestionId
-            };
-            if (this.selected.some(s => s.id === suggestion.id)) {
-                return;
-            }
-            this.selected.push(suggestion);
-            this.inputElement.value = "";
-            this.highlightedIndex = -1;
-            this.updateSelected();
-            this.suggestions = [];
-            this.updateSuggestionsList();
-            this.suggestionsList.scrollTop = 0;
+    private selectSuggestion(suggestion: Suggestion) {
+        if (!suggestion || this.selected.some(s => s.id === suggestion.id)) {
+            return;
+        }
+        this.selected.push(suggestion);
+        this.inputElement.value = "";
+        this.highlightedIndex = -1;
+        this.updateSelected();
+        this.clearSuggestions();
+        this.suggestionsList.scrollTop = 0;
+    }
+
+    private selectSuggestionByIndex(index: number) {
+        const suggestion = this.suggestions[index];
+        if (suggestion) {
+            this.selectSuggestion(suggestion);
         }
     }
 
@@ -268,8 +277,7 @@ export class SearchComponent {
             this.selected.push(suggestion);
             this.inputElement.value = "";
             this.updateSelected();
-            this.suggestions = [];
-            this.updateSuggestionsList();
+            this.clearSuggestions();
         }
     }
 
@@ -281,7 +289,8 @@ export class SearchComponent {
                 const listItem = document.createElement("li");
                 const itemName = document.createElement("span");
                 const itemId = document.createElement("span");
-                listItem.classList.add("rounded-xl", "p-1", "py-2", "flex", "flex-row", "bg-green", "text-xs", "text-white", "hover:bg-darkgrey", "hover:cursor-pointer");
+                listItem.classList.add("rounded-xl", "p-1", "py-2", "flex", "flex-row", "bg-green", "text-xs", "text-white", "hover:bg-darkgrey", "hover:cursor-pointer", "pointer-events-auto");
+                listItem.dataset.id = suggestion.id.toString();
                 itemName.textContent = suggestion.name;
                 itemName.classList.add("selected-name", "mr-1");
                 itemId.classList.add("selected-id");
@@ -299,23 +308,27 @@ export class SearchComponent {
 
     private removeSelected(event: Event) {
         const listItem = event.currentTarget as HTMLLIElement;
-        const suggestionIdText = listItem.querySelector(".selected-id")?.textContent;
-        if (suggestionIdText) {
-            const suggestionId = parseInt(suggestionIdText.replace(/[[]]/g, ''));
-            if (!isNaN(suggestionId)) {
-                this.selected = this.selected.filter(s => s.id !== suggestionId);
-                this.updateSelected();
-            }
+        const suggestionId = parseInt(listItem.dataset.id!);
+        if (!isNaN(suggestionId)) {
+            this.selected = this.selected.filter(s => s.id !== suggestionId);
+            this.updateSelected();
         }
     }
 
     private async setTaxonomyType(event: Event) {
         const target = event.target as HTMLLIElement;
         if (target) {
-            this.taxonomyType = target.dataset.type as TaxonomyType;
+            Vitax.setTaxonomyType(target.dataset.type as TaxonomyType);
             this.taxonomyTypeButton.querySelector("span")!.textContent = target.textContent;
             this.taxonomyTypeList.classList.add("hidden");
         }
-        console.log(`Taxonomy type set to: ${this.taxonomyType}`);
+    }
+
+    public getSearchTerm(): string {
+        return this.inputElement.value.trim();
+    }
+
+    public getSelected(): Suggestion[] {
+        return this.selected;
     }
 }

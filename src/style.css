@@ -28,6 +28,11 @@
   html {
     width: 100vw;
     height: 100vh;
+    overflow: hidden;
+  }
+
+  body {
+    @apply w-full h-full;
     background:
       linear-gradient(var(--color-background-grey) 2px, transparent 2px),
       linear-gradient(90deg, var(--color-background-grey) 2px, transparent 2px),
@@ -45,10 +50,10 @@
       -2px -2px,
       -1px -1px,
       -1px -1px;
-    z-index: -1;
+
   }
 
-  body {
+  main {
     @apply bg-green/5;
   }
 
@@ -164,7 +169,7 @@
   }
 
   .glass {
-    @apply bg-white/5 backdrop-blur-[2px] border-2 border-white/50;
+    @apply bg-white/5 backdrop-blur-xs border-2 border-white/50;
   }
 
   .floating {

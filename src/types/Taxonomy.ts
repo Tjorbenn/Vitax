@@ -3,7 +3,7 @@ export interface Taxon {
   name: string;
   rank?: string;
   parentId?: number;
-  children?: Taxon[];
+  children: Taxon[];
   genomeCount?: GenomeCount[];
   genomeCountRecursive?: GenomeCount[];
 }

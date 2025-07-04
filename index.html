@@ -1,246 +1,124 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link
-      rel="icon"
-      type="image/svg+xml"
-      href="images/logo.svg"
-    />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0"
-    />
-    <title>Vitax</title>
-  </head>
 
-  <body
-    id="app"
-    class="h-full w-full"
-  >
-    <script
-      type="module"
-      src="/src/icons.ts"
-    ></script>
-    <main class="h-full w-full relative">
-      <div
-        id="menu-overlay"
-        class="flex h-full w-full flex-col justify-between gap-6 p-6 pointer-events-none"
-      >
-        <header
-          id="menu-header"
-          class="relative flex h-full w-full flex-initial basis-1/24 flex-row items-start justify-start gap-4"
-        >
-          <div
-            id="menu-header-title"
-            class="round-box floating glass bouncy flex h-fit w-fit shrink-0 flex-row items-center gap-2 cursor-default pointer-events-auto"
-          >
-            <img
-              src="images/logo.svg"
-              alt="Vitax Logo"
-              class="h-8"
-            />
-            <hgroup>
-              <h1 class="!mb-0">Vitax</h1>
-              <!-- <span>Visualizing the NCBI Taxonomy</span> -->
-            </hgroup>
-          </div>
-          <search
-            id="taxonomy-search"
-            class="floating absolute left-1/2 top-0 -translate-x-1/2 mx-auto flex h-full w-1/2 items-center rounded-xl transition-all duration-300 ease-in-out focus-within:scale-105 focus-within:shadow-2xl hover:scale-105 hover:shadow-2xl pointer-events-auto"
-          >
-            <fieldset
-              title="Search Taxonomy"
-              class="relative flex h-full flex-grow items-center rounded-xl p-0"
-            >
-              <button
-                id="taxonomy-type-dropdown"
-                class="bg-green border-green/50 h-full cursor-pointer rounded-l-xl border-y-2 border-l-2 p-1 pl-6 pr-3 text-white shadow-xl transition-transform duration-75 active:scale-90 z-9"
-              >
-                <icon-material-symbols-arrow-drop-down-rounded
-                  class="text-white absolute left-1 z-10 text-center top-1/2 -translate-y-1/2"
-                ></icon-material-symbols-arrow-drop-down-rounded>
-                <span id="taxonomy-type"> Neighbors </span>
-              </button>
-              <div class="relative flex-grow h-full">
-                <icon-material-symbols-search-rounded
-                  class="text-grey absolute left-3 top-1/2 -translate-y-1/2 z-10 pointer-events-none"
-                ></icon-material-symbols-search-rounded>
-                <input
-                  id="taxonomy-search-input"
-                  type="search"
-                  placeholder="Search taxon..."
-                  class="h-full w-full border-y-2 border-white/50 bg-white/5 p-1 pr-25 pl-10 backdrop-blur-[2px] outline-none z-9"
-                />
-              </div>
-              <div
-                class="bg-green/30 pointer-events-none absolute top-1/2 right-26 z-10 flex -translate-y-1/2 items-center space-x-1 rounded-lg p-1 inset-shadow-sm"
-              >
-                <kbd
-                  class="rounded-md border border-gray-300 bg-gray-100 px-1.5 py-0.5 font-sans text-xs font-semibold text-gray-500 shadow-sm"
-                  >Ctrl</kbd
-                >
-                <span class="text-xs font-semibold text-gray-500">+</span>
-                <kbd
-                  class="rounded-md border border-gray-300 bg-gray-100 px-1.5 py-0.5 font-sans text-xs font-semibold text-gray-500 shadow-sm"
-                  >K</kbd
-                >
-              </div>
-              <button
-                id="taxonomy-visualize-button"
-                type="submit"
-                class="bg-green border-green/50 h-full cursor-pointer rounded-r-xl border-y-2 border-r-2 p-1 px-3 text-white shadow-xl transition-transform duration-75 active:scale-90 z-9"
-              >
-                Visualize
-              </button>
-            </fieldset>
-            <ul
-              id="taxonomy-type-options"
-              class="hidden round-box floating glass absolute top-full z-60 mt-1 w-fit max-h-60 overflow-y-auto hide-scrollbar flex-col gap-2 py-2 transition-all duration-300 ease-in-out"
-            >
-              <li
-                class="cursor-pointer rounded-lg px-1 py-2 text-start select-none hover:bg-green hover:text-white"
-                data-type="neighbors"
-              >
-                Neighbors
-              </li>
-              <li
-                class="cursor-pointer rounded-lg px-1 py-2 text-start select-none hover:bg-green hover:text-white"
-                data-type="descendants"
-              >
-                Descendants
-              </li>
-              <li
-                class="cursor-pointer rounded-lg px-1 py-2 text-start select-none hover:bg-green hover:text-white"
-                data-type="mrca"
-              >
-                MRCA
-              </li>
-            </ul>
-            <div
-              id="suggestions-container"
-              class="hidden absolute top-full z-50 mt-1 w-full transition-all duration-300 ease-in-out"
-            >
-              <ul
-                id="selected-list"
-                class="hidden round-box floating glass w-fit max-w-full flex-row flex-wrap mb-1 p-2 gap-2"
-              ></ul>
-              <ul
-                id="suggestions-list"
-                class="round-box floating glass w-full max-h-60 z-50 overflow-y-auto hide-scrollbar"
-              ></ul>
-            </div>
-          </search>
-        </header>
-        <div
-          id="menu-middle"
-          class="flex w-full flex-auto shrink-3 flex-row items-center justify-end"
-        >
-          <fieldset
-            id="display-type"
-            title="Display Type"
-            class="round-box floating glass bouncy flex flex-col flex-wrap gap-2 pointer-events-auto"
-          >
-            <div>
-              <input
-                type="radio"
-                name="display-option"
-                id="tree"
-                value="tree"
-                class="peer hidden"
-                checked
-              />
-              <label
-                for="tree"
-                class="peer-checked:bg-green block cursor-pointer rounded-lg p-2 text-center select-none peer-checked:text-white peer-checked:shadow-xl"
-                >Tree</label
-              >
-            </div>
-            <div>
-              <input
-                type="radio"
-                name="display-option"
-                id="graph"
-                value="graph"
-                class="peer hidden"
-              />
-              <label
-                for="graph"
-                class="peer-checked:bg-green block cursor-pointer rounded-lg p-2 text-center select-none peer-checked:text-white peer-checked:shadow-xl"
-                >Graph</label
-              >
-            </div>
-            <div>
-              <input
-                type="radio"
-                name="display-option"
-                id="cluster"
-                value="cluster"
-                class="peer hidden"
-              />
-              <label
-                for="cluster"
-                class="peer-checked:bg-green block cursor-pointer rounded-lg p-2 text-center select-none peer-checked:text-white peer-checked:shadow-xl"
-                >Cluster</label
-              >
-            </div>
-            <div>
-              <input
-                type="radio"
-                name="display-option"
-                id="partition"
-                value="partition"
-                class="peer hidden"
-              />
-              <label
-                for="partition"
-                class="peer-checked:bg-green block cursor-pointer rounded-lg p-2 text-center select-none peer-checked:text-white peer-checked:shadow-xl"
-                >Partition</label
-              >
-            </div>
-            <div>
-              <input
-                type="radio"
-                name="display-option"
-                id="pack"
-                value="pack"
-                class="peer hidden"
-              />
-              <label
-                for="pack"
-                class="peer-checked:bg-green block cursor-pointer rounded-lg p-2 text-center select-none peer-checked:text-white peer-checked:shadow-xl"
-                >Pack</label
-              >
-            </div>
-            <div>
-              <input
-                type="radio"
-                name="display-option"
-                id="treemap"
-                value="treemap"
-                class="peer hidden"
-              />
-              <label
-                for="treemap"
-                class="peer-checked:bg-green block cursor-pointer rounded-lg p-2 text-center select-none peer-checked:text-white peer-checked:shadow-xl"
-                >Treemap</label
-              >
-            </div>
-          </fieldset>
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="images/logo.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vitax</title>
+</head>
+
+<body id="app" class="h-full w-full">
+  <script type="module" src="/src/icons.ts"></script>
+  <main class="h-full w-full relative">
+    <div id="menu-overlay"
+      class="relative z-10 flex h-full w-full flex-col justify-between gap-6 p-6 pointer-events-none">
+      <header id="menu-header"
+        class="relative flex h-full w-full flex-initial basis-1/24 flex-row items-start justify-start gap-4">
+        <div id="menu-header-title"
+          class="round-box floating glass bouncy flex h-fit w-fit shrink-0 flex-row items-center gap-2 cursor-default pointer-events-auto">
+          <img src="images/logo.svg" alt="Vitax Logo" class="h-8" />
+          <hgroup>
+            <h1 class="!mb-0">Vitax</h1>
+            <!-- <span>Visualizing the NCBI Taxonomy</span> -->
+          </hgroup>
         </div>
-        <footer
-          id="menu-footer"
-          class="flex w-full flex-initial basis-1/24 flex-row justify-between"
-        ></footer>
+        <search id="taxonomy-search"
+          class="floating absolute left-1/2 top-0 -translate-x-1/2 mx-auto flex h-full w-1/2 items-center rounded-xl transition-all duration-300 ease-in-out focus-within:scale-105 focus-within:shadow-2xl hover:scale-105 hover:shadow-2xl pointer-events-auto">
+          <fieldset title="Search Taxonomy" class="relative flex h-full flex-grow items-center rounded-xl p-0">
+            <button id="taxonomy-type-dropdown"
+              class="bg-green border-green/50 h-full cursor-pointer rounded-l-xl border-y-2 border-l-2 p-1 pl-6 pr-3 text-white shadow-xl transition-transform duration-75 active:scale-90 z-9">
+              <icon-material-symbols-arrow-drop-down-rounded
+                class="text-white absolute left-1 z-10 text-center top-1/2 -translate-y-1/2"></icon-material-symbols-arrow-drop-down-rounded>
+              <span id="taxonomy-type"> Neighbors </span>
+            </button>
+            <div class="relative flex-grow h-full">
+              <icon-material-symbols-search-rounded
+                class="text-grey absolute left-3 top-1/2 -translate-y-1/2 z-10 pointer-events-none"></icon-material-symbols-search-rounded>
+              <input id="taxonomy-search-input" type="search" placeholder="Search taxon..."
+                class="h-full w-full border-y-2 border-white/50 bg-white/5 p-1 pr-25 pl-10 backdrop-blur-[2px] outline-none z-9" />
+            </div>
+            <div
+              class="bg-green/30 pointer-events-none absolute top-1/2 right-26 z-10 flex -translate-y-1/2 items-center space-x-1 rounded-lg p-1 inset-shadow-sm">
+              <kbd
+                class="rounded-md border border-gray-300 bg-gray-100 px-1.5 py-0.5 font-sans text-xs font-semibold text-gray-500 shadow-sm">Ctrl</kbd>
+              <span class="text-xs font-semibold text-gray-500">+</span>
+              <kbd
+                class="rounded-md border border-gray-300 bg-gray-100 px-1.5 py-0.5 font-sans text-xs font-semibold text-gray-500 shadow-sm">K</kbd>
+            </div>
+            <button id="taxonomy-visualize-button" type="submit"
+              class="bg-green border-green/50 h-full cursor-pointer rounded-r-xl border-y-2 border-r-2 p-1 px-3 text-white shadow-xl transition-transform duration-75 active:scale-90 z-9">
+              Visualize
+            </button>
+          </fieldset>
+          <ul id="taxonomy-type-options"
+            class="hidden round-box floating glass absolute top-full z-60 mt-1 w-fit max-h-60 overflow-y-auto hide-scrollbar flex-col gap-2 py-2 transition-all duration-300 ease-in-out">
+            <li class="cursor-pointer rounded-lg px-1 py-2 text-start select-none hover:bg-green hover:text-white"
+              data-type="neighbors">
+              Neighbors
+            </li>
+            <li class="cursor-pointer rounded-lg px-1 py-2 text-start select-none hover:bg-green hover:text-white"
+              data-type="descendants">
+              Descendants
+            </li>
+            <li class="cursor-pointer rounded-lg px-1 py-2 text-start select-none hover:bg-green hover:text-white"
+              data-type="mrca">
+              MRCA
+            </li>
+          </ul>
+          <div id="suggestions-container"
+            class="hidden absolute top-full z-50 mt-1 w-full transition-all duration-300 ease-in-out pointer-events-none">
+            <ul id="selected-list"
+              class="hidden round-box floating glass w-fit max-w-full flex-row flex-wrap mb-1 p-2 gap-2 pointer-events-none">
+            </ul>
+            <ul id="suggestions-list"
+              class="round-box floating glass w-full max-h-60 z-50 overflow-y-auto hide-scrollbar pointer-events-auto">
+            </ul>
+          </div>
+        </search>
+      </header>
+      <div id="menu-middle"
+        class="flex w-full flex-auto shrink-3 flex-row items-center justify-end pointer-events-none">
+        <fieldset id="display-type" title="Display Type"
+          class="round-box floating glass bouncy flex flex-col flex-wrap gap-2 pointer-events-auto">
+          <div>
+            <input type="radio" name="display-option" id="tree" value="tree" class="peer hidden" checked />
+            <label for="tree"
+              class="peer-checked:bg-green block cursor-pointer rounded-lg p-2 text-center select-none peer-checked:text-white peer-checked:shadow-xl">Tree</label>
+          </div>
+          <div>
+            <input type="radio" name="display-option" id="graph" value="graph" class="peer hidden" />
+            <label for="graph"
+              class="peer-checked:bg-green block cursor-pointer rounded-lg p-2 text-center select-none peer-checked:text-white peer-checked:shadow-xl">Graph</label>
+          </div>
+          <div>
+            <input type="radio" name="display-option" id="cluster" value="cluster" class="peer hidden" />
+            <label for="cluster"
+              class="peer-checked:bg-green block cursor-pointer rounded-lg p-2 text-center select-none peer-checked:text-white peer-checked:shadow-xl">Cluster</label>
+          </div>
+          <div>
+            <input type="radio" name="display-option" id="partition" value="partition" class="peer hidden" />
+            <label for="partition"
+              class="peer-checked:bg-green block cursor-pointer rounded-lg p-2 text-center select-none peer-checked:text-white peer-checked:shadow-xl">Partition</label>
+          </div>
+          <div>
+            <input type="radio" name="display-option" id="pack" value="pack" class="peer hidden" />
+            <label for="pack"
+              class="peer-checked:bg-green block cursor-pointer rounded-lg p-2 text-center select-none peer-checked:text-white peer-checked:shadow-xl">Pack</label>
+          </div>
+          <div>
+            <input type="radio" name="display-option" id="treemap" value="treemap" class="peer hidden" />
+            <label for="treemap"
+              class="peer-checked:bg-green block cursor-pointer rounded-lg p-2 text-center select-none peer-checked:text-white peer-checked:shadow-xl">Treemap</label>
+          </div>
+        </fieldset>
       </div>
-      <div
-        id="visualization-container"
-        class="absolute -z-10 inset-0 flex h-full w-full items-center justify-center"
-      ></div>
-    </main>
-    <script
-      type="module"
-      src="/src/main.ts"
-    ></script>
-  </body>
+      <footer id="menu-footer" class="flex w-full flex-initial basis-1/24 flex-row justify-between pointer-events-none">
+      </footer>
+    </div>
+    <div id="visualization-container" class="absolute inset-0 h-full w-full"></div>
+  </main>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+
 </html>
