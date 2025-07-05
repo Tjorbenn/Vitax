@@ -29,11 +29,11 @@
       >
         <header
           id="menu-header"
-          class="relative flex h-full w-full flex-initial basis-1/24 flex-row items-start justify-start gap-4"
+          class="relative flex h-fit w-full flex-initial flex-row items-center justify-center gap-4 lg:justify-between"
         >
           <div
             id="menu-header-title"
-            class="round-box floating glass bouncy flex h-fit w-fit shrink-0 flex-row items-center gap-2 cursor-default pointer-events-auto"
+            class="round-box floating glass bouncy hidden h-full w-fit shrink-0 flex-row items-center gap-2 self-start cursor-default pointer-events-auto lg:flex"
           >
             <img
               src="images/logo.svg"
@@ -47,7 +47,7 @@
           </div>
           <search
             id="taxonomy-search"
-            class="floating absolute left-1/2 top-0 -translate-x-1/2 mx-auto flex h-full w-1/2 items-center rounded-xl transition-all duration-300 ease-in-out focus-within:scale-105 focus-within:shadow-2xl hover:scale-105 hover:shadow-2xl pointer-events-auto"
+            class="floating flex w-full h-12 items-center rounded-xl transition-all duration-300 ease-in-out focus-within:scale-105 focus-within:shadow-2xl hover:scale-105 hover:shadow-2xl pointer-events-auto lg:absolute lg:left-1/2 lg:-translate-x-1/2 lg:w-1/2"
           >
             <fieldset
               title="Search Taxonomy"
@@ -55,10 +55,10 @@
             >
               <button
                 id="taxonomy-type-dropdown"
-                class="bg-green border-green/50 h-full cursor-pointer rounded-l-xl border-y-2 border-l-2 p-1 pl-6 pr-3 text-white shadow-xl transition-transform duration-75 active:scale-90 z-9"
+                class="bg-green border-green/50 h-full cursor-pointer rounded-l-xl border-y-2 border-l-2 p-1 text-white shadow-xl transition-transform duration-75 active:scale-90 z-9 pl-2 pr-3 flex flex-row items-center justify-center"
               >
                 <icon-material-symbols-arrow-drop-down-rounded
-                  class="text-white absolute left-1 z-10 text-center top-1/2 -translate-y-1/2"
+                  class="text-white relative text-center"
                 ></icon-material-symbols-arrow-drop-down-rounded>
                 <span id="taxonomy-type"> Neighbors </span>
               </button>
@@ -70,11 +70,11 @@
                   id="taxonomy-search-input"
                   type="search"
                   placeholder="Search taxon..."
-                  class="h-full w-full border-y-2 border-white/50 bg-white/5 p-1 pr-25 pl-10 backdrop-blur-[2px] outline-none z-9"
+                  class="h-full w-full border-y-2 border-white/50 bg-white/5 p-1 pr-4 pl-10 backdrop-blur-[2px] outline-none z-9 lg:pr-25"
                 />
               </div>
               <div
-                class="bg-green/30 pointer-events-none absolute top-1/2 right-26 z-10 flex -translate-y-1/2 items-center space-x-1 rounded-lg p-1 inset-shadow-sm"
+                class="bg-green/30 pointer-events-none absolute top-1/2 right-30 z-10 hidden -translate-y-1/2 items-center space-x-1 rounded-lg p-1 inset-shadow-sm lg:flex"
               >
                 <kbd
                   class="rounded-md border border-gray-300 bg-gray-100 px-1.5 py-0.5 font-sans text-xs font-semibold text-gray-500 shadow-sm"
@@ -89,9 +89,12 @@
               <button
                 id="taxonomy-visualize-button"
                 type="submit"
-                class="bg-green border-green/50 h-full cursor-pointer rounded-r-xl border-y-2 border-r-2 p-1 px-3 text-white shadow-xl transition-transform duration-75 active:scale-90 z-9"
+                class="bg-green border-green/50 h-full cursor-pointer rounded-r-xl border-y-2 border-r-2 p-1 text-white shadow-xl transition-transform duration-75 active:scale-90 z-9 px-3 flex flex-row items-center justify-center"
               >
-                Visualize
+                <span class="hidden mr-1 md:block"> Visualize </span>
+                <icon-material-symbols-draw-collage
+                  class="text-white relative text-center md:hidden"
+                ></icon-material-symbols-draw-collage>
               </button>
             </fieldset>
             <ul
@@ -132,16 +135,44 @@
             </div>
           </search>
         </header>
-        <div
-          id="menu-middle"
-          class="flex w-full flex-auto shrink-3 flex-row items-center justify-end pointer-events-none"
+        <footer
+          id="menu-footer"
+          class="relative flex w-full flex-initial basis-1/24 flex-col items-center justify-center gap-4 md:flex-row md:justify-between pointer-events-none"
         >
+          <div
+            id="impressum"
+            class="round-box floating glass bouncy hidden flex-row items-center gap-2 px-2 lg:flex"
+          >
+            <span class="flex flex-col">
+              <div>
+                By
+                <a
+                  href="https://github.com/Tjorbenn"
+                  class="pointer-events-auto mx-1 font-semibold"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Tjorben Nawroth</a
+                >
+              </div>
+              <div>
+                @
+                <a
+                  href="https://evolbioinf.github.io"
+                  class="pointer-events-auto mx-1 font-semibold"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >RG Bioinformatics</a
+                >
+              </div>
+            </span>
+          </div>
           <fieldset
             id="display-type"
             title="Display Type"
-            class="round-box floating glass bouncy flex flex-col flex-wrap gap-2 pointer-events-auto"
+            class="round-box floating glass bouncy pointer-events-auto flex flex-row flex-wrap gap-0 justify-center lg:gap-2 w-full lg:w-fit lg:absolute lg:left-1/2 lg:-translate-x-1/2"
           >
-            <div>
+            <div class="flex-1">
               <input
                 type="radio"
                 name="display-option"
@@ -152,11 +183,11 @@
               />
               <label
                 for="tree"
-                class="peer-checked:bg-green block cursor-pointer rounded-lg p-2 text-center select-none peer-checked:text-white peer-checked:shadow-xl"
+                class="peer-checked:bg-green block cursor-pointer select-none rounded-lg p-1 md:p-2 text-center peer-checked:text-white peer-checked:shadow-xl"
                 >Tree</label
               >
             </div>
-            <div>
+            <div class="flex-1">
               <input
                 type="radio"
                 name="display-option"
@@ -166,11 +197,11 @@
               />
               <label
                 for="graph"
-                class="peer-checked:bg-green block cursor-pointer rounded-lg p-2 text-center select-none peer-checked:text-white peer-checked:shadow-xl"
+                class="peer-checked:bg-green block cursor-pointer select-none rounded-lg p-1 md:p-2 text-center peer-checked:text-white peer-checked:shadow-xl"
                 >Graph</label
               >
             </div>
-            <div>
+            <div class="flex-1">
               <input
                 type="radio"
                 name="display-option"
@@ -180,11 +211,11 @@
               />
               <label
                 for="cluster"
-                class="peer-checked:bg-green block cursor-pointer rounded-lg p-2 text-center select-none peer-checked:text-white peer-checked:shadow-xl"
+                class="peer-checked:bg-green block cursor-pointer select-none rounded-lg p-1 md:p-2 text-center peer-checked:text-white peer-checked:shadow-xl"
                 >Cluster</label
               >
             </div>
-            <div>
+            <div class="flex-1">
               <input
                 type="radio"
                 name="display-option"
@@ -194,11 +225,11 @@
               />
               <label
                 for="partition"
-                class="peer-checked:bg-green block cursor-pointer rounded-lg p-2 text-center select-none peer-checked:text-white peer-checked:shadow-xl"
+                class="peer-checked:bg-green block cursor-pointer select-none rounded-lg p-1 md:p-2 text-center peer-checked:text-white peer-checked:shadow-xl"
                 >Partition</label
               >
             </div>
-            <div>
+            <div class="flex-1">
               <input
                 type="radio"
                 name="display-option"
@@ -208,11 +239,11 @@
               />
               <label
                 for="pack"
-                class="peer-checked:bg-green block cursor-pointer rounded-lg p-2 text-center select-none peer-checked:text-white peer-checked:shadow-xl"
+                class="peer-checked:bg-green block cursor-pointer select-none rounded-lg p-1 md:p-2 text-center peer-checked:text-white peer-checked:shadow-xl"
                 >Pack</label
               >
             </div>
-            <div>
+            <div class="flex-1">
               <input
                 type="radio"
                 name="display-option"
@@ -222,51 +253,14 @@
               />
               <label
                 for="treemap"
-                class="peer-checked:bg-green block cursor-pointer rounded-lg p-2 text-center select-none peer-checked:text-white peer-checked:shadow-xl"
+                class="peer-checked:bg-green block cursor-pointer select-none rounded-lg p-1 md:p-2 text-center peer-checked:text-white peer-checked:shadow-xl"
                 >Treemap</label
               >
             </div>
           </fieldset>
-        </div>
-        <footer
-          id="menu-footer"
-          class="flex w-full flex-initial basis-1/24 flex-row justify-between pointer-events-none"
-        >
-          <div
-            id="impressum"
-            class="round-box floating glass bouncy flex flex-row gap-2 items-center px-2"
-          >
-            <span class="flex flex-row">
-              By
-              <a
-                href="https://github.com/Tjorbenn"
-                class="pointer-events-auto font-semibold mx-1"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Tjorben Nawroth</a
-              >
-              @
-              <a
-                href="https://evolbioinf.github.io"
-                class="pointer-events-auto font-semibold mx-1"
-                target="_blank"
-                rel="noopener noreferrer"
-                >RG Bioinformatics</a
-              >
-              /
-              <a
-                href="https://www.evolbio.mpg.de"
-                class="pointer-events-auto font-semibold ml-1"
-                target="_blank"
-                rel="noopener noreferrer"
-                >MPI-EB</a
-              >
-            </span>
-          </div>
           <div
             id="github-info"
-            class="round-box floating glass bouncy flex flex-row gap-2 items-center"
+            class="round-box floating glass bouncy hidden flex-row items-center gap-2 lg:flex"
           >
             <a
               href="https://github.com/Tjorbenn/Vitax"
@@ -276,12 +270,12 @@
             >
               <img
                 src="images/github.svg"
-                class="h-8"
+                class="h-[2em]"
               />
             </a>
             <div
               id="build-hash"
-              class="flex flex-row gap-1 items-center"
+              class="flex flex-row items-center gap-1"
               hidden
             >
               <a
