@@ -1,18 +1,14 @@
 export enum Endpoint {
-
+    ITISFromCommonName = "getITISTermsFromCommonName"
 };
 
 export type Response = Entry[]
 
 export type Entry = {
-
 };
 
 export enum ParameterKey {
-    Term = "t",
-    Exact = "e",
-    Page = "p",
-    PageSize = "n"
+    Term = "srchKey"
 }
 
 export class Request {
