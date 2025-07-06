@@ -180,10 +180,6 @@
     @apply p-1 rounded-xl ring-1 ring-black/5;
   }
 
-  .bouncy {
-    @apply transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-2xl;
-  }
-
   .highlighted {
     @apply bg-green text-white;
   }
