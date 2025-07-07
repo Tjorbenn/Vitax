@@ -13,9 +13,14 @@
 
 ## Introduction
 
-Vitax is a powerful and intuitive web application designed for scientists, researchers, and students alike who need to explore and understand the complex relationships between biological taxa. The application provides a user-friendly interface for searching and visualizing taxonomic data in various formats, including interactive trees, graphs, and treemaps.
+Vitax is an intuitive web application designed for scientists, researchers, and students alike who need to explore and understand the complex relationships between biological taxa. The application provides a user-friendly interface for searching and visualizing a wide range of taxonomic information in various formats.
 
 ## Features
+
+- **Multiple types of relationships / taxonomic data:** Investigate different types of taxonomic relationships, including:
+  - **Neighbors:** Displays the the taxonomic neighbors of a group of target taxa.
+  - **Descendants:** Shows the descendants of a taxon.
+  - **Most Recent Common Ancestor (MRCA):** Shows the most recent common ancestor of a group of target taxa and their connecting lineage.
 
 - **Interactive Visualizations:** Explore taxonomic relationships through a variety of interactive visualizations, including:
   - **Tree:** A classic hierarchical view of the taxonomic tree. (_Implemented_)
