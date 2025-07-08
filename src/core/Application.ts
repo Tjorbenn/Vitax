@@ -1,6 +1,6 @@
-import type { TaxonomyType, Visualization, Suggestion } from "../types/Application";
+import type { TaxonomyType, Visualization } from "../types/Application";
 import { Status } from "../types/Application";
-import type { TaxonomyTree } from "../types/Taxonomy";
+import type { Taxon, TaxonomyTree } from "../types/Taxonomy";
 
 import { SearchComponent } from "../components/SearchComponent";
 import { DisplayTypeComponent } from "../components/DisplayTypeComponent";
@@ -13,7 +13,7 @@ import { D3Tree } from "../visualizations/d3/d3Tree";
 
 // Singleton Application orchestrator class
 export class Application {
-    private query?: Suggestion[];
+    private query?: Taxon[];
     private tree?: TaxonomyTree;
     private status: Status = Status.Loading;
     private displayType?: Visualization;
@@ -32,11 +32,11 @@ export class Application {
         this.displayType = this.displayTypeComponent.getValue();
     }
 
-    public getQuery(): Suggestion[] | undefined {
+    public getQuery(): Taxon[] | undefined {
         return this.query;
     }
 
-    public setQuery(query: Suggestion[]): void {
+    public setQuery(query: Taxon[]): void {
         this.query = query;
     }
 
@@ -86,7 +86,7 @@ export class Application {
                     this.tree = await this.taxonomyService.getDescendantsTree(this.query[0]);
                     break;
                 case "neighbors":
-                    this.tree = await this.taxonomyService.getNeighborsTree(this.query[0]);
+                    this.tree = await this.taxonomyService.getNeighborsTree(this.query);
                     break;
                 case "mrca":
                     this.tree = await this.taxonomyService.getMrcaTree(this.query);

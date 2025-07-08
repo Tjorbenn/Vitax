@@ -2,6 +2,7 @@ import { Vitax } from "../main";
 import type { TaxonomyType, Suggestion } from "../types/Application";
 import { Status } from "../types/Application";
 import { SuggestionsService } from "../services/SuggestionsService";
+import { SuggestionsToTaxa } from "../core/Utility";
 
 export class SearchComponent {
     private suggestionsService: SuggestionsService = new SuggestionsService();
@@ -138,7 +139,7 @@ export class SearchComponent {
             alert("Please select at least one suggestion to visualize.");
             return;
         }
-        Vitax.setQuery(this.selected);
+        Vitax.setQuery(SuggestionsToTaxa(this.selected));
         Vitax.visualize();
     }
 

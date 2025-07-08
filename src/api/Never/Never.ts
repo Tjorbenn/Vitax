@@ -12,7 +12,7 @@ export enum Endpoint {
   Ranks = "ranks",
   Subtree = "subtree",
   Taxon = "taxi",
-  TaxonID = "taxid",
+  TaxonID = "taxids",
   TaxonInfo = "taxa_info"
 };
 
@@ -65,6 +65,10 @@ export class Request {
     return this;
   }
 
+  /**
+   * Sends the request to the Never-API.
+   * @returns A Promise that resolves to the response from the Never-API.
+   */
   async Send(): Promise<Response> {
     if (!this.endpoint) {
       throw new Error("Endpoint is not set!");
