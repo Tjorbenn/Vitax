@@ -55,7 +55,7 @@
             >
               <button
                 id="taxonomy-type-dropdown"
-                class="bg-green border-green/50 h-full cursor-pointer rounded-l-xl border-y-2 border-l-2 p-1 text-white shadow-xl transition-transform duration-75 active:scale-90 z-9 pl-2 pr-3 flex flex-row items-center justify-center"
+                class="bg-green border-green/50 h-full cursor-pointer rounded-l-xl border-y-2 border-l-2 p-1 text-white shadow-xl active:scale-90 z-9 pl-2 pr-3 flex flex-row items-center justify-center animated"
               >
                 <icon-material-symbols-arrow-drop-down-rounded
                   class="text-white relative text-center"
@@ -89,7 +89,7 @@
               <button
                 id="taxonomy-visualize-button"
                 type="submit"
-                class="bg-green border-green/50 h-full cursor-pointer rounded-r-xl border-y-2 border-r-2 p-1 text-white shadow-xl transition-transform duration-75 active:scale-90 z-9 px-3 flex flex-row items-center justify-center"
+                class="bg-green border-green/50 h-full cursor-pointer rounded-r-xl border-y-2 border-r-2 p-1 text-white shadow-xl active:scale-90 z-9 px-3 flex flex-row items-center justify-center animated"
               >
                 <span class="hidden mr-1 md:block"> Visualize </span>
                 <icon-material-symbols-draw-collage
@@ -99,7 +99,7 @@
             </fieldset>
             <ul
               id="taxonomy-type-options"
-              class="hidden round-box floating glass absolute top-full z-60 mt-1 w-fit max-h-60 overflow-y-auto hide-scrollbar flex-col gap-2 py-2 transition-all duration-300 ease-in-out"
+              class="hidden round-box floating glass absolute top-full z-60 mt-1 w-fit max-h-60 overflow-y-auto hide-scrollbar flex-col gap-2 py-2 animated"
             >
               <li
                 class="cursor-pointer rounded-lg px-1 py-2 text-start select-none hover:bg-green hover:text-white"
@@ -122,7 +122,7 @@
             </ul>
             <div
               id="suggestions-container"
-              class="hidden absolute top-full z-50 mt-1 w-full transition-all duration-300 ease-in-out pointer-events-none"
+              class="hidden absolute top-full z-50 mt-1 w-full pointer-events-none animated"
             >
               <ul
                 id="selected-list"
@@ -135,13 +135,25 @@
             </div>
           </search>
         </header>
-        <div id="menu-middle">
-          <Window
+        <div
+          id="menu-middle"
+          class="pointer-events-none"
+        >
+          <div
             id="data-window"
-            class="floating glass round-box pointer-events-auto"
+            class="floating glass round-box draggable select-none pointer-events-auto flex flex-col p-0 z-50 max-h-120 max-w-100 resize"
           >
-            Test
-          </Window>
+            <div
+              id="data-window-header"
+              class="flex flex-row items-center px-2 pt-2 draggable-header border-b-mediumgrey border-b-1"
+            >
+              <h3>Taxa</h3>
+            </div>
+            <div
+              id="data-window-content"
+              class="flex-grow overflow-y-scroll p-2 hide-scrollbar"
+            ></div>
+          </div>
         </div>
         <footer
           id="menu-footer"
@@ -191,7 +203,7 @@
               />
               <label
                 for="tree"
-                class="peer-checked:bg-green block cursor-pointer select-none rounded-lg p-1 md:p-2 text-center peer-checked:text-white peer-checked:shadow-xl"
+                class="peer-checked:bg-green block cursor-pointer select-none rounded-lg p-1 md:p-2 text-center peer-checked:text-white peer-checked:shadow-xl animated"
                 >Tree</label
               >
             </div>
@@ -205,7 +217,7 @@
               />
               <label
                 for="graph"
-                class="peer-checked:bg-green block cursor-pointer select-none rounded-lg p-1 md:p-2 text-center peer-checked:text-white peer-checked:shadow-xl"
+                class="peer-checked:bg-green block cursor-pointer select-none rounded-lg p-1 md:p-2 text-center peer-checked:text-white peer-checked:shadow-xl animated"
                 >Graph</label
               >
             </div>
@@ -219,7 +231,7 @@
               />
               <label
                 for="cluster"
-                class="peer-checked:bg-green block cursor-pointer select-none rounded-lg p-1 md:p-2 text-center peer-checked:text-white peer-checked:shadow-xl"
+                class="peer-checked:bg-green block cursor-pointer select-none rounded-lg p-1 md:p-2 text-center peer-checked:text-white peer-checked:shadow-xl animated"
                 >Cluster</label
               >
             </div>
@@ -233,7 +245,7 @@
               />
               <label
                 for="partition"
-                class="peer-checked:bg-green block cursor-pointer select-none rounded-lg p-1 md:p-2 text-center peer-checked:text-white peer-checked:shadow-xl"
+                class="peer-checked:bg-green block cursor-pointer select-none rounded-lg p-1 md:p-2 text-center peer-checked:text-white peer-checked:shadow-xl animated"
                 >Partition</label
               >
             </div>
@@ -247,7 +259,7 @@
               />
               <label
                 for="pack"
-                class="peer-checked:bg-green block cursor-pointer select-none rounded-lg p-1 md:p-2 text-center peer-checked:text-white peer-checked:shadow-xl"
+                class="peer-checked:bg-green block cursor-pointer select-none rounded-lg p-1 md:p-2 text-center peer-checked:text-white peer-checked:shadow-xl animated"
                 >Pack</label
               >
             </div>
@@ -261,7 +273,7 @@
               />
               <label
                 for="treemap"
-                class="peer-checked:bg-green block cursor-pointer select-none rounded-lg p-1 md:p-2 text-center peer-checked:text-white peer-checked:shadow-xl"
+                class="peer-checked:bg-green block cursor-pointer select-none rounded-lg p-1 md:p-2 text-center peer-checked:text-white peer-checked:shadow-xl animated"
                 >Treemap</label
               >
             </div>
@@ -298,7 +310,7 @@
       </div>
       <div
         id="visualization-container"
-        class="absolute inset-0 h-full w-full"
+        class="hidden absolute inset-0 h-full w-full"
       ></div>
     </main>
     <script

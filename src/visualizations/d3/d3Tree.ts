@@ -7,7 +7,7 @@ import * as d3 from "d3"
 export class D3Tree extends D3Visualization {
   private layout: d3.TreeLayout<Taxon>;
   private diagonal: d3.Link<any, d3.HierarchyPointLink<Taxon>, d3.HierarchyPointNode<Taxon>>
-  
+
   private gNode: any;
   private gLink: any;
 
@@ -33,8 +33,9 @@ export class D3Tree extends D3Visualization {
   public async render(): Promise<SVGSVGElement> {
     this.width = this.canvas.clientWidth;
     this.height = this.canvas.clientHeight;
+    this.svg.attr("viewBox", [0, 0, this.width, this.height]);
 
-    const nodeWidth = 180; 
+    const nodeWidth = 180;
     const nodeHeight = 25;
 
     this.layout.nodeSize([nodeHeight, nodeWidth]);

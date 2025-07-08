@@ -226,6 +226,7 @@ export class SearchComponent {
             this.suggestionsList.style.display = "block";
             this.suggestions.forEach((suggestion, index) => {
                 const listItem = document.createElement("li");
+                listItem.classList.add("animated");
                 const itemName = document.createElement("span");
                 const itemId = document.createElement("span");
                 listItem.classList.add("w-full", "rounded-md", "p-1", "my-1", "flex", "flex-row", "justify-between", "hover:bg-green", "hover:text-white", "hover:cursor-pointer");
@@ -288,6 +289,7 @@ export class SearchComponent {
             this.selectedList.style.display = "flex";
             this.selected.forEach(suggestion => {
                 const listItem = document.createElement("li");
+                listItem.classList.add("animated");
                 const itemName = document.createElement("span");
                 const itemId = document.createElement("span");
                 listItem.classList.add("rounded-xl", "p-1", "py-2", "flex", "flex-row", "bg-green", "text-xs", "text-white", "hover:bg-darkgrey", "hover:cursor-pointer", "pointer-events-auto");

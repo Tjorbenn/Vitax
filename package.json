@@ -15,7 +15,6 @@
     "@types/d3": "^7.4.3",
     "autoprefixer": "^10.4.21",
     "cross-env": "^7.0.3",
-    "eslint": "^9.29.0",
     "globals": "^16.2.0",
     "postcss": "^8.5.6",
     "prettier": "^3.5.3",

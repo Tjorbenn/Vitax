@@ -183,4 +183,41 @@
   .highlighted {
     @apply bg-green text-white;
   }
+
+  .animated {
+    @apply transition-all duration-200 ease-in-out;
+  }
+
+  .taxonomy-list {
+    @apply list-none m-0 p-0;
+  }
+
+  .taxonomy-list .taxonomy-list {
+    @apply pl-4;
+  }
+
+  .taxonomy-list-item>div,
+  .taxonomy-list-item>button {
+    @apply flex items-center w-full text-left p-1 rounded hover:bg-green hover:text-white;
+  }
+
+  .taxonomy-list-item>button {
+    @apply cursor-pointer;
+  }
+
+  .taxonomy-list-toggle>icon-material-symbols-expand-circle-right-rounded {
+    @apply transition-transform mr-1;
+  }
+
+  .taxonomy-list-toggle.expanded>icon-material-symbols-expand-circle-right-rounded {
+    @apply rotate-90;
+  }
+
+  .taxonomy-list-item span {
+    @apply pr-2;
+  }
+
+  .taxonomy-list-item span:last-child {
+    @apply text-grey;
+  }
 }
