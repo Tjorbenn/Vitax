@@ -6,6 +6,8 @@ import { SearchComponent } from "../components/SearchComponent";
 import { DisplayTypeComponent } from "../components/DisplayTypeComponent";
 import { VisualizationComponent } from "../components/VisualizationComponent";
 import { DataListComponent } from "../components/DataListComponent";
+import { ToastComponent } from "../components/ToastComponent";
+import { LoaderComponent } from "../components/LoaderComponent";
 
 import { TaxonomyService } from "../services/TaxonomyService";
 
@@ -21,23 +23,27 @@ import { D3Tree } from "../visualizations/d3/d3Tree";
 export class Application {
     private query?: Taxon[];
     private tree?: TaxonomyTree;
-    private status: Status = Status.Loading;
+    private status: Status = Status.Idle;
     private displayType?: Visualization;
-    private taxonomyType: TaxonomyType = "neighbors";
+    private taxonomyType?: TaxonomyType;
 
-    private searchComponent: SearchComponent;
-    private displayTypeComponent: DisplayTypeComponent;
-    private visualizationComponent: VisualizationComponent;
-    private dataListComponent: DataListComponent;
+    private searchComponent?: SearchComponent;
+    private displayTypeComponent?: DisplayTypeComponent;
+    private visualizationComponent?: VisualizationComponent;
+    private dataListComponent?: DataListComponent;
+    private loaderComponent?: LoaderComponent;
+
+    private toastComponent: ToastComponent = new ToastComponent();
 
     private taxonomyService: TaxonomyService = new TaxonomyService();
 
-    constructor(searchComponent: SearchComponent, displayTypeComponent: DisplayTypeComponent, visualizationComponent: VisualizationComponent, dataListComponent: DataListComponent) {
-        this.searchComponent = searchComponent;
-        this.displayTypeComponent = displayTypeComponent;
-        this.visualizationComponent = visualizationComponent;
-        this.dataListComponent = dataListComponent;
-        this.displayType = this.displayTypeComponent.getValue();
+    private querySubscribers: Set<(query: Taxon[] | undefined) => void> = new Set();
+    private treeSubscribers: Set<(tree: TaxonomyTree | undefined) => void> = new Set();
+    private statusSubscribers: Set<(status: Status) => void> = new Set();
+    private displayTypeSubscribers: Set<(displayType: Visualization | undefined) => void> = new Set();
+    private taxonomyTypeSubscribers: Set<(taxonomyType: TaxonomyType | undefined) => void> = new Set();
+
+    constructor() {
     }
 
     public getQuery(): Taxon[] | undefined {
@@ -46,10 +52,28 @@ export class Application {
 
     public setQuery(query: Taxon[]): void {
         this.query = query;
+        this.callQuerySubscribers();
+        console.debug("Query: ", this.query);
+    }
+
+    public getTree(): TaxonomyTree | undefined {
+        return this.tree;
+    }
+
+    public setTree(tree: TaxonomyTree): void {
+        this.tree = tree;
+        this.callTreeSubscribers();
+        console.debug("Tree: ", this.tree);
     }
 
     public getStatus(): Status {
         return this.status;
+    }
+
+    public setStatus(status: Status): void {
+        this.status = status;
+        this.callStatusSubscribers();
+        console.debug("Status: ", this.status);
     }
 
     public getDisplayType(): Visualization | undefined {
@@ -58,6 +82,8 @@ export class Application {
 
     public setDisplayType(value: Visualization) {
         this.displayType = value;
+        this.callDisplayTypeSubscribers();
+        console.debug("DisplayType: ", this.displayType);
     }
 
     public getTaxonomyType(): TaxonomyType | undefined {
@@ -66,28 +92,122 @@ export class Application {
 
     public setTaxonomyType(value: TaxonomyType) {
         this.taxonomyType = value;
+        this.callTaxonomyTypeSubscribers();
+        console.debug("TaxonomyType: ", this.taxonomyType);
     }
 
     public getSearchComponent(): SearchComponent {
+        if (!this.searchComponent) {
+            throw new Error("SearchComponent is not set. Please initialize it before accessing.");
+        }
         return this.searchComponent;
     }
 
+    public setSearchComponent(searchComponent: SearchComponent): void {
+        this.searchComponent = searchComponent;
+    }
+
     public getDisplayTypeComponent(): DisplayTypeComponent {
+        if (!this.displayTypeComponent) {
+            throw new Error("DisplayTypeComponent is not set. Please initialize it before accessing.");
+        }
         return this.displayTypeComponent;
     }
 
+    public setDisplayTypeComponent(displayTypeComponent: DisplayTypeComponent): void {
+        this.displayTypeComponent = displayTypeComponent;
+    }
+
     public getVisualizationComponent(): VisualizationComponent {
+        if (!this.visualizationComponent) {
+            throw new Error("VisualizationComponent is not set. Please initialize it before accessing.");
+        }
         return this.visualizationComponent;
     }
 
-    public async visualize(): Promise<void> {
-        this.status = Status.Loading;
-        await this.getTree();
-        this.showTree();
-        this.status = Status.Idle;
+    public setVisualizationComponent(visualizationComponent: VisualizationComponent): void {
+        this.visualizationComponent = visualizationComponent;
     }
 
-    private async getTree(): Promise<void> {
+    public getDataListComponent(): DataListComponent {
+        if (!this.dataListComponent) {
+            throw new Error("DataListComponent is not set. Please initialize it before accessing.");
+        }
+        return this.dataListComponent;
+    }
+
+    public setDataListComponent(dataListComponent: DataListComponent): void {
+        this.dataListComponent = dataListComponent;
+    }
+
+    public getToastComponent(): ToastComponent {
+        return this.toastComponent;
+    }
+
+    public getLoaderComponent(): LoaderComponent {
+        if (!this.loaderComponent) {
+            throw new Error("LoaderComponent is not set. Please initialize it before accessing.");
+        }
+        return this.loaderComponent;
+    }
+
+    public setLoaderComponent(loaderComponent: LoaderComponent): void {
+        this.loaderComponent = loaderComponent;
+    }
+
+    public subscribeToQuery(callback: (query: Taxon[] | undefined) => void): void {
+        this.querySubscribers.add(callback);
+        callback(this.query);
+    }
+
+    private callQuerySubscribers(): void {
+        this.querySubscribers.forEach(callback => callback(this.query));
+    }
+
+    public subscribeToTree(callback: (tree: TaxonomyTree | undefined) => void): void {
+        this.treeSubscribers.add(callback);
+        callback(this.tree);
+    }
+
+    private callTreeSubscribers(): void {
+        this.treeSubscribers.forEach(callback => callback(this.tree));
+    }
+
+    public subscribeToStatus(callback: (status: Status) => void): void {
+        this.statusSubscribers.add(callback);
+        callback(this.status);
+    }
+
+    private callStatusSubscribers(): void {
+        this.statusSubscribers.forEach(callback => callback(this.status));
+    }
+
+    public subscribeToDisplayType(callback: (displayType: Visualization | undefined) => void): void {
+        this.displayTypeSubscribers.add(callback);
+        callback(this.displayType);
+    }
+
+    private callDisplayTypeSubscribers(): void {
+        this.displayTypeSubscribers.forEach(callback => callback(this.displayType));
+    }
+
+    public subscribeToTaxonomyType(callback: (taxonomyType: TaxonomyType | undefined) => void): void {
+        this.taxonomyTypeSubscribers.add(callback);
+        callback(this.taxonomyType);
+    }
+
+    private callTaxonomyTypeSubscribers(): void {
+        this.taxonomyTypeSubscribers.forEach(callback => callback(this.taxonomyType));
+    }
+
+    public async visualize(): Promise<void> {
+        this.setStatus(Status.Loading);
+        await this.resolveTree();
+        this.showTree();
+        this.setStatus(Status.Idle);
+    }
+
+    private async resolveTree(): Promise<void> {
         if (this.query) {
             switch (this.taxonomyType) {
                 case "descendants":
@@ -106,29 +226,32 @@ export class Application {
     }
 
     private async showTree(): Promise<void> {
-        let renderer
+        if (!this.visualizationComponent) {
+            throw new Error("VisualizationComponent is not set. Please initialize it before rendering.");
+        }
+        let renderer;
         const container = this.visualizationComponent.getContainer();
         if (!this.tree) {
             throw new Error("Tree is not set when trying to show the tree. Please ensure the tree is loaded before rendering.");
         }
         switch (this.displayType) {
             case "tree":
-                renderer = new D3Tree(container, this.tree)
+                renderer = new D3Tree(container, this.tree, this.query ?? []);
                 break;
             case "graph":
-                // renderer = new D3Graph(container, this.tree)
+                // renderer = new D3Graph(container, this.tree, this.query ?? []);
                 break;
             case "cluster":
-                // renderer = new D3Cluster(container, this.tree)
+                // renderer = new D3Cluster(container, this.tree, this.query ?? []);
                 break;
             case "pack":
-                // renderer = new D3Pack(container, this.tree)
+                // renderer = new D3Pack(container, this.tree, this.query ?? []);
                 break;
             case "partition":
-                // renderer = new D3Partition(container, this.tree)
+                // renderer = new D3Partition(container, this.tree, this.query ?? []);
                 break;
             case "treemap":
-                // renderer = new D3Treemap(container, this.tree)
+                // renderer = new D3Treemap(container, this.tree, this.query ?? []);
                 break;
             default:
                 throw new Error("Display type is not set or invalid. Please select a valid display type.");
@@ -137,6 +260,10 @@ export class Application {
         this.visualizationComponent.show();
         const svg = await renderer!.render();
         this.visualizationComponent.setSVG(svg);
+
+        if (!this.dataListComponent) {
+            throw new Error("DataListComponent is not set. Please initialize it before rendering.");
+        }
         this.dataListComponent.setTree(this.tree);
         this.dataListComponent.show();
     }

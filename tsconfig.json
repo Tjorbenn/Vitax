@@ -23,7 +23,9 @@
     "erasableSyntaxOnly": false,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": false,
-    "noImplicitAny": false
+    "noImplicitAny": false,
+    /* Custom */
+    "inlineSourceMap": true
   },
   "include": [
     "src"

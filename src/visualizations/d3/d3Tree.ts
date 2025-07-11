@@ -11,8 +11,8 @@ export class D3Tree extends D3Visualization {
   private gNode: any;
   private gLink: any;
 
-  constructor(canvas: HTMLDivElement, tree: TaxonomyTree) {
-    super(canvas, tree);
+  constructor(canvas: HTMLDivElement, tree: TaxonomyTree, query: Taxon[]) {
+    super(canvas, tree, query);
 
     this.layout = d3.tree<Taxon>();
     this.diagonal = d3.linkHorizontal<d3.HierarchyPointLink<Taxon>, d3.HierarchyPointNode<Taxon>>()
@@ -54,6 +54,11 @@ export class D3Tree extends D3Visualization {
   }
 
   public async update(event?: MouseEvent, source?: any, duration: number = 250): Promise<void> {
+    if (!source || source.x0 === undefined) {
+      source = this.root;
+      source.x0 = this.height / 2;
+      source.y0 = 0;
+    }
     const currentDuration = event?.altKey ? 2500 : duration;
 
     this.layout(this.root);
@@ -84,10 +89,7 @@ export class D3Tree extends D3Visualization {
       .attr("transform", _d => `translate(${source.y0},${source.x0})`)
       .attr("fill-opacity", 0)
       .attr("stroke-opacity", 0)
-      .on("click", (event, d) => {
-        d.children = d.children ? null : d._children;
-        this.update(event, d);
-      });
+      .on("click", this.handleOnClick.bind(this));
 
     nodeEnter.append("circle")
       .attr("r", 3.5)
@@ -144,5 +146,35 @@ export class D3Tree extends D3Visualization {
       mergedLinks.end(),
       exitedLinks.end()
     ]);
+  }
+
+  protected async handleOnClick(event: MouseEvent, datum: any): Promise<void> {
+    let changed = false;
+    if (!datum.parent) {
+      this.getParent(datum);
+      changed = true;
+    }
+    const children = await this.taxonomyService.getChildren(datum.data);
+
+    const existingChildIds = new Set(datum.data.children?.map(child => child.id) ?? []);
+    const allChildIds = new Set(children.map(child => child.id));
+
+    if ([...allChildIds].every(child => existingChildIds.has(child))) {
+      this.getChildren(datum);
+      changed = true;
+    }
+
+    if (!changed) {
+      if (datum.children) {
+        datum._children = datum.children;
+        datum.children = null;
+      } else {
+        datum.children = datum._children;
+        datum._children = null;
+      }
+    }
+
+    await this.update(event, datum);
+    return;
   }
 }

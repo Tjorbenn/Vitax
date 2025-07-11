@@ -7,9 +7,10 @@ export class DisplayTypeComponent {
     constructor(fieldset: HTMLFieldSetElement) {
         this.fieldset = fieldset;
         this.fieldset.addEventListener("change", this.handleChange.bind(this));
+        Vitax.setDisplayType(this.getDisplayType());
     }
 
-    getValue(): Visualization {
+    public getDisplayType(): Visualization {
         const radios = this.fieldset.querySelectorAll('input[type="radio"]');
         for (const radio of radios) {
             if ((radio as HTMLInputElement).checked) {
@@ -19,8 +20,19 @@ export class DisplayTypeComponent {
         throw new Error("No display type selected.");
     }
 
-    handleChange(): void {
-        const newValue = this.getValue() as Visualization;
+    public setDisplayType(value: Visualization): void {
+        const radios = this.fieldset.querySelectorAll('input[type="radio"]');
+        for (const radio of radios) {
+            if ((radio as HTMLInputElement).value === value) {
+                (radio as HTMLInputElement).checked = true;
+                return;
+            }
+        }
+        throw new Error(`Display type ${value} not found in fieldset.`);
+    }
+
+    private handleChange(): void {
+        const newValue = this.getDisplayType();
         Vitax.setDisplayType(newValue);
     }
 }

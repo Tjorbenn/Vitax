@@ -100,22 +100,17 @@ export class NeverAPI {
     }
 
     /**
-     * Get the children IDs of a taxon by its ID.
+     * Get the children of a taxon by its ID.
      * @param taxonId The ID of the taxon to get the children of.
-     * @returns A promise that resolves to an array of child taxon IDs.
+     * @returns A promise that resolves to an array of child taxa.
      */
-    public async getChildrenIdsByTaxonId(taxonId: number): Promise<number[]> {
+    public async getChildrenByTaxonId(taxonId: number): Promise<Taxon[]> {
         const request = new Never.Request(Never.Endpoint.Children);
         request.addParameter(Never.ParameterKey.Term, taxonId);
 
         const response = await request.Send();
 
-        return response.map(entry => {
-            if (!entry.taxid) {
-                throw new Error("Missing Taxon-ID in entry: " + JSON.stringify(entry));
-            }
-            return entry.taxid;
-        });
+        return response.map(EntryToTaxon);
     }
 
     /**

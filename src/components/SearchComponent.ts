@@ -75,6 +75,7 @@ export class SearchComponent {
         for (const option of this.taxonomyTypeList.children) {
             option.addEventListener("click", this.setTaxonomyType.bind(this));
         }
+        Vitax.setTaxonomyType(this.getTaxonomyType());
     }
 
     private handleInput() {
@@ -318,10 +319,19 @@ export class SearchComponent {
         }
     }
 
-    private async setTaxonomyType(event: Event) {
+    public getTaxonomyType(): TaxonomyType {
+        const type = this.taxonomyTypeButton.querySelector("span")?.dataset.type as TaxonomyType;
+        if (!type) {
+            throw new Error("No taxonomy type is set. Please select a taxonomy type.");
+        }
+        return type;
+    }
+
+    private setTaxonomyType(event: Event) {
         const target = event.target as HTMLLIElement;
         if (target) {
             Vitax.setTaxonomyType(target.dataset.type as TaxonomyType);
+            this.taxonomyTypeButton.dataset.type = target.dataset.type as TaxonomyType;
             this.taxonomyTypeButton.querySelector("span")!.textContent = target.textContent;
             this.taxonomyTypeList.classList.add("hidden");
         }

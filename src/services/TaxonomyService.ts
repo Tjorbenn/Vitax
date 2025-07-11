@@ -54,17 +54,38 @@ export class TaxonomyService {
         return this.buildSparseTree(mrca, mrcaArray, query);
     }
 
+    public async expandTreeUp(tree: TaxonomyTree): Promise<TaxonomyTree> {
+        const root = tree.root;
+        if (!root) {
+            throw new Error("Tree root is undefined");
+        }
+        const parent = await this.getParent(root);
+        if (!parent) {
+            console.warn("No parent found for the root taxon, returning the original tree.");
+            return tree;
+        }
+        else {
+            parent.children = [root];
+            return { root: parent };
+        }
+    }
+
     /**
      * Get the parent of a taxon.
      * @param taxon The taxon to find the parent for.
      * @returns A promise that resolves to the parent taxon.
      */
-    private async getParent(taxon: Taxon): Promise<Taxon> {
+    public async getParent(taxon: Taxon): Promise<Taxon> {
         if (taxon.parentId === undefined) {
-            throw new Error(`Taxon ${taxon.name} has no parentId`);
+            taxon.parentId = await this.api.getParentIdByTaxonId(taxon.id);
         }
         const parent = await this.api.getTaxonById(taxon.parentId);
         return parent;
+    }
+
+    public async getChildren(taxon: Taxon): Promise<Taxon[]> {
+        const children = await this.api.getChildrenByTaxonId(taxon.id);
+        return children;
     }
 
     /**
@@ -72,9 +93,8 @@ export class TaxonomyService {
      * @param taxon The taxon to resolve children for.
      * @returns A promise that resolves to the taxon with its children set.
      */
-    private async resolveChildren(taxon: Taxon): Promise<Taxon> {
-        const childrenIds = await this.api.getChildrenIdsByTaxonId(taxon.id);
-        const children = await this.api.getTaxaByTaxonIds(childrenIds);
+    public async resolveChildren(taxon: Taxon): Promise<Taxon> {
+        const children = await this.getChildren(taxon);
         taxon.children = children;
         return taxon;
     }
@@ -85,6 +105,7 @@ export class TaxonomyService {
      * @param ancestor The ancestor taxon to stop at.
      * @returns A promise that resolves to the taxonomic lineage as a tree with the ancestor as the root.
      */
+    /**
     private async getLineage(target: Taxon, ancestor: Taxon): Promise<TaxonomyTree> {
         if (target.id === ancestor.id) {
             return TaxaToTree([target]);
@@ -104,6 +125,7 @@ export class TaxonomyService {
         lineage.push(ancestor);
         return TaxaToTree(lineage.reverse());
     }
+    */
 
     /**
      * Build a sparse tree from the root and its subtree, including only the target taxa and their direct lineage.

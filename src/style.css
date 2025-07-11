@@ -185,7 +185,7 @@
   }
 
   .animated {
-    @apply transition-all duration-200 ease-in-out;
+    @apply transition-all duration-100 ease-in-out;
   }
 
   .taxonomy-list {
@@ -193,7 +193,33 @@
   }
 
   .taxonomy-list .taxonomy-list {
-    @apply pl-4;
+    @apply pl-8;
+  }
+
+  .taxonomy-list .taxonomy-list .taxonomy-list-item {
+    position: relative;
+  }
+
+  .taxonomy-list .taxonomy-list .taxonomy-list-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -1rem;
+    bottom: 0;
+    border-left: 1px solid var(--color-mediumgrey);
+  }
+
+  .taxonomy-list .taxonomy-list .taxonomy-list-item::after {
+    content: '';
+    position: absolute;
+    top: 18px;
+    left: -1rem;
+    width: 1rem;
+    border-top: 1px solid var(--color-mediumgrey);
+  }
+
+  .taxonomy-list .taxonomy-list .taxonomy-list-item:last-child::before {
+    height: 18px;
   }
 
   .taxonomy-list-item>div,
@@ -218,6 +244,6 @@
   }
 
   .taxonomy-list-item span:last-child {
-    @apply text-grey;
+    @apply text-mediumgrey;
   }
 }
