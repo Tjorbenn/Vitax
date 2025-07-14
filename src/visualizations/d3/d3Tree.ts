@@ -149,22 +149,25 @@ export class D3Tree extends D3Visualization {
   }
 
   protected async handleOnClick(event: MouseEvent, datum: any): Promise<void> {
-    let changed = false;
+    let parentFetched = false;
+    let childrenFetched = false;
+
     if (!datum.parent) {
-      this.getParent(datum);
-      changed = true;
+      await this.getParent(datum);
+      parentFetched = true;
     }
-    const children = await this.taxonomyService.getChildren(datum.data);
 
     const existingChildIds = new Set(datum.data.children?.map(child => child.id) ?? []);
+
+    const children = await this.taxonomyService.getChildren(datum.data);
     const allChildIds = new Set(children.map(child => child.id));
 
-    if ([...allChildIds].every(child => existingChildIds.has(child))) {
-      this.getChildren(datum);
-      changed = true;
+    if ([...allChildIds].some(child => !existingChildIds.has(child))) {
+      await this.getChildren(datum);
+      childrenFetched = true;
     }
 
-    if (!changed) {
+    if (!parentFetched && !childrenFetched) {
       if (datum.children) {
         datum._children = datum.children;
         datum.children = null;
@@ -172,6 +175,12 @@ export class D3Tree extends D3Visualization {
         datum.children = datum._children;
         datum._children = null;
       }
+    }
+
+    // Display children if they were fetched and node was collapsed
+    if (childrenFetched && datum._children) {
+      datum.children = datum._children;
+      datum._children = null;
     }
 
     await this.update(event, datum);

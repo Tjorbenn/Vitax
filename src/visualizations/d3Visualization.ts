@@ -36,6 +36,7 @@ export abstract class D3Visualization {
     this.setupScalingAndDragging();
   }
 
+
   protected setupScalingAndDragging(): void {
     this.svg.attr("id", "plot")
       .attr("viewBox", [0, 0, this.width, this.height])
@@ -124,9 +125,9 @@ export abstract class D3Visualization {
   }
 
   protected async getRelated(event: MouseEvent, datum: d3.HierarchyNode<Taxon>): Promise<void> {
-    this.getChildren(datum);
+    await this.getChildren(datum);
     if (!datum.parent) {
-      this.getParent(datum);
+      await this.getParent(datum);
     }
     await this.update(event, datum);
     return;

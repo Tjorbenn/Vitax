@@ -27,9 +27,15 @@ export class LoaderComponent {
     }
 
     public show(): void {
-        this.animation.play();
         this.container.classList.remove("hidden");
         this.container.classList.add("flex");
+
+        const box = this.container.getBoundingClientRect();
+        this.container.width = box.width;
+        this.container.height = box.height;
+        this.animation.resize();
+
+        this.animation.play();
     }
 
     public hide(): void {
