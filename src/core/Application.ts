@@ -210,6 +210,9 @@ export class Application {
     private async resolveTree(): Promise<void> {
         if (this.query) {
             switch (this.taxonomyType) {
+                case "taxon":
+                    this.tree = await this.taxonomyService.getTaxonTree(this.query[0]);
+                    break;
                 case "descendants":
                     this.tree = await this.taxonomyService.getDescendantsTree(this.query[0]);
                     break;
@@ -236,22 +239,22 @@ export class Application {
         }
         switch (this.displayType) {
             case "tree":
-                renderer = new D3Tree(container, this.tree, this.query ?? []);
+                renderer = new D3Tree(container, this.query ?? []);
                 break;
             case "graph":
-                // renderer = new D3Graph(container, this.tree, this.query ?? []);
+                // renderer = new D3Graph(container, this.query ?? []);
                 break;
             case "cluster":
-                // renderer = new D3Cluster(container, this.tree, this.query ?? []);
+                // renderer = new D3Cluster(container, this.query ?? []);
                 break;
             case "pack":
-                // renderer = new D3Pack(container, this.tree, this.query ?? []);
+                // renderer = new D3Pack(container, this.query ?? []);
                 break;
             case "partition":
-                // renderer = new D3Partition(container, this.tree, this.query ?? []);
+                // renderer = new D3Partition(container, this.query ?? []);
                 break;
             case "treemap":
-                // renderer = new D3Treemap(container, this.tree, this.query ?? []);
+                // renderer = new D3Treemap(container, this.query ?? []);
                 break;
             default:
                 throw new Error("Display type is not set or invalid. Please select a valid display type.");

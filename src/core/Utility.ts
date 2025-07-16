@@ -1,4 +1,4 @@
-import type { Taxon, TaxonomyTree } from "../types/Taxonomy";
+import { Taxon, TaxonomyTree } from "../types/Taxonomy";
 import type { Suggestion } from "../types/Application";
 
 /**
@@ -24,16 +24,13 @@ export function TaxaToTree(taxa: Taxon[]): TaxonomyTree {
         taxon.children = taxa.filter(child => child.parentId === taxon.id);
     }
 
-    const tree: TaxonomyTree = { root };
+    const tree = new TaxonomyTree(root);
     return tree;
 }
 
 export function SuggestionToTaxon(suggestion: Suggestion): Taxon {
-    return {
-        id: suggestion.id,
-        name: suggestion.name,
-        children: []
-    };
+    const taxon = new Taxon(suggestion.id, suggestion.name);
+    return taxon;
 }
 
 export function SuggestionsToTaxa(suggestions: Suggestion[]): Taxon[] {

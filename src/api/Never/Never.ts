@@ -1,9 +1,10 @@
-import type { GenomeCount } from "../../types/Taxonomy";
+import type { GenomeLevel } from "../../types/Taxonomy";
 
 export enum Endpoint {
   Accessions = "accessions",
   Children = "children",
   Levels = "levels",
+  Lineage = "path",
   MRCA = "mrca",
   Names = "names",
   GenomeCount = "num_genomes",
@@ -24,9 +25,14 @@ export type Entry = {
   parent?: number;
   rank?: string;
   taxid?: number;
-  raw_genome_counts?: GenomeCount[];
-  rec_genome_counts?: GenomeCount[];
+  raw_genome_counts?: NeverGenomeCount[];
+  rec_genome_counts?: NeverGenomeCount[];
 };
+
+export type NeverGenomeCount = {
+  level: GenomeLevel;
+  count: number;
+}
 
 export enum ParameterKey {
   Term = "t",
@@ -84,11 +90,11 @@ export class Request {
     const json = await response.json();
 
     // Workaround for the MRCA endpoint that does not return an array, but just an object that looks like this: { "taxid": 9606 } -> The endpoint will be changed later to return an array.
-    if (this.endpoint === Endpoint.MRCA && json.taxid) {
+    if (this.endpoint === Endpoint.MRCA && json.taxid || this.endpoint === Endpoint.Parent && json.taxid) {
       return [json];
     }
 
-    if (json.length < 1) {
+    if (!json || json.length < 1) {
       throw new Error(`Empty response to ${requestUrl} from Never-API`);
     }
 

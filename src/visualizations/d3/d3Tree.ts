@@ -1,6 +1,6 @@
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 
-import type { Taxon, TaxonomyTree } from '../../types/Taxonomy';
+import { type Taxon, type TaxonomyTree } from '../../types/Taxonomy';
 import { D3Visualization } from '../d3Visualization';
 import * as d3 from "d3"
 
@@ -11,8 +11,8 @@ export class D3Tree extends D3Visualization {
   private gNode: any;
   private gLink: any;
 
-  constructor(canvas: HTMLDivElement, tree: TaxonomyTree, query: Taxon[]) {
-    super(canvas, tree, query);
+  constructor(canvas: HTMLDivElement, query: Taxon[]) {
+    super(canvas, query);
 
     this.layout = d3.tree<Taxon>();
     this.diagonal = d3.linkHorizontal<d3.HierarchyPointLink<Taxon>, d3.HierarchyPointNode<Taxon>>()
@@ -38,7 +38,8 @@ export class D3Tree extends D3Visualization {
     const nodeWidth = 180;
     const nodeHeight = 25;
 
-    this.layout.nodeSize([nodeHeight, nodeWidth]);
+    this.layout.nodeSize([nodeHeight, nodeWidth])
+      .separation((a, b) => a.parent == b.parent ? 1 : 1.25);
 
     this.root.x0 = this.height / 2;
     this.root.y0 = 0;
@@ -93,7 +94,7 @@ export class D3Tree extends D3Visualization {
 
     nodeEnter.append("circle")
       .attr("r", 3.5)
-      .attr("fill", d => d.children ? "#555" : "#999")
+      .attr("fill", d => this.query.some(q => q.id === d.data.id) ? "#006c66" : d.children ? "#555" : "#999")
       .attr("stroke.width", 10);
 
     nodeEnter.append("text")
@@ -107,12 +108,12 @@ export class D3Tree extends D3Visualization {
       .attr("paint-order", "stroke")
       .style("font-size", "10px");
 
-    const mergedNodes = node.merge(nodeEnter).transition(transition)
+    node.merge(nodeEnter).transition(transition)
       .attr("transform", d => `translate(${d.y},${d.x})`)
       .attr("fill-opacity", 1)
       .attr("stroke-opacity", 1);
 
-    const exitedNodes = node.exit().transition(transition).remove()
+    node.exit().transition(transition).remove()
       .attr("transform", _d => `translate(${source.y},${source.x})`)
       .attr("fill-opacity", 0)
       .attr("stroke-opacity", 0);
@@ -126,10 +127,10 @@ export class D3Tree extends D3Visualization {
         return this.diagonal({ source: o, target: o });
       });
 
-    const mergedLinks = link.merge(linkEnter).transition(transition)
+    link.merge(linkEnter).transition(transition)
       .attr("d", this.diagonal);
 
-    const exitedLinks = link.exit().transition(transition).remove()
+    link.exit().transition(transition).remove()
       .attr("d", _d => {
         const o = { x: source.x, y: source.y } as d3.HierarchyPointNode<Taxon>;
         return this.diagonal({ source: o, target: o });
@@ -139,30 +140,28 @@ export class D3Tree extends D3Visualization {
       d.x0 = d.x;
       d.y0 = d.y;
     });
-
-    await Promise.all([
-      mergedNodes.end(),
-      exitedNodes.end(),
-      mergedLinks.end(),
-      exitedLinks.end()
-    ]);
   }
 
   protected async handleOnClick(event: MouseEvent, datum: any): Promise<void> {
     let parentFetched = false;
     let childrenFetched = false;
 
+    if (datum._children && datum.children === null) {
+      datum.children = datum._children;
+      datum._children = null;
+
+      await this.update(event, datum);
+      return;
+    }
+
     if (!datum.parent) {
       await this.getParent(datum);
       parentFetched = true;
     }
 
-    const existingChildIds = new Set(datum.data.children?.map(child => child.id) ?? []);
-
-    const children = await this.taxonomyService.getChildren(datum.data);
-    const allChildIds = new Set(children.map(child => child.id));
-
-    if ([...allChildIds].some(child => !existingChildIds.has(child))) {
+    const remoteChildren = await this.taxonomyService.getChildren(datum.data);
+    const localChildren = datum.children ?? [];
+    if (remoteChildren.length > localChildren.length) {
       await this.getChildren(datum);
       childrenFetched = true;
     }
@@ -171,19 +170,9 @@ export class D3Tree extends D3Visualization {
       if (datum.children) {
         datum._children = datum.children;
         datum.children = null;
-      } else {
-        datum.children = datum._children;
-        datum._children = null;
       }
     }
 
-    // Display children if they were fetched and node was collapsed
-    if (childrenFetched && datum._children) {
-      datum.children = datum._children;
-      datum._children = null;
-    }
-
     await this.update(event, datum);
-    return;
   }
 }

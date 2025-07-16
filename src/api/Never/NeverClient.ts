@@ -1,4 +1,4 @@
-import type { Taxon, TaxonomyTree } from "../../types/Taxonomy";
+import { GenomeLevel, Taxon, type TaxonomyTree } from "../../types/Taxonomy";
 import type { Suggestion } from "../../types/Application"
 import * as Never from "./Never";
 import { TaxaToTree } from "../../core/Utility";
@@ -124,7 +124,7 @@ export class NeverAPI {
 
         const response = await request.Send();
 
-        if (!response[0].taxid) {
+        if (!response[0] || !response[0].taxid) {
             throw new Error("No parent found for Taxon-ID: " + taxonId);
         }
         return response[0].taxid;
@@ -142,6 +142,24 @@ export class NeverAPI {
         const response = await request.Send();
         const taxa = await this.getTaxaByTaxonIds(response.filter(entry => entry.taxid !== undefined).map(entry => entry.taxid as number));
 
+        return TaxaToTree(taxa);
+    }
+
+    /**
+     * Get the lineage from one taxon to another by their IDs.
+     * @param ancestorId The ID of the ancestor taxon.
+     * @param descendantID The ID of the descendant taxon.
+     */
+    public async getLineageFromTaxonIds(ancestorId: number, descendantId: number): Promise<TaxonomyTree> {
+        const request = new Never.Request(Never.Endpoint.Lineage);
+        request.addParameter(Never.ParameterKey.Term, `${descendantId},${ancestorId}`);
+
+        const response = await request.Send();
+        if (response.length === 0) {
+            throw new Error(`No lineage found between ancestor ID ${ancestorId} and descendant ID ${descendantId}`);
+        }
+
+        const taxa = await Promise.all(response.map(entry => this.EntryToFullTaxon(entry)));
         return TaxaToTree(taxa);
     }
 
@@ -172,6 +190,26 @@ export class NeverAPI {
 
         return mrca;
     }
+
+    /**
+     * Converts a Never.Entry to a full Taxon object.
+     * @param entry The entry to convert.
+     * @returns A promise that resolves to the full Taxon object.
+     */
+    private async EntryToFullTaxon(entry: Never.Entry): Promise<Taxon> {
+        if (entry.taxid) {
+            const taxon = await this.getTaxonById(entry.taxid);
+            return taxon;
+        }
+        else if (entry.name) {
+            const preTaxon = await this.getTaxonByName(entry.name);
+            const taxon = await this.getTaxonById(preTaxon.id);
+            return taxon;
+        }
+        else {
+            throw new Error("Incomplete taxon entry: " + JSON.stringify(entry));
+        }
+    }
 }
 
 /**
@@ -183,15 +221,22 @@ function EntryToTaxon(entry: Never.Entry): Taxon {
     if (!entry.taxid || !entry.name) {
         throw new Error("Incomplete taxon entry: " + JSON.stringify(entry));
     }
-    return {
-        id: entry.taxid,
-        name: entry.name,
-        parentId: entry.parent,
-        rank: entry.rank ?? undefined,
-        children: [],
-        genomeCount: entry.raw_genome_counts ?? [],
-        genomeCountRecursive: entry.rec_genome_counts ?? [],
+    const taxon = new Taxon(entry.taxid, entry.name);
+    taxon.rank = entry.rank ?? undefined;
+    taxon.parentId = entry.parent ?? undefined;
+    taxon.genomeCount = {
+        [GenomeLevel.Complete]: entry.raw_genome_counts?.find(count => count.level === GenomeLevel.Complete)?.count ?? undefined,
+        [GenomeLevel.Chromosome]: entry.raw_genome_counts?.find(count => count.level === GenomeLevel.Chromosome)?.count ?? undefined,
+        [GenomeLevel.Scaffold]: entry.raw_genome_counts?.find(count => count.level === GenomeLevel.Scaffold)?.count ?? undefined,
+        [GenomeLevel.Contig]: entry.raw_genome_counts?.find(count => count.level === GenomeLevel.Contig)?.count ?? undefined,
     };
+    taxon.genomeCountRecursive = {
+        [GenomeLevel.Complete]: entry.rec_genome_counts?.find(count => count.level === GenomeLevel.Complete)?.count ?? undefined,
+        [GenomeLevel.Chromosome]: entry.rec_genome_counts?.find(count => count.level === GenomeLevel.Chromosome)?.count ?? undefined,
+        [GenomeLevel.Scaffold]: entry.rec_genome_counts?.find(count => count.level === GenomeLevel.Scaffold)?.count ?? undefined,
+        [GenomeLevel.Contig]: entry.rec_genome_counts?.find(count => count.level === GenomeLevel.Contig)?.count ?? undefined,
+    };
+    return taxon;
 }
 
 /**

@@ -1,9 +1,24 @@
-import type { Taxon, TaxonomyTree } from "../types/Taxonomy";
+import { Taxon, TaxonomyTree } from "../types/Taxonomy";
 import { NeverAPI } from "../api/Never/NeverClient"
 import { TaxaToTree } from "../core/Utility";
 
 export class TaxonomyService {
     private api: NeverAPI = new NeverAPI();
+
+    /**
+     * Returns a single taxon as a tree. Ideal for exploration from a single taxon.
+     * @param query The taxon to retrieve.
+     * @returns A promise that resolves to a TaxonomyTree with the query taxon as the root.
+     */
+    public async getTaxonTree(query: Taxon): Promise<TaxonomyTree> {
+        const taxon = await this.api.getTaxonById(query.id);
+        if (!taxon) {
+            throw new Error(`Taxon with id ${query.id} not found.`);
+        }
+
+        const tree = new TaxonomyTree(taxon);
+        return tree;
+    }
 
     /**
      * Get the descendants of a taxon as a tree with the query taxon as the root.
@@ -49,9 +64,24 @@ export class TaxonomyService {
         if (query.length < 2) {
             throw new Error("At least two taxa are required to find the MRCA.");
         }
+
         const mrca = await this.api.getMrcaByTaxonIds(query.map(taxon => taxon.id));
-        const mrcaArray = await this.api.getSubtreeByTaxonIdAsArray(mrca.id);
-        return this.buildSparseTree(mrca, mrcaArray, query);
+        const mrcaTree = new TaxonomyTree(mrca);
+        mrcaTree.root.children = [];
+
+        for (const taxon of query) {
+            if (taxon.id !== mrca.id) {
+                const lineage = await this.api.getLineageFromTaxonIds(mrca.id, taxon.id);
+                if (lineage.root.children) {
+                    mrcaTree.root.children.push(...lineage.root.children);
+                }
+                else {
+                    throw new Error(`No children found for taxon ${taxon.name} in lineage from MRCA ${mrca.name}`);
+                }
+            }
+        }
+
+        return mrcaTree;
     }
 
     public async expandTreeUp(tree: TaxonomyTree): Promise<TaxonomyTree> {
@@ -66,7 +96,7 @@ export class TaxonomyService {
         }
         else {
             parent.children = [root];
-            return { root: parent };
+            return new TaxonomyTree(parent);
         }
     }
 
@@ -85,7 +115,8 @@ export class TaxonomyService {
 
     public async getChildren(taxon: Taxon): Promise<Taxon[]> {
         const children = await this.api.getChildrenByTaxonId(taxon.id);
-        return children;
+        const fullChildren = await this.getFullTaxa(children);
+        return fullChildren;
     }
 
     /**
@@ -127,38 +158,13 @@ export class TaxonomyService {
     }
     */
 
-    /**
-     * Build a sparse tree from the root and its subtree, including only the target taxa and their direct lineage.
-     * @param root The root taxon.
-     * @param tree The subtree of the root as an array of Taxon objects.
-     * @param targets The target taxa to include in the sparse tree as an array of Taxon objects.
-     * @returns The sparse tree containing only the target taxa and their direct lineage to the root.
-     */
-    private buildSparseTree(root: Taxon, tree: Taxon[], targets: Taxon[]): TaxonomyTree {
-        const taxa = new Map<number, Taxon>();
-        for (const taxon of tree) {
-            taxa.set(taxon.id, taxon);
+    private async getFullTaxa(query: Taxon[]): Promise<Taxon[]> {
+        if (query.every(taxon => taxon.id !== undefined)) {
+            const taxIds = query.map(taxon => taxon.id);
+            return this.api.getTaxaByTaxonIds(taxIds);
         }
-
-        if (!taxa.has(root.id)) {
-            throw new Error(`MRCA with id ${root.id} not found in the provided tree.`);
+        else {
+            throw new Error("All taxa in the query must have an id.");
         }
-
-        const sparseTree = new Set<Taxon>();
-        sparseTree.add(root);
-
-        for (const target of targets) {
-            let currentId = target.id;
-
-            while (currentId && currentId !== root.id && taxa.has(currentId)) {
-                const currentTaxon = taxa.get(currentId)!;
-                sparseTree.add(currentTaxon);
-                if (currentTaxon.parentId) {
-                    currentId = currentTaxon.parentId;
-                }
-            }
-        }
-
-        return TaxaToTree(Array.from(sparseTree));
     }
 }

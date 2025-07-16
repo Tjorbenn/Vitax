@@ -11,6 +11,7 @@ export enum Status {
 }
 
 export type TaxonomyType =
+  | "taxon"
   | "descendants"
   | "neighbors"
   | "mrca";
