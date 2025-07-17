@@ -40,12 +40,12 @@ export class NeverAPI {
      * @param taxonIds The IDs of the taxa to get.
      * @returns A promise that resolves to an array of taxa.
      */
-    public async getTaxaByTaxonIds(taxonIds: number[]): Promise<Taxon[]> {
+    public async getTaxaByTaxonIds(taxonIds: number[]): Promise<Set<Taxon>> {
         const request = new Never.Request(Never.Endpoint.TaxonInfo);
         request.addParameter(Never.ParameterKey.Term, taxonIds.join(","));
 
         const response = await request.Send();
-        return response.map(EntryToTaxon);
+        return new Set(response.map(EntryToTaxon));
     }
 
     /**
@@ -87,7 +87,7 @@ export class NeverAPI {
      * @param exact Whether the name should be an exact match.
      * @returns A promise that resolves to an array of suggestions.
      */
-    public async getSuggestionsByName(name: string, page: number = 1, pageSize: number = 10, exact: boolean = false): Promise<Suggestion[]> {
+    public async getSuggestionsByName(name: string, page: number = 1, pageSize: number = 10, exact: boolean = false): Promise<Set<Suggestion>> {
         const request = new Never.Request(Never.Endpoint.Taxon);
         request.addParameter(Never.ParameterKey.Term, name)
             .addParameter(Never.ParameterKey.Exact, +exact)
@@ -96,7 +96,7 @@ export class NeverAPI {
 
         const response = await request.Send();
 
-        return response.map(EntryToSuggestion);
+        return new Set(response.map(EntryToSuggestion));
     }
 
     /**
@@ -104,13 +104,13 @@ export class NeverAPI {
      * @param taxonId The ID of the taxon to get the children of.
      * @returns A promise that resolves to an array of child taxa.
      */
-    public async getChildrenByTaxonId(taxonId: number): Promise<Taxon[]> {
+    public async getChildrenByTaxonId(taxonId: number): Promise<Set<Taxon>> {
         const request = new Never.Request(Never.Endpoint.Children);
         request.addParameter(Never.ParameterKey.Term, taxonId);
 
         const response = await request.Send();
 
-        return response.map(EntryToTaxon);
+        return new Set(response.map(EntryToTaxon));
     }
 
     /**
@@ -160,7 +160,7 @@ export class NeverAPI {
         }
 
         const taxa = await Promise.all(response.map(entry => this.EntryToFullTaxon(entry)));
-        return TaxaToTree(taxa);
+        return TaxaToTree(new Set(taxa));
     }
 
     /**
@@ -168,12 +168,12 @@ export class NeverAPI {
      * @param taxonId The ID of the taxon to get the subtree of.
      * @returns A promise that resolves to an array of taxa in the subtree.
      */
-    public async getSubtreeByTaxonIdAsArray(taxonId: number): Promise<Taxon[]> {
+    public async getSubtreeByTaxonIdAsArray(taxonId: number): Promise<Set<Taxon>> {
         const request = new Never.Request(Never.Endpoint.Subtree);
         request.addParameter(Never.ParameterKey.Term, taxonId);
 
         const response = await request.Send();
-        return response.map(EntryToTaxon);
+        return new Set(response.map(EntryToTaxon));
     }
 
     /**

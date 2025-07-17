@@ -21,7 +21,7 @@ import { D3Tree } from "../visualizations/d3/d3Tree";
 
 // Singleton Application orchestrator class
 export class Application {
-    private query?: Taxon[];
+    private query?: Set<Taxon>;
     private tree?: TaxonomyTree;
     private status: Status = Status.Idle;
     private displayType?: VisualizationType;
@@ -37,7 +37,7 @@ export class Application {
 
     private taxonomyService: TaxonomyService = new TaxonomyService();
 
-    private querySubscribers: Set<(query: Taxon[] | undefined) => void> = new Set();
+    private querySubscribers: Set<(query: Set<Taxon> | undefined) => void> = new Set();
     private treeSubscribers: Set<(tree: TaxonomyTree | undefined) => void> = new Set();
     private statusSubscribers: Set<(status: Status) => void> = new Set();
     private displayTypeSubscribers: Set<(displayType: VisualizationType | undefined) => void> = new Set();
@@ -46,11 +46,11 @@ export class Application {
     constructor() {
     }
 
-    public getQuery(): Taxon[] | undefined {
+    public getQuery(): Set<Taxon> | undefined {
         return this.query;
     }
 
-    public setQuery(query: Taxon[]): void {
+    public setQuery(query: Set<Taxon>): void {
         this.query = query;
         this.callQuerySubscribers();
         console.debug("Query: ", this.query);
@@ -160,7 +160,7 @@ export class Application {
         this.loaderComponent = loaderComponent;
     }
 
-    public subscribeToQuery(callback: (query: Taxon[] | undefined) => void): void {
+    public subscribeToQuery(callback: (query: Set<Taxon> | undefined) => void): void {
         this.querySubscribers.add(callback);
         callback(this.query);
     }
@@ -213,13 +213,13 @@ export class Application {
     }
 
     private async resolveTree(): Promise<void> {
-        if (this.query) {
+        if (this.query && this.query.first()) {
             switch (this.taxonomyType) {
                 case "taxon":
-                    this.setTree(await this.taxonomyService.getTaxonTree(this.query[0]));
+                    this.setTree(await this.taxonomyService.getTaxonTree(this.query.first()!));
                     break;
                 case "descendants":
-                    this.setTree(await this.taxonomyService.getDescendantsTree(this.query[0]));
+                    this.setTree(await this.taxonomyService.getDescendantsTree(this.query.first()!));
                     break;
                 case "neighbors":
                     this.setTree(await this.taxonomyService.getNeighborsTree(this.query));

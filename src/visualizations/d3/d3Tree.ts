@@ -45,7 +45,7 @@ export class D3Tree extends D3Visualization {
     this.root.x0 = this.height / 2;
     this.root.y0 = 0;
 
-    this.root.descendants().forEach(d => { d.isCollapsed = false; });
+    this.root.descendants().forEach(d => { d.collapsed = false; });
 
     await this.update(undefined, this.root);
     this.centerAndFit();
@@ -57,9 +57,7 @@ export class D3Tree extends D3Visualization {
     if (!this.root || !this.layout) {
       return;
     }
-    this.root.descendants().forEach((d, i) => {
-      d.id = i;
-    });
+    this.root.each(d => d.id = d.data.id);
 
     if (!source || source.x0 === undefined) {
       source = this.root;
@@ -82,8 +80,8 @@ export class D3Tree extends D3Visualization {
       }
     });
 
-    const nodes = this.root.descendants().filter(d => !d.isCollapsed).reverse();
-    const links = this.root.links().filter(d => !d.target.isCollapsed);
+    const nodes = this.root.descendants().filter(d => this.isNodeVisible(d)).reverse();
+    const links = this.root.links().filter(d => this.isNodeVisible(d.target));
 
     const transition = this.svg.transition()
       .duration(currentDuration)
@@ -106,8 +104,8 @@ export class D3Tree extends D3Visualization {
 
     nodeEnter.append("text")
       .attr("dy", "0.31em")
-      .attr("x", d => !d.isCollapsed ? -8 : 8)
-      .attr("text-anchor", d => !d.isCollapsed ? "end" : "start")
+      .attr("x", d => !d.collapsed ? -8 : 8)
+      .attr("text-anchor", d => !d.collapsed ? "end" : "start")
       .text(d => d.data.name)
       .attr("stroke-linejoin", "round")
       .attr("stroke-width", 2.5)
@@ -154,8 +152,8 @@ export class D3Tree extends D3Visualization {
     let fetchedChildren = false;
 
     // If the clicked node is collapsed, expand it
-    if (datum.isCollapsed) {
-      datum.isCollapsed = false;
+    if (datum.collapsed) {
+      datum.collapsed = false;
       return this.update(event, datum);
     }
 
@@ -173,13 +171,19 @@ export class D3Tree extends D3Visualization {
 
     // If no data was fetched, collapse the node
     if (!fetchedParent && !fetchedChildren) {
-      if (datum.children) {
-        datum.children.forEach(child => {
-          child.descendants().forEach(d => d.isCollapsed = true);
-        });
-      }
+      datum.collapsed = true;
     }
 
     return this.update(event, datum);
+  }
+
+  /**
+   * Checks if a node is visible in the current view. A node is considered visible if no ancestor is collapsed.
+   * @param node 
+   */
+  private isNodeVisible(node: any): boolean {
+    // All ancestors excluding the node itself must not be collapsed
+    const ancestors = node.ancestors().filter(ancestor => ancestor.data.id !== node.data.id);
+    return ancestors.every(ancestor => !ancestor.collapsed);
   }
 }

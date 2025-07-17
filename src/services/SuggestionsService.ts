@@ -25,17 +25,20 @@ export class SuggestionsService {
 
     async getExactSuggestion(term: string): Promise<Suggestion> {
         const suggestion = await this.api.getSuggestionsByName(term, 1, 1, true);
-        if (suggestion.length < 1) {
+        if (suggestion.size < 1) {
             throw new Error(`No exact suggestion found for term: ${term}`);
         }
-        return suggestion[0];
+        if (suggestion.first()) {
+            throw new Error("No exact suggestion found for term: " + term);
+        }
+        return suggestion.first()!;
     }
 
-    async nextSuggestions(): Promise<Suggestion[]> {
+    async nextSuggestions(): Promise<Set<Suggestion>> {
         try {
             const suggestions = await this.api.getSuggestionsByName(this.term, this.page, this.pageSize);
-            if (suggestions.length === 0) {
-                return [];
+            if (suggestions.size === 0) {
+                return new Set<Suggestion>();
             }
             else {
                 this.page++;
@@ -43,7 +46,7 @@ export class SuggestionsService {
             }
         }
         catch {
-            return [];
+            return new Set<Suggestion>();
         }
     }
 }

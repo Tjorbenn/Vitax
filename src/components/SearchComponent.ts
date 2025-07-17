@@ -11,7 +11,7 @@ export class SearchComponent {
     private suggestionsStatus: Status = Status.Success;
     private highlightedIndex: number = -1;
     private suggestions: Suggestion[] = [];
-    private selected: Suggestion[] = [];
+    private selected: Set<Suggestion> = new Set<Suggestion>();
 
     searchElement: HTMLElement;
     inputElement: HTMLInputElement;
@@ -92,7 +92,7 @@ export class SearchComponent {
         this.inputChangeTimer = window.setTimeout(() => {
             this.suggestionsService.getSuggestions(query).then(suggestions => {
                 if (query === this.getSearchTerm()) {
-                    this.suggestions = this.sortSuggestions(suggestions, query);
+                    this.suggestions = this.sortSuggestions(Array.from(suggestions), query);
                     this.updateSuggestionsList();
                 }
             });
@@ -136,7 +136,7 @@ export class SearchComponent {
 
     private handleVisualize(event: Event) {
         event.preventDefault();
-        if (this.selected.length < 1) {
+        if (this.selected.size < 1) {
             alert("Please select at least one suggestion to visualize.");
             return;
         }
@@ -194,12 +194,12 @@ export class SearchComponent {
         const query = this.getSearchTerm();
         const moreSuggestions = await this.suggestionsService.nextSuggestions();
         const newSuggestions = moreSuggestions.filter(s => !this.suggestions.some(existing => existing.id === s.id));
-        if (moreSuggestions.length < 1) {
+        if (moreSuggestions.size < 1) {
             return;
-        } else if (moreSuggestions.length < 10) {
+        } else if (moreSuggestions.size < 10) {
             this.suggestionsStatus = Status.Success;
         }
-        this.suggestions = this.sortSuggestions(this.suggestions.concat(newSuggestions), query);
+        this.suggestions = this.sortSuggestions(this.suggestions.concat(Array.from(newSuggestions)), query);
         this.updateSuggestionsList();
     }
 
@@ -225,7 +225,7 @@ export class SearchComponent {
         if (this.suggestions.length > 0) {
             this.suggestionsContainer.style.display = "block";
             this.suggestionsList.style.display = "block";
-            this.suggestions.forEach((suggestion, index) => {
+            this.suggestions.forEach(suggestion => {
                 const listItem = document.createElement("li");
                 listItem.classList.add("animated");
                 const itemName = document.createElement("span");
@@ -239,7 +239,7 @@ export class SearchComponent {
                 listItem.appendChild(itemName)
                 listItem.appendChild(itemId)
                 this.suggestionsList.appendChild(listItem);
-                listItem.addEventListener("click", () => this.selectSuggestionByIndex(index));
+                listItem.addEventListener("click", () => this.selectSuggestion(suggestion));
                 listItem.addEventListener("mouseover", this.handleMouseHighlight.bind(this));
             });
         }
@@ -254,7 +254,7 @@ export class SearchComponent {
         if (!suggestion || this.selected.some(s => s.id === suggestion.id)) {
             return;
         }
-        this.selected.push(suggestion);
+        this.selected.add(suggestion);
         this.inputElement.value = "";
         this.highlightedIndex = -1;
         this.updateSelected();
@@ -277,7 +277,7 @@ export class SearchComponent {
             if (this.selected.some(s => s.id === suggestion.id)) {
                 return;
             }
-            this.selected.push(suggestion);
+            this.selected.add(suggestion);
             this.inputElement.value = "";
             this.updateSelected();
             this.clearSuggestions();
@@ -286,7 +286,7 @@ export class SearchComponent {
 
     private updateSelected() {
         this.selectedList.innerHTML = "";
-        if (this.selected.length > 0) {
+        if (this.selected.size > 0) {
             this.selectedList.style.display = "flex";
             this.selected.forEach(suggestion => {
                 const listItem = document.createElement("li");
@@ -341,7 +341,7 @@ export class SearchComponent {
         return this.inputElement.value.trim();
     }
 
-    public getSelected(): Suggestion[] {
+    public getSelected(): Set<Suggestion> {
         return this.selected;
     }
 }

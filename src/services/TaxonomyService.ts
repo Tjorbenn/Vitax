@@ -1,5 +1,6 @@
 import { Taxon, TaxonomyTree } from "../types/Taxonomy";
-import { NeverAPI } from "../api/Never/NeverClient"
+import { NeverAPI } from "../api/Never/NeverClient";
+import { TaxaToTree } from "../core/Utility"
 
 export class TaxonomyService {
     private api: NeverAPI = new NeverAPI();
@@ -25,7 +26,11 @@ export class TaxonomyService {
      * @returns A promise that resolves to the taxonomic descendants tree.
      */
     public async getDescendantsTree(query: Taxon): Promise<TaxonomyTree> {
-        return await this.api.getSubtreeByTaxonId(query.id);
+        const subtree = await this.api.getSubtreeByTaxonId(query.id);
+        const taxa = subtree.toSet();
+        const fullTaxa = await this.getFullTaxa(taxa);
+        const descTree = TaxaToTree(fullTaxa);
+        return descTree;
     }
 
     /**
@@ -36,8 +41,8 @@ export class TaxonomyService {
      * @param query The taxon to find neighbors for.
      * @returns A promise that resolves to the taxonomic neighbors tree.
      */
-    public async getNeighborsTree(query: Taxon[]): Promise<TaxonomyTree> {
-        if (query.length < 2) {
+    public async getNeighborsTree(query: Set<Taxon>): Promise<TaxonomyTree> {
+        if (query.size < 2) {
             throw new Error("At least two taxa are required to find neighbors.");
         }
 
@@ -59,8 +64,8 @@ export class TaxonomyService {
      * @param query The taxa to find the MRCA for. At least two taxa are required.
      * @returns A promise that resolves to the MRCA tree.
      */
-    public async getMrcaTree(query: Taxon[]): Promise<TaxonomyTree> {
-        if (query.length < 2) {
+    public async getMrcaTree(query: Set<Taxon>): Promise<TaxonomyTree> {
+        if (query.size < 2) {
             throw new Error("At least two taxa are required to find the MRCA.");
         }
 
@@ -139,8 +144,8 @@ export class TaxonomyService {
         return remoteChildren.some(child => !taxon.hasChild(child));
     }
 
-    private async getFullTaxa(query: Taxon[]): Promise<Set<Taxon>> {
-        if (query.every(taxon => taxon.id !== undefined)) {
+    private async getFullTaxa(query: Set<Taxon>): Promise<Set<Taxon>> {
+        if (query.all(taxon => taxon.id !== undefined)) {
             const taxIds = query.map(taxon => taxon.id);
             return new Set(await this.api.getTaxaByTaxonIds(taxIds));
         }

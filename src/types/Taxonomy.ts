@@ -15,7 +15,7 @@ export class Taxon {
   }
 
   public toString(): string {
-    return `Taxon: ${this.name} (ID: ${this.id})`;
+    return `Taxon: ${this.name} (ID: ${this.id}) [Parent ID: ${this.parentId || "N/A"} | Parent: ${this.parent?.name || "N/A"} | Children Count: ${this.children.size}]`;
   }
 
   public setParent(parent: Taxon): this {
@@ -47,13 +47,13 @@ export class Taxon {
 
   public addChild(child: Taxon): this {
     this.children.add(child);
-    if (!child.parent)
+    if (!child.hasParent(this))
       child.setParent(this);
     return this;
   }
 
   public addChildren(children: Set<Taxon>): this {
-    this.children = this.children.union(children);
+    children.forEach(child => this.addChild(child));
     return this;
   }
 }
@@ -69,6 +69,10 @@ export class TaxonomyTree {
 
   public toString(): string {
     return `TaxonomyTree with root: ${this.root.name} (ID: ${this.root.id}) | Entries: ${this.taxonMap.toString()}`;
+  }
+
+  public toSet(): Set<Taxon> {
+    return this.taxonMap.getAll();
   }
 
   public findTaxonById(id: number): Taxon | undefined {
@@ -110,6 +114,10 @@ export class IndexedTaxa {
   public toString(): string {
     const entries = Array.from(this.idMap.entries());
     return "Entries: " + entries.map(([id, taxon]) => `${id}: ${taxon.name}`).join(", ");
+  }
+
+  public getAll(): Set<Taxon> {
+    return new Set(this.idMap.values());
   }
 
   public getById(id: number): Taxon | undefined {
