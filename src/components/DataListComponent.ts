@@ -1,24 +1,15 @@
 import type { Taxon, TaxonomyTree } from "../types/Taxonomy";
+import { Vitax } from "../main";
 
 export class DataListComponent {
     private listContainer: HTMLDivElement;
-    private tree?: TaxonomyTree;
     private list?: HTMLUListElement;
 
     constructor(listContainer: HTMLDivElement) {
         this.listContainer = listContainer;
         this.hide();
-    }
-
-    public setTree(tree: TaxonomyTree) {
-        this.tree = tree;
-        this.render();
-    }
-
-    public removeTree() {
-        this.tree = undefined;
-        this.hide();
-        this.removeList();
+        Vitax.subscribeToTree(this.render.bind(this));
+        this.render(Vitax.getTree());
     }
 
     public show() {
@@ -32,11 +23,15 @@ export class DataListComponent {
         this.listContainer.closest("#data-window")?.classList.add("hidden");
     }
 
-    private render() {
-        if (!this.tree) {
-            throw new Error("No taxonomy tree set. Please set a taxonomy tree before rendering.");
+    public render(TaxonomyTree: TaxonomyTree | undefined) {
+        if (!TaxonomyTree) {
+            this.removeList();
+            this.hide();
         }
-        this.setList(this.TaxonomyTreeToList(this.tree));
+        else {
+            this.setList(this.TaxonomyTreeToList(TaxonomyTree));
+            this.show();
+        }
     }
 
     private setList(list: HTMLUListElement) {

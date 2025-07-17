@@ -1,7 +1,7 @@
 import { Taxon, TaxonomyTree } from "../types/Taxonomy";
 import type { Suggestion } from "../types/Application";
 
-// Extend the Set prototype to include a filter method
+// Extend the Set prototype to include filter, some and all methods
 declare global {
     interface Set<T> {
         /**

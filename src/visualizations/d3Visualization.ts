@@ -14,32 +14,27 @@ export abstract class D3Visualization {
 
   protected zoom: d3.ZoomBehavior<Element, unknown>
 
-  protected query: Taxon[];
-  protected root: any;
+  protected root?: any;
 
   protected svg: any;
   protected g: any;
 
-  constructor(canvas: HTMLDivElement, query: Taxon[]) {
+  constructor(canvas: HTMLDivElement) {
     this.canvas = canvas;
-    this.query = query;
     this.width = canvas.clientWidth;
     this.height = canvas.clientHeight;
 
-    this.zoom = d3.zoom()
+    this.zoom = d3.zoom();
 
-    this.svg = d3.create("svg")
+    this.svg = d3.create("svg");
 
-    const tree = Vitax.getTree();
-    if (!tree) {
-      throw new Error("No taxonomy tree available. Please ensure the tree is loaded before creating a visualization.");
-    }
-    this.root = d3.hierarchy<Taxon>(tree.root);
+    Vitax.subscribeToTree(this.updateHierarchy.bind(this));
+
+    this.updateHierarchy(Vitax.getTree());
 
     this.g = this.svg.append("g");
     this.setupScalingAndDragging();
   }
-
 
   protected setupScalingAndDragging(): void {
     this.svg.attr("id", "plot")
@@ -57,7 +52,7 @@ export abstract class D3Visualization {
 
   protected centerAndFit(): void {
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-    this.root.descendants().forEach((d: any) => {
+    this.root?.descendants().forEach((d: any) => {
       minX = Math.min(minX, d.y);
       maxX = Math.max(maxX, d.y);
       minY = Math.min(minY, d.x);
@@ -72,6 +67,25 @@ export abstract class D3Visualization {
     const translateY = (this.height / 2) - (minY + treeHeight / 2) * scale;
 
     this.svg.call(this.zoom.transform, d3.zoomIdentity.translate(translateX, translateY).scale(scale));
+  }
+
+  protected updateHierarchy(tree: TaxonomyTree | undefined): void {
+    if (!tree) {
+      this.root = undefined;
+      return;
+    }
+    else {
+      this.root = d3.hierarchy<Taxon>(tree.root);
+    }
+    this.update();
+  }
+
+  protected async upRoot(): Promise<void> {
+    await Vitax.expandTreeUp();
+  }
+
+  protected async getChildren(datum: d3.HierarchyNode<Taxon>): Promise<void> {
+    await Vitax.resolveChildrenOfTreeTaxon(datum.data);
   }
 
   public abstract render(): Promise<SVGSVGElement>

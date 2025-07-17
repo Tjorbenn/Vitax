@@ -62,8 +62,13 @@ export class Application {
 
     public setTree(tree: TaxonomyTree): void {
         this.tree = tree;
-        this.callTreeSubscribers();
+        this.treeHasChanged();
         console.debug("Tree: ", this.tree);
+    }
+
+    public treeHasChanged(): void {
+        this.tree?.update();
+        this.callTreeSubscribers();
     }
 
     public getStatus(): Status {
@@ -211,16 +216,16 @@ export class Application {
         if (this.query) {
             switch (this.taxonomyType) {
                 case "taxon":
-                    this.tree = await this.taxonomyService.getTaxonTree(this.query[0]);
+                    this.setTree(await this.taxonomyService.getTaxonTree(this.query[0]));
                     break;
                 case "descendants":
-                    this.tree = await this.taxonomyService.getDescendantsTree(this.query[0]);
+                    this.setTree(await this.taxonomyService.getDescendantsTree(this.query[0]));
                     break;
                 case "neighbors":
-                    this.tree = await this.taxonomyService.getNeighborsTree(this.query);
+                    this.setTree(await this.taxonomyService.getNeighborsTree(this.query));
                     break;
                 case "mrca":
-                    this.tree = await this.taxonomyService.getMrcaTree(this.query);
+                    this.setTree(await this.taxonomyService.getMrcaTree(this.query));
                     break;
                 default:
                     throw new Error("Taxonomy type is not set or invalid. Please select a valid taxonomy type.");
@@ -239,22 +244,22 @@ export class Application {
         }
         switch (this.displayType) {
             case "tree":
-                renderer = new D3Tree(container, this.query ?? []);
+                renderer = new D3Tree(container);
                 break;
             case "graph":
-                // renderer = new D3Graph(container, this.query ?? []);
+                // renderer = new D3Graph(container);
                 break;
             case "cluster":
-                // renderer = new D3Cluster(container, this.query ?? []);
+                // renderer = new D3Cluster(container);
                 break;
             case "pack":
-                // renderer = new D3Pack(container, this.query ?? []);
+                // renderer = new D3Pack(container);
                 break;
             case "partition":
-                // renderer = new D3Partition(container, this.query ?? []);
+                // renderer = new D3Partition(container);
                 break;
             case "treemap":
-                // renderer = new D3Treemap(container, this.query ?? []);
+                // renderer = new D3Treemap(container);
                 break;
             default:
                 throw new Error("Display type is not set or invalid. Please select a valid display type.");
@@ -263,16 +268,28 @@ export class Application {
         this.visualizationComponent.show();
         const svg = await renderer!.render();
         this.visualizationComponent.setSVG(svg);
-
-        if (!this.dataListComponent) {
-            throw new Error("DataListComponent is not set. Please initialize it before rendering.");
-        }
-        this.dataListComponent.setTree(this.tree);
-        this.dataListComponent.show();
     }
 
     public async expandTreeUp(): Promise<void> {
+        if (!this.tree) {
+            throw new Error("Tree is not set while trying to expand it. Please ensure the tree is loaded before expanding.");
+        }
+        else {
+            const newTree = await this.taxonomyService.expandTreeUp(this.tree);
+            this.setTree(newTree);
+        }
     }
 
-    public async addNewChild(): Promise<void>
+    public async resolveChildrenOfTreeTaxon(taxon: Taxon): Promise<void> {
+        if (!this.tree) {
+            throw new Error("Tree is not set while trying to resolve children. Please ensure the tree is loaded before resolving.");
+        }
+        let treeTaxon = this.tree.findTaxonById(taxon.id);
+        if (!treeTaxon) {
+            throw new Error(`Taxon with ID ${taxon.id} not found in the tree.`);
+        }
+        treeTaxon = await this.taxonomyService.resolveMissingChildren(treeTaxon);
+        this.treeHasChanged();
+        return;
+    }
 }

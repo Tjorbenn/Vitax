@@ -14,6 +14,10 @@ export class Taxon {
     this.children = new Set();
   }
 
+  public toString(): string {
+    return `Taxon: ${this.name} (ID: ${this.id})`;
+  }
+
   public setParent(parent: Taxon): this {
     this.parent = parent;
     this.parentId = parent.id;
@@ -63,12 +67,20 @@ export class TaxonomyTree {
     this.taxonMap = this.buildTaxonMap(root);
   }
 
+  public toString(): string {
+    return `TaxonomyTree with root: ${this.root.name} (ID: ${this.root.id}) | Entries: ${this.taxonMap.toString()}`;
+  }
+
   public findTaxonById(id: number): Taxon | undefined {
     return this.taxonMap.getById(id);
   }
 
   public findTaxonByName(name: string): Taxon | undefined {
     return this.taxonMap.getByName(name);
+  }
+
+  public update(): void {
+    this.taxonMap = this.buildTaxonMap(this.root);
   }
 
   private buildTaxonMap(root: Taxon): IndexedTaxa {
@@ -93,6 +105,11 @@ export class IndexedTaxa {
       this.idMap.set(taxon.id, taxon);
       this.nameMap.set(taxon.name, taxon);
     });
+  }
+
+  public toString(): string {
+    const entries = Array.from(this.idMap.entries());
+    return "Entries: " + entries.map(([id, taxon]) => `${id}: ${taxon.name}`).join(", ");
   }
 
   public getById(id: number): Taxon | undefined {

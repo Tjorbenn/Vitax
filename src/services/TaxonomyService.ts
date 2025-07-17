@@ -90,10 +90,11 @@ export class TaxonomyService {
         if (parent.id === oldRoot.id) {
             return tree;
         }
-
-        const newTree = new TaxonomyTree(parent);
-        newTree.root.addChild(oldRoot);
-        return newTree;
+        else {
+            parent.addChild(oldRoot);
+            const newTree = new TaxonomyTree(parent);
+            return newTree;
+        }
     }
 
     /**
@@ -122,43 +123,21 @@ export class TaxonomyService {
     }
 
     /**
-     * Get the children of a taxon.
+     * Get the children of a taxon that are not already set and add them to the taxon.
      * @param taxon The taxon to resolve children for.
-     * @returns A promise that resolves to the taxon with its children set.
+     * @returns A promise that resolves to the taxon with its missing children set.
      */
-    public async resolveChildren(taxon: Taxon): Promise<Taxon> {
-        const children = await this.getChildren(taxon);
-        taxon.addChildren(children);
+    public async resolveMissingChildren(taxon: Taxon): Promise<Taxon> {
+        const remoteChildren = await this.getChildren(taxon);
+        const missingChildren = remoteChildren.filter(child => !taxon.hasChild(child));
+        taxon.addChildren(missingChildren);
         return taxon;
     }
 
-    /**
-     * Get the lineage of a taxon up to a specified ancestor.
-     * @param target The taxon to find the lineage for.
-     * @param ancestor The ancestor taxon to stop at.
-     * @returns A promise that resolves to the taxonomic lineage as a tree with the ancestor as the root.
-     */
-    /**
-    private async getLineage(target: Taxon, ancestor: Taxon): Promise<TaxonomyTree> {
-        if (target.id === ancestor.id) {
-            return TaxaToTree([target]);
-        }
-
-        const lineage: Taxon[] = [];
-        let currentTaxon: Taxon | undefined = target;
-
-        while (currentTaxon && currentTaxon.id !== ancestor.id) {
-            lineage.push(currentTaxon);
-            if (currentTaxon.parentId === undefined) {
-                throw new Error(`No parent found for taxon ${currentTaxon.name}`);
-            }
-            currentTaxon = await this.api.getTaxonById(currentTaxon.parentId);
-        }
-
-        lineage.push(ancestor);
-        return TaxaToTree(lineage.reverse());
+    public async hasMissingChildren(taxon: Taxon): Promise<boolean> {
+        const remoteChildren = await this.getChildren(taxon);
+        return remoteChildren.some(child => !taxon.hasChild(child));
     }
-    */
 
     private async getFullTaxa(query: Taxon[]): Promise<Set<Taxon>> {
         if (query.every(taxon => taxon.id !== undefined)) {

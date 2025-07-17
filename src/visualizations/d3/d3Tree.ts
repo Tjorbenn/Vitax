@@ -1,8 +1,9 @@
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 
-import { type Taxon, type TaxonomyTree } from '../../types/Taxonomy';
+import { Taxon } from '../../types/Taxonomy';
 import { D3Visualization } from '../d3Visualization';
-import * as d3 from "d3"
+import { Vitax } from '../../main';
+import * as d3 from "d3";
 
 export class D3Tree extends D3Visualization {
   private layout: d3.TreeLayout<Taxon>;
@@ -11,8 +12,8 @@ export class D3Tree extends D3Visualization {
   private gNode: any;
   private gLink: any;
 
-  constructor(canvas: HTMLDivElement, query: Taxon[]) {
-    super(canvas, query);
+  constructor(canvas: HTMLDivElement) {
+    super(canvas);
 
     this.layout = d3.tree<Taxon>();
     this.diagonal = d3.linkHorizontal<d3.HierarchyPointLink<Taxon>, d3.HierarchyPointNode<Taxon>>()
@@ -27,7 +28,13 @@ export class D3Tree extends D3Visualization {
 
     this.gNode = this.g.append("g")
       .attr("cursor", "pointer")
-      .attr("pointer-events", "full")
+      .attr("pointer-events", "full");
+
+    const nodeWidth = 180;
+    const nodeHeight = 25;
+
+    this.layout.nodeSize([nodeHeight, nodeWidth])
+      .separation((a, b) => a.parent == b.parent ? 1 : 1.25);
   }
 
   public async render(): Promise<SVGSVGElement> {
@@ -35,18 +42,10 @@ export class D3Tree extends D3Visualization {
     this.height = this.canvas.clientHeight;
     this.svg.attr("viewBox", [0, 0, this.width, this.height]);
 
-    const nodeWidth = 180;
-    const nodeHeight = 25;
-
-    this.layout.nodeSize([nodeHeight, nodeWidth])
-      .separation((a, b) => a.parent == b.parent ? 1 : 1.25);
-
     this.root.x0 = this.height / 2;
     this.root.y0 = 0;
-    this.root.descendants().forEach((d, i) => {
-      d.id = i;
-      d._children = d.children;
-    });
+
+    this.root.descendants().forEach(d => { d.isCollapsed = false; });
 
     await this.update(undefined, this.root);
     this.centerAndFit();
@@ -55,6 +54,13 @@ export class D3Tree extends D3Visualization {
   }
 
   public async update(event?: MouseEvent, source?: any, duration: number = 250): Promise<void> {
+    if (!this.root || !this.layout) {
+      return;
+    }
+    this.root.descendants().forEach((d, i) => {
+      d.id = i;
+    });
+
     if (!source || source.x0 === undefined) {
       source = this.root;
       source.x0 = this.height / 2;
@@ -76,8 +82,8 @@ export class D3Tree extends D3Visualization {
       }
     });
 
-    const nodes = this.root.descendants().reverse();
-    const links = this.root.links();
+    const nodes = this.root.descendants().filter(d => !d.isCollapsed).reverse();
+    const links = this.root.links().filter(d => !d.target.isCollapsed);
 
     const transition = this.svg.transition()
       .duration(currentDuration)
@@ -92,15 +98,16 @@ export class D3Tree extends D3Visualization {
       .attr("stroke-opacity", 0)
       .on("click", this.handleOnClick.bind(this));
 
+    const query = Vitax.getQuery();
     nodeEnter.append("circle")
       .attr("r", 3.5)
-      .attr("fill", d => this.query.some(q => q.id === d.data.id) ? "#006c66" : d.children ? "#555" : "#999")
+      .attr("fill", d => query?.some(q => q.id === d.data.id) ? "#006c66" : d.children ? "#555" : "#999")
       .attr("stroke.width", 10);
 
     nodeEnter.append("text")
       .attr("dy", "0.31em")
-      .attr("x", d => d._children ? -8 : 8)
-      .attr("text-anchor", d => d._children ? "end" : "start")
+      .attr("x", d => !d.isCollapsed ? -8 : 8)
+      .attr("text-anchor", d => !d.isCollapsed ? "end" : "start")
       .text(d => d.data.name)
       .attr("stroke-linejoin", "round")
       .attr("stroke-width", 2.5)
@@ -143,36 +150,36 @@ export class D3Tree extends D3Visualization {
   }
 
   protected async handleOnClick(event: MouseEvent, datum: any): Promise<void> {
-    let parentFetched = false;
-    let childrenFetched = false;
+    let fetchedParent = false;
+    let fetchedChildren = false;
 
-    if (datum._children && datum.children === null) {
-      datum.children = datum._children;
-      datum._children = null;
-
-      await this.update(event, datum);
-      return;
+    // If the clicked node is collapsed, expand it
+    if (datum.isCollapsed) {
+      datum.isCollapsed = false;
+      return this.update(event, datum);
     }
 
-    if (!datum.parent) {
-      Vitax.setTree((datum);
-      parentFetched = true;
+    // If the clicked node has no parent, it is the root node, so we expand the tree upwards
+    if (!datum.data.parent) {
+      await this.upRoot();
+      fetchedParent = true;
     }
 
-    const remoteChildren = await this.taxonomyService.getChildren(datum.data);
-    const localChildren = datum.children ?? [];
-    if (remoteChildren.length > localChildren.length) {
+    // If the clicked node does not have all existing children, fetch them
+    if (await this.taxonomyService.hasMissingChildren(datum.data)) {
       await this.getChildren(datum);
-      childrenFetched = true;
+      fetchedChildren = true;
     }
 
-    if (!parentFetched && !childrenFetched) {
+    // If no data was fetched, collapse the node
+    if (!fetchedParent && !fetchedChildren) {
       if (datum.children) {
-        datum._children = datum.children;
-        datum.children = null;
+        datum.children.forEach(child => {
+          child.descendants().forEach(d => d.isCollapsed = true);
+        });
       }
     }
 
-    await this.update(event, datum);
+    return this.update(event, datum);
   }
 }
