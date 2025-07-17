@@ -1,4 +1,4 @@
-import type { Visualization } from "../types/Application";
+import { VisualizationType } from "../types/Application";
 import { Vitax } from "../main";
 
 export class DisplayTypeComponent {
@@ -10,17 +10,17 @@ export class DisplayTypeComponent {
         Vitax.setDisplayType(this.getDisplayType());
     }
 
-    public getDisplayType(): Visualization {
+    public getDisplayType(): VisualizationType {
         const radios = this.fieldset.querySelectorAll('input[type="radio"]');
         for (const radio of radios) {
             if ((radio as HTMLInputElement).checked) {
-                return (radio as HTMLInputElement).value as Visualization;
+                return (radio as HTMLInputElement).value as VisualizationType;
             }
         }
         throw new Error("No display type selected.");
     }
 
-    public setDisplayType(value: Visualization): void {
+    public setDisplayType(value: VisualizationType): void {
         const radios = this.fieldset.querySelectorAll('input[type="radio"]');
         for (const radio of radios) {
             if ((radio as HTMLInputElement).value === value) {

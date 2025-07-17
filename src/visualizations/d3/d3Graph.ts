@@ -1,9 +1,9 @@
-import type { Taxon, TaxonomyTree } from "../../types/Taxonomy";
+import { Taxon, TaxonomyTree } from "../../types/Taxonomy";
 import { D3Visualization } from "../d3Visualization";
 
 export class D3Graph extends D3Visualization {
-    constructor(canvas: HTMLDivElement, tree: TaxonomyTree, query: Taxon[]) {
-        super(canvas, tree, query);
+    constructor(canvas: HTMLDivElement, query: Taxon[]) {
+        super(canvas, query);
     }
 
     public render(): Promise<SVGSVGElement> {

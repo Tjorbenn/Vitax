@@ -4,29 +4,52 @@ export class Taxon {
   public rank?: string;
   public parentId?: number;
   public parent?: Taxon;
-  public children: Taxon[];
+  public children: Set<Taxon>;
   public genomeCount?: GenomeCount;
   public genomeCountRecursive?: GenomeCount;
 
   constructor(id: number, name: string) {
     this.id = id;
     this.name = name;
-    this.children = [];
+    this.children = new Set();
   }
 
-  public addParent(parent: Taxon): this {
+  public setParent(parent: Taxon): this {
     this.parent = parent;
     this.parentId = parent.id;
-    parent.addChild(this);
+    if (!this.parent.children.has(this)) {
+      this.parent.children.add(this);
+    }
     return this;
   }
 
-  public addChild(child: Taxon): this {
-    if (!this.children) {
-      this.children = [];
+  public hasParent(parent: Taxon): boolean {
+    if (!this.parent) {
+      return false;
     }
-    this.children.push(child);
-    child.addParent(this);
+    else {
+      return this.parent.id === parent.id;
+    }
+  }
+
+  public hasChild(child: Taxon): boolean {
+    if (!this.children || this.children.size === 0) {
+      return false;
+    }
+    else {
+      return this.children.some(c => c.id === child.id);
+    }
+  }
+
+  public addChild(child: Taxon): this {
+    this.children.add(child);
+    if (!child.parent)
+      child.setParent(this);
+    return this;
+  }
+
+  public addChildren(children: Set<Taxon>): this {
+    this.children = this.children.union(children);
     return this;
   }
 }
@@ -49,9 +72,9 @@ export class TaxonomyTree {
   }
 
   private buildTaxonMap(root: Taxon): IndexedTaxa {
-    const taxa: Taxon[] = [];
+    const taxa = new Set<Taxon>();
     const traverse = (taxon: Taxon) => {
-      taxa.push(taxon);
+      taxa.add(taxon);
       taxon.children.forEach(child => traverse(child));
     }
     traverse(root);
@@ -63,7 +86,7 @@ export class IndexedTaxa {
   private idMap: Map<number, Taxon>;
   private nameMap: Map<string, Taxon>;
 
-  constructor(taxa: Taxon[]) {
+  constructor(taxa: Set<Taxon>) {
     this.idMap = new Map();
     this.nameMap = new Map();
     taxa.forEach(taxon => {

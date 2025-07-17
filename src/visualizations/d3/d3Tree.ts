@@ -155,7 +155,7 @@ export class D3Tree extends D3Visualization {
     }
 
     if (!datum.parent) {
-      await this.getParent(datum);
+      Vitax.setTree((datum);
       parentFetched = true;
     }
 

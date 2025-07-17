@@ -10,16 +10,18 @@ export enum Status {
   Error
 }
 
-export type TaxonomyType =
-  | "taxon"
-  | "descendants"
-  | "neighbors"
-  | "mrca";
+export enum TaxonomyType {
+  Taxon = "taxon",
+  Descendants = "descendants",
+  Neighbors = "neighbors",
+  MRCA = "mrca"
+}
 
-export type Visualization =
-  | "cluster"
-  | "tree"
-  | "graph"
-  | "pack"
-  | "partition"
-  | "treemap";
+export enum VisualizationType {
+  Cluster = "cluster",
+  Tree = "tree",
+  Graph = "graph",
+  Pack = "pack",
+  Partition = "partition",
+  Treemap = "treemap"
+}

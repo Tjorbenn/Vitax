@@ -1,6 +1,5 @@
 import { Taxon, TaxonomyTree } from "../types/Taxonomy";
 import { NeverAPI } from "../api/Never/NeverClient"
-import { TaxaToTree } from "../core/Utility";
 
 export class TaxonomyService {
     private api: NeverAPI = new NeverAPI();
@@ -50,7 +49,7 @@ export class TaxonomyService {
 
         // Remove the MRCA from the children of the parent subtrees root and add the sparse MRCA tree as a child
         parentSubtree.root.children = parentSubtree.root.children.filter(child => child.id !== mrca.id);
-        parentSubtree.root.children.push(sparseMrcaTree.root);
+        parentSubtree.root.children.add(sparseMrcaTree.root);
 
         return parentSubtree;
     }
@@ -67,13 +66,13 @@ export class TaxonomyService {
 
         const mrca = await this.api.getMrcaByTaxonIds(query.map(taxon => taxon.id));
         const mrcaTree = new TaxonomyTree(mrca);
-        mrcaTree.root.children = [];
+        mrcaTree.root.children = new Set();
 
         for (const taxon of query) {
             if (taxon.id !== mrca.id) {
                 const lineage = await this.api.getLineageFromTaxonIds(mrca.id, taxon.id);
                 if (lineage.root.children) {
-                    mrcaTree.root.children.push(...lineage.root.children);
+                    lineage.root.children.forEach(child => mrcaTree.root.children.add(child));
                 }
                 else {
                     throw new Error(`No children found for taxon ${taxon.name} in lineage from MRCA ${mrca.name}`);
@@ -85,19 +84,16 @@ export class TaxonomyService {
     }
 
     public async expandTreeUp(tree: TaxonomyTree): Promise<TaxonomyTree> {
-        const root = tree.root;
-        if (!root) {
-            throw new Error("Tree root is undefined");
-        }
-        const parent = await this.getParent(root);
-        if (!parent) {
-            console.warn("No parent found for the root taxon, returning the original tree.");
+        const oldRoot = tree.root;
+        const parent = await this.getParent(oldRoot);
+
+        if (parent.id === oldRoot.id) {
             return tree;
         }
-        else {
-            parent.children = [root];
-            return new TaxonomyTree(parent);
-        }
+
+        const newTree = new TaxonomyTree(parent);
+        newTree.root.addChild(oldRoot);
+        return newTree;
     }
 
     /**
@@ -113,10 +109,16 @@ export class TaxonomyService {
         return parent;
     }
 
-    public async getChildren(taxon: Taxon): Promise<Taxon[]> {
+    public async getChildren(taxon: Taxon): Promise<Set<Taxon>> {
         const children = await this.api.getChildrenByTaxonId(taxon.id);
         const fullChildren = await this.getFullTaxa(children);
-        return fullChildren;
+        return new Set(fullChildren);
+    }
+
+    public async resolveParent(taxon: Taxon): Promise<Taxon> {
+        const parent = await this.getParent(taxon);
+        taxon.setParent(parent);
+        return taxon;
     }
 
     /**
@@ -126,7 +128,7 @@ export class TaxonomyService {
      */
     public async resolveChildren(taxon: Taxon): Promise<Taxon> {
         const children = await this.getChildren(taxon);
-        taxon.children = children;
+        taxon.addChildren(children);
         return taxon;
     }
 
@@ -158,10 +160,10 @@ export class TaxonomyService {
     }
     */
 
-    private async getFullTaxa(query: Taxon[]): Promise<Taxon[]> {
+    private async getFullTaxa(query: Taxon[]): Promise<Set<Taxon>> {
         if (query.every(taxon => taxon.id !== undefined)) {
             const taxIds = query.map(taxon => taxon.id);
-            return this.api.getTaxaByTaxonIds(taxIds);
+            return new Set(await this.api.getTaxaByTaxonIds(taxIds));
         }
         else {
             throw new Error("All taxa in the query must have an id.");

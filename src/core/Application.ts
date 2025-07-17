@@ -1,4 +1,4 @@
-import type { TaxonomyType, Visualization } from "../types/Application";
+import { TaxonomyType, VisualizationType } from "../types/Application";
 import { Status } from "../types/Application";
 import type { Taxon, TaxonomyTree } from "../types/Taxonomy";
 
@@ -24,7 +24,7 @@ export class Application {
     private query?: Taxon[];
     private tree?: TaxonomyTree;
     private status: Status = Status.Idle;
-    private displayType?: Visualization;
+    private displayType?: VisualizationType;
     private taxonomyType?: TaxonomyType;
 
     private searchComponent?: SearchComponent;
@@ -40,7 +40,7 @@ export class Application {
     private querySubscribers: Set<(query: Taxon[] | undefined) => void> = new Set();
     private treeSubscribers: Set<(tree: TaxonomyTree | undefined) => void> = new Set();
     private statusSubscribers: Set<(status: Status) => void> = new Set();
-    private displayTypeSubscribers: Set<(displayType: Visualization | undefined) => void> = new Set();
+    private displayTypeSubscribers: Set<(displayType: VisualizationType | undefined) => void> = new Set();
     private taxonomyTypeSubscribers: Set<(taxonomyType: TaxonomyType | undefined) => void> = new Set();
 
     constructor() {
@@ -76,11 +76,11 @@ export class Application {
         console.debug("Status: ", this.status);
     }
 
-    public getDisplayType(): Visualization | undefined {
+    public getDisplayType(): VisualizationType | undefined {
         return this.displayType;
     }
 
-    public setDisplayType(value: Visualization) {
+    public setDisplayType(value: VisualizationType) {
         this.displayType = value;
         this.callDisplayTypeSubscribers();
         console.debug("DisplayType: ", this.displayType);
@@ -182,7 +182,7 @@ export class Application {
         this.statusSubscribers.forEach(callback => callback(this.status));
     }
 
-    public subscribeToDisplayType(callback: (displayType: Visualization | undefined) => void): void {
+    public subscribeToDisplayType(callback: (displayType: VisualizationType | undefined) => void): void {
         this.displayTypeSubscribers.add(callback);
         callback(this.displayType);
     }
@@ -270,4 +270,9 @@ export class Application {
         this.dataListComponent.setTree(this.tree);
         this.dataListComponent.show();
     }
+
+    public async expandTreeUp(): Promise<void> {
+    }
+
+    public async addNewChild(): Promise<void>
 }

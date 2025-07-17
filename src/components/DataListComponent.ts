@@ -66,7 +66,7 @@ export class DataListComponent {
         nameSpan.textContent = taxon.name;
         idSpan.textContent = `[${taxon.id}]`;
 
-        if (taxon.children && taxon.children.length > 0) {
+        if (taxon.children && taxon.children.size > 0) {
             const button = document.createElement("button") as HTMLButtonElement;
             button.classList.add("taxonomy-list-toggle", "animated");
 
