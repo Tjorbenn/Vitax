@@ -1,5 +1,5 @@
 import { VisualizationType } from "../types/Application";
-import { Vitax } from "../main";
+import { Vitax } from "../init";
 
 export class DisplayTypeComponent {
     private fieldset: HTMLFieldSetElement;

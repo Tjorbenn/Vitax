@@ -2,7 +2,7 @@
 
 import { Taxon, TaxonomyTree } from "../types/Taxonomy";
 import { TaxonomyService } from "../services/TaxonomyService";
-import { Vitax } from "../main";
+import { Vitax } from "../init";
 import * as d3 from "d3";
 
 export abstract class D3Visualization {

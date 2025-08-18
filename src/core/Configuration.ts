@@ -1,1 +1,0 @@
-// Default configurations / settings for Vitax

@@ -1,7 +1,7 @@
 import { GenomeLevel, Taxon, type TaxonomyTree } from "../../types/Taxonomy";
 import type { Suggestion } from "../../types/Application"
 import * as Never from "./Never";
-import { TaxaToTree } from "../../core/Utility";
+import { TaxaToTree } from "../../types/Taxonomy";
 
 export class NeverAPI {
     /**

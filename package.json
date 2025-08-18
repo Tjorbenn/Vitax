@@ -10,7 +10,8 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.29.0",
-    "@iconify/json": "^2.2.349",
+    "@iconify/json": "^2.2.375",
+    "@iconify/tailwind4": "^1.0.6",
     "@tailwindcss/vite": "^4.0.0",
     "@types/d3": "^7.4.3",
     "autoprefixer": "^10.4.21",
@@ -29,8 +30,8 @@
     "@fontsource-variable/merriweather": "^5.2.4",
     "@fontsource-variable/roboto": "^5.2.6",
     "@lottiefiles/dotlottie-web": "^0.47.0",
+    "basecoat-css": "^0.3.1",
     "d3": "^7.9.0",
-    "plain-draggable": "^2.5.15",
-    "typescript-toastify": "^1.0.4"
+    "plain-draggable": "^2.5.15"
   }
 }

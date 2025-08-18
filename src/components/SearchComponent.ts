@@ -1,8 +1,8 @@
-import { Vitax } from "../main";
+import { Vitax } from "../init";
 import type { TaxonomyType, Suggestion } from "../types/Application";
 import { Status } from "../types/Application";
 import { SuggestionsService } from "../services/SuggestionsService";
-import { SuggestionsToTaxa } from "../core/Utility";
+import { SuggestionsToTaxa } from "../types/Application";
 
 export class SearchComponent {
     private suggestionsService: SuggestionsService = new SuggestionsService();

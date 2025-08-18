@@ -1,5 +1,5 @@
 import type { Taxon, TaxonomyTree } from "../types/Taxonomy";
-import { Vitax } from "../main";
+import { Vitax } from "../init";
 
 export class DataListComponent {
     private listContainer: HTMLDivElement;

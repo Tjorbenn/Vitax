@@ -1,6 +1,6 @@
 import { Taxon, TaxonomyTree } from "../types/Taxonomy";
 import { NeverAPI } from "../api/Never/NeverClient";
-import { TaxaToTree } from "../core/Utility"
+import { TaxaToTree } from "../types/Taxonomy"
 
 export class TaxonomyService {
     private api: NeverAPI = new NeverAPI();
