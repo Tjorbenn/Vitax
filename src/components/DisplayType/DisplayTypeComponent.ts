@@ -5,43 +5,46 @@ import HTMLtemplate from "./DisplayTypeTemplate.html?raw";
 
 export class DisplayTypeComponent extends BaseComponent {
     private state: State = State.getInstance();
-    private nav?: HTMLElement;
+    private tabs?: HTMLDivElement;
 
     constructor() {
         super(HTMLtemplate);
-        this.initialize();
+        this.loadTemplate();
     }
 
-    onInitialized(): void {
-        this.nav = this.querySelector("nav") as HTMLElement;
-        if (!this.nav) {
-            throw new Error("Navigation element not found");
+    initialize(): void {
+        this.tabs = this.querySelector(".tabs") as HTMLDivElement;
+
+        if (!this.tabs) {
+            throw new Error("Tabs container not found");
         }
+
+        this.tabs.addEventListener("change", this.onChange.bind(this));
 
         const currentDisplayType = this.state.getDisplayType();
         Object.values(VisualizationType).forEach((type) => {
-            const button = document.createElement("button");
-            button.textContent = type;
-            button.type = "button";
-            button.role = "tab";
-            button.id = `display-type-${type.toLowerCase()}`;
-            button.setAttribute("aria-controls", `display-type-${type.toLowerCase()}-panel`);
-            button.dataset.type = type;
-            button.tabIndex = 0;
-            button.addEventListener("click", this.onDisplayTypeSelected.bind(this));
+            const radio = document.createElement("input");
+            radio.type = "radio";
+            radio.name = "display-type";
+            radio.value = type;
+            radio.ariaLabel = type;
+            radio.classList.add("tab", "animated", "capitalize");
+
             if (type === currentDisplayType) {
-                button.ariaSelected = "true";
+                radio.checked = true;
             }
 
-            this.nav!.appendChild(button);
+            this.tabs!.appendChild(radio);
         });
     }
 
-    private onDisplayTypeSelected(event: MouseEvent): void {
-        const button = event.currentTarget as HTMLButtonElement;
-        const type = button.dataset.type as VisualizationType;
-        if (this.state.getDisplayType() !== type) {
-            this.state.setDisplayType(type);
+    private onChange(event: Event) {
+        const target = event.target as HTMLInputElement;
+        if (target.name === "display-type") {
+            const type = target.value as VisualizationType;
+            if (this.state.getDisplayType() !== type) {
+                this.state.setDisplayType(type);
+            }
         }
     }
 }

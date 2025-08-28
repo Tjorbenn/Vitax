@@ -1,24 +1,27 @@
 export abstract class BaseComponent extends HTMLElement {
     protected template: HTMLTemplateElement = document.createElement("template");
 
-    constructor(templateHTML: string) {
+    constructor(templateHTML?: string) {
         super();
-        this.template.innerHTML = templateHTML;
+        if (templateHTML) {
+            this.template.innerHTML = templateHTML;
+        }
     }
 
-    protected async initialize() {
+    protected async loadTemplate() {
         this.appendChild(this.template.content.cloneNode(true));
-        this.onInitialized();
+        this.initialize();
     }
 
-    onInitialized() {
+    initialize(): void {
+        // Initialization logic after template is loaded
     }
 
-    connectedCallback() {
+    connectedCallback(): void {
         // Setup
     }
 
-    disconnectedCallback() {
+    disconnectedCallback(): void {
         // Cleanup
     }
 }

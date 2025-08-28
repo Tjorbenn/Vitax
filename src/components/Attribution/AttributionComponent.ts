@@ -5,7 +5,7 @@ export class AttributionComponent extends BaseComponent {
 
     constructor() {
         super(HTMLtemplate);
-        this.initialize();
+        this.loadTemplate();
     }
 }
 

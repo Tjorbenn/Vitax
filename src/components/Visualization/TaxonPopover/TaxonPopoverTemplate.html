@@ -1,0 +1,37 @@
+<div class="card-body flex flex-col items-center gap-2">
+  <hgroup class="card-title flex flex-row gap-2 justify-between items-center">
+    <h3
+      id="taxon-name"
+      class="m-0 text-primary"
+    ></h3>
+    <span
+      id="taxon-id"
+      class="badge badge-primary badge-xs"
+    ></span>
+  </hgroup>
+  <div class="card card-border bg-base-100 mx-4">
+    <div class="card-body">
+      <h4 class="card-title">Genomes</h4>
+      <div class="flex flex-row">
+        <div
+          id="genome-count"
+          class="stats stats-vertical text-center"
+        ></div>
+        <div
+          id="genome-count-recursive"
+          class="stats stats-vertical text-center"
+        ></div>
+      </div>
+    </div>
+  </div>
+  <div class="card-actions justify-end">
+    <button class="btn btn-primary btn-xs">
+      <span class="icon-[material-symbols--arrow-upward-rounded]"></span>
+      Parent
+    </button>
+    <button class="btn btn-primary btn-xs">
+      <span class="icon-[material-symbols--arrow-downward-rounded]"></span>
+      Children
+    </button>
+  </div>
+</div>

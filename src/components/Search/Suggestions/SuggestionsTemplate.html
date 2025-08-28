@@ -1,3 +1,25 @@
-<div class="max-h-64 overflow-auto">
-  <ul></ul>
-</div>
+<table
+  id="suggestions-table"
+  class="table card-body animated"
+>
+  <tbody
+    id="suggestions-body"
+    class="animated"
+  ></tbody>
+  <tfoot
+    id="suggestions-loader"
+    class="animated hidden opacity-0"
+  >
+    <tr
+      id="suggestions-loader-row"
+      class="border-t border-base-300"
+    >
+      <td>
+        <div class="skeleton inline-block h-4 w-80"></div>
+      </td>
+      <td class="text-right">
+        <div class="skeleton inline-block h-4 w-20"></div>
+      </td>
+    </tr>
+  </tfoot>
+</table>

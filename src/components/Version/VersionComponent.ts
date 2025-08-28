@@ -5,10 +5,7 @@ export class VersionComponent extends BaseComponent {
 
     constructor() {
         super(HTMLtemplate);
-        this.initialize();
-    }
-
-    onInitialized(): void {
+        this.loadTemplate();
     }
 }
 

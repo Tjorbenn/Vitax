@@ -5,7 +5,7 @@ export class TitleComponent extends BaseComponent {
 
     constructor() {
         super(HTMLtemplate);
-        this.initialize();
+        this.loadTemplate();
     }
 }
 

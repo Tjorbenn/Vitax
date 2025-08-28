@@ -1,4 +1,5 @@
 import type { GenomeLevel } from "../../types/Taxonomy";
+import { Rank } from "../../types/Taxonomy";
 
 export enum Endpoint {
   Accessions = "accessions",
@@ -19,17 +20,20 @@ export enum Endpoint {
 
 export type Response = Entry[]
 
-export type Entry = {
-  accession?: string;
+export interface Entry {
   name?: string;
-  parent?: number;
-  rank?: string;
+  common_name?: string;
   taxid?: number;
+  is_leaf?: boolean;
+  parent?: number;
+  rank?: Rank;
+  accession?: string;
+  level?: GenomeLevel;
   raw_genome_counts?: NeverGenomeCount[];
   rec_genome_counts?: NeverGenomeCount[];
 };
 
-export type NeverGenomeCount = {
+export interface NeverGenomeCount {
   level: GenomeLevel;
   count: number;
 }
@@ -94,7 +98,7 @@ export class Request {
       return [json];
     }
 
-    if (!json || json.length < 1) {
+    if (!json) {
       throw new Error(`Empty response to ${requestUrl} from Never-API`);
     }
 

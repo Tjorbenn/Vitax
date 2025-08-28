@@ -1,3 +1,20 @@
+export interface Accession {
+  accession: string;
+  level: GenomeLevel;
+}
+
+export enum Rank {
+  None = "no rank",
+  Domain = "domain",
+  Kingdom = "kingdom",
+  Phylum = "phylum",
+  Class = "class",
+  Order = "order",
+  Family = "family",
+  Genus = "genus",
+  Species = "species"
+}
+
 export interface GenomeCount {
   [GenomeLevel.Complete]?: number;
   [GenomeLevel.Chromosome]?: number;
@@ -15,7 +32,10 @@ export enum GenomeLevel {
 export class Taxon {
   public id: number;
   public name: string;
-  public rank?: string;
+  public commonName?: string;
+  public isLeaf?: boolean;
+  public accessions?: Accession[];
+  public rank?: Rank;
   public parentId?: number;
   public parent?: Taxon;
   public children: Set<Taxon>;
@@ -26,10 +46,6 @@ export class Taxon {
     this.id = id;
     this.name = name;
     this.children = new Set();
-  }
-
-  public toString(): string {
-    return `Taxon: ${this.name} (ID: ${this.id}) [Parent ID: ${this.parentId || "N/A"} | Parent: ${this.parent?.name || "N/A"} | Children Count: ${this.children.size}]`;
   }
 
   public setParent(parent: Taxon): this {
@@ -57,6 +73,12 @@ export class Taxon {
     else {
       return this.children.some(c => c.id === child.id);
     }
+  }
+
+  public setChildren(children: Set<Taxon>): this {
+    this.children = children;
+    children.forEach(child => child.setParent(this));
+    return this;
   }
 
   public addChild(child: Taxon): this {

@@ -2,15 +2,15 @@
 @import "@fontsource-variable/roboto";
 
 @import "tailwindcss";
-@import "basecoat-css";
-@import "./theme.css";
+@plugin "daisyui";
+@import "./daisy.css";
 
 @plugin "@iconify/tailwind4";
 
 @layer base {
   html {
-    width: 100vw;
-    height: 100vh;
+    width: 100%;
+    height: 100%;
     overflow: hidden;
   }
 
@@ -104,6 +104,10 @@
     margin: 0 0 10px 0;
     letter-spacing: 0.24px;
   }
+
+  td {
+    @apply !max-h-fit;
+  }
 }
 
 @layer components {
@@ -125,7 +129,15 @@
     margin: 0 0 24px 0;
   }
 
-  .menu-card {
-    @apply bg-card/5 backdrop-blur-xs shadow-xl p-1;
+  .animated {
+    @apply !transition-all !transition-discrete !ease-in-out !duration-300 starting:opacity-0;
+  }
+
+  .bounce {
+    @apply hover:scale-105 active:scale-105 focus:scale-105 hover:shadow-xl active:shadow-xl focus:shadow-xl;
+  }
+
+  .bounce-within {
+    @apply focus-within:scale-105 focus-within:shadow-xl;
   }
 }

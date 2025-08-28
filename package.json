@@ -16,6 +16,7 @@
     "@types/d3": "^7.4.3",
     "autoprefixer": "^10.4.21",
     "cross-env": "^7.0.3",
+    "daisyui": "^5.0.50",
     "globals": "^16.2.0",
     "postcss": "^8.5.6",
     "prettier": "^3.5.3",
@@ -29,9 +30,6 @@
   "dependencies": {
     "@fontsource-variable/merriweather": "^5.2.4",
     "@fontsource-variable/roboto": "^5.2.6",
-    "@lottiefiles/dotlottie-web": "^0.47.0",
-    "basecoat-css": "^0.3.1",
-    "d3": "^7.9.0",
-    "plain-draggable": "^2.5.15"
+    "d3": "^7.9.0"
   }
 }

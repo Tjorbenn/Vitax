@@ -1,6 +1,7 @@
 import { State } from "./State";
 
 import { Status, TaxonomyType } from "../types/Application";
+import { TaxonomyTree } from "../types/Taxonomy";
 
 import { TaxonomyService } from "../services/TaxonomyService";
 
@@ -27,27 +28,30 @@ export class Orchestrator {
         return Orchestrator.instance;
     }
 
-    private async resolveTree(): Promise<void> {
+    public async resolveTree(): Promise<void> {
         this.state.setStatus(Status.Loading);
         const query = this.state.getQuery();
 
         if (query && query.first()) {
+            let tree: TaxonomyTree;
             switch (this.state.getTaxonomyType()) {
                 case TaxonomyType.Taxon:
-                    this.state.setTree(await this.taxonomyService.getTaxonTree(query.first()!));
+                    tree = await this.taxonomyService.getTaxonTree(query.first()!);
                     break;
                 case TaxonomyType.Descendants:
-                    this.state.setTree(await this.taxonomyService.getDescendantsTree(query.first()!));
+                    tree = await this.taxonomyService.getDescendantsTree(query.first()!);
                     break;
                 case TaxonomyType.Neighbors:
-                    this.state.setTree(await this.taxonomyService.getNeighborsTree(query));
+                    tree = await this.taxonomyService.getNeighborsTree(query);
                     break;
                 case TaxonomyType.MRCA:
-                    this.state.setTree(await this.taxonomyService.getMrcaTree(query));
+                    tree = await this.taxonomyService.getMrcaTree(query);
                     break;
                 default:
+                    console.log(this.state.getTaxonomyType());
                     throw new Error("Taxonomy type is not set or invalid. Please select a valid taxonomy type.");
             }
+            this.state.setTree(tree);
         }
     }
 }

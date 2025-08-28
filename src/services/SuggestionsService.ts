@@ -4,7 +4,7 @@ import { NeverAPI } from "../api/Never/NeverClient";
 export class SuggestionsService {
     private api: NeverAPI = new NeverAPI();
     page: number = 1;
-    pageSize: number = 500;
+    pageSize: number = import.meta.env.VITAX_SUGGESTIONS_PAGESIZE;
     term: string = "";
 
     setPage(page: number): this {
@@ -25,13 +25,12 @@ export class SuggestionsService {
 
     async getExactSuggestion(term: string): Promise<Suggestion> {
         const suggestion = await this.api.getSuggestionsByName(term, 1, 1, true);
-        if (suggestion.size < 1) {
-            throw new Error(`No exact suggestion found for term: ${term}`);
-        }
-        if (suggestion.first()) {
+        if (suggestion.size < 1 || !suggestion.first()) {
             throw new Error("No exact suggestion found for term: " + term);
         }
-        return suggestion.first()!;
+        else {
+            return suggestion.first()!;
+        }
     }
 
     async nextSuggestions(): Promise<Set<Suggestion>> {

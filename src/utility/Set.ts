@@ -41,6 +41,22 @@ declare global {
          * @returns The first element of the set, or undefined if the set is empty.
          */
         first(): T | undefined;
+
+        /**
+         * Returns a new Set containing unique elements from this set and another iterable,
+         * where uniqueness is determined by a key selector function.
+         * @param other - Another iterable of elements to union with.
+         * @param keySelector - Function to produce a comparable key for each element.
+         * @returns A new Set with elements from both sets without duplicate keys.
+         */
+        unionBy(other: Iterable<T>, keySelector: (value: T) => any): Set<T>;
+
+        /**
+         * Joins the elements of the set into a string, separated by the specified separator.
+         * @param separator - The string to separate each element. Defaults to ",".
+         * @returns A string representation of the set elements.
+         */
+        join(separator?: string): string;
     }
 }
 
@@ -105,5 +121,28 @@ if (!Set.prototype.first) {
             return value;
         }
         return undefined;
+    };
+}
+
+if (!Set.prototype.unionBy) {
+    Set.prototype.unionBy = function <T>(this: Set<T>, other: Iterable<T>, keySelector: (value: T) => any): Set<T> {
+        const map = new Map<any, T>();
+        for (const value of this) {
+            map.set(keySelector(value), value);
+        }
+        for (const value of other) {
+            const key = keySelector(value);
+            if (!map.has(key)) {
+                map.set(key, value);
+            }
+        }
+        return new Set(map.values());
+    };
+}
+
+if (!Set.prototype.join) {
+    Set.prototype.join = function <T>(this: Set<T>, separator: string = ","): string {
+        const elements = this.map(value => String(value));
+        return elements.join(separator);
     };
 }
