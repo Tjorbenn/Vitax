@@ -11,7 +11,10 @@ export enum Rank {
   Class = "class",
   Order = "order",
   Family = "family",
+  Subfamily = "subfamily",
   Genus = "genus",
+  Group = "species group",
+  Subgroup = "species subgroup",
   Species = "species"
 }
 

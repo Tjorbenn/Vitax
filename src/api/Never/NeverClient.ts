@@ -18,7 +18,10 @@ export class NeverAPI {
             .addParameter(Never.ParameterKey.PageSize, 1);
 
         const response = await request.Send();
-        return await this.MapResponseToTaxa(response)[0];
+        const taxa = this.MapResponseToTaxa(response);
+        const taxon = taxa.first();
+        if (!taxon) throw new Error(`Taxon '${name}' not found.`);
+        return taxon;
     }
 
     /**
@@ -193,8 +196,9 @@ export class NeverAPI {
         if (!response[0].taxid) {
             throw new Error("No MRCA found");
         }
-        const mrca = await this.getFullTaxaByIds([response[0].taxid])[0];
-
+        const mrcaSet = await this.getFullTaxaByIds([response[0].taxid]);
+        const mrca = mrcaSet.first();
+        if (!mrca) throw new Error("MRCA not resolved");
         return mrca;
     }
 
@@ -212,7 +216,10 @@ export class NeverAPI {
 
     public async getFullTaxonByName(name: string): Promise<Taxon> {
         const preTaxon = await this.getTaxonByName(name);
-        return await this.getFullTaxaByIds([preTaxon.id])[0];
+        const full = await this.getFullTaxaByIds([preTaxon.id]);
+        const fullTaxon = full.first();
+        if (!fullTaxon) throw new Error(`Full taxon data for '${name}' not found.`);
+        return fullTaxon;
     }
 
     private MapResponseToTaxa(response: Never.Response): Set<Taxon> {

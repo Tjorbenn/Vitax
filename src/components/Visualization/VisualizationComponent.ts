@@ -38,6 +38,10 @@ export class VisualizationComponent extends BaseComponent {
         // Abonnements für State-Änderungen
         this.state.subscribeToTree(_tree => {
             this.renderVisualization();
+            // Root-ID global aktualisieren und evtl. Popover refreshen
+            const tree = this.state.getTree();
+            (window as any).vitaxCurrentRootId = tree?.root.id;
+            this.taxonPopoverEl?.refresh();
         });
         this.state.subscribeToDisplayType(_dt => {
             this.renderVisualization();
@@ -210,6 +214,12 @@ export class VisualizationComponent extends BaseComponent {
         switch (type) {
             case VisualizationType.Tree:
                 return this.renderer.constructor.name === 'D3Tree';
+            case VisualizationType.Pack:
+                return this.renderer.constructor.name === 'D3Pack';
+            case VisualizationType.Radial:
+                return this.renderer.constructor.name === 'D3Radial';
+            case VisualizationType.Treemap:
+                return this.renderer.constructor.name === 'D3Treemap';
             default:
                 return false;
         }
@@ -245,6 +255,10 @@ export class VisualizationComponent extends BaseComponent {
 
     connectedCallback(): void {
         if (!this.svg) this.initialize();
+        // Doppelklick Zoom deaktivieren
+        if (this.svg) {
+            this.svg.on('dblclick.zoom', null);
+        }
     }
 
     disconnectedCallback(): void {
@@ -285,21 +299,39 @@ export class VisualizationComponent extends BaseComponent {
             this.taxonPopoverEl.addEventListener('mouseleave', () => {
                 this.isOverPopover = false;
                 // Leicht verzögert, damit Übergang zurück zum Node nicht flackert
-                this.scheduleHidePopover(120);
+                this.scheduleHidePopover(60);
             });
         }
         window.addEventListener('vitax:taxonHover', this.onTaxonHover as any);
         window.addEventListener('vitax:taxonUnhover', this.onTaxonUnhover as any);
+        window.addEventListener('vitax:fetchParent', this.onFetchParent as any);
+        window.addEventListener('vitax:fetchChildren', this.onFetchChildren as any);
+        window.addEventListener('vitax:toggleNode', this.onToggleNode as any);
     }
 
     private onTaxonHover = (ev: CustomEvent<any>): void => {
         if (!this.taxonPopoverEl) return;
-        const { id, x, y } = ev.detail || {};
+        const { id, x, y, node } = ev.detail || {};
         if (id === undefined || x === undefined || y === undefined) return;
+        // Node aus Event bevorzugen (vom Renderer übergeben)
+        const hierarchyNode: (d3.HierarchyNode<Taxon> & { collapsed?: boolean }) | undefined = node;
         const tree = this.state.getTree();
-        const taxon: Taxon | undefined = tree?.findTaxonById(id);
-        if (!taxon) return;
-        this.taxonPopoverEl.setTaxon(taxon);
+        if (!hierarchyNode && tree) {
+            const t = tree.findTaxonById(id);
+            if (!t) return;
+            // Fallback: künstlicher HierarchyNode wrapper falls Renderer kein node geschickt hat
+            const rootTaxon = tree.root;
+            const rootNode = d3.hierarchy<Taxon>(rootTaxon, r => Array.from(r.children || []));
+            const found = rootNode.descendants().find(d => d.data.id === id) as any;
+            if (!found) return;
+            (window as any).vitaxCurrentRootId = tree?.root.id;
+            this.taxonPopoverEl.setNode(found);
+        } else if (hierarchyNode) {
+            (window as any).vitaxCurrentRootId = tree?.root.id;
+            this.taxonPopoverEl.setNode(hierarchyNode);
+        } else {
+            return;
+        }
         const canvasRect = this.getBoundingClientRect();
         this.taxonPopoverEl.positionAt(canvasRect, x, y);
         this.taxonPopoverEl.show();
@@ -312,7 +344,7 @@ export class VisualizationComponent extends BaseComponent {
 
     private onTaxonUnhover = (): void => {
         // Nicht sofort schließen – Gelegenheit geben auf das Popover zu fahren
-        this.scheduleHidePopover(160);
+        this.scheduleHidePopover(80);
     }
 
     private scheduleHidePopover(delay: number): void {
@@ -326,6 +358,65 @@ export class VisualizationComponent extends BaseComponent {
             this.hidePopoverTimeout = undefined;
         }, delay);
     }
+
+    // Event Handler für Parent Fetch
+    private onFetchParent = async (ev: CustomEvent<any>) => {
+        const tree = this.state.getTree();
+        if (!tree) return;
+        const targetId = ev.detail?.id as number | undefined;
+        if (targetId === undefined) return;
+        if (tree.root.id === targetId) {
+            // Root -> expand nach oben
+            const taxonomyServiceMod = await import('../../services/TaxonomyService');
+            const service = new taxonomyServiceMod.TaxonomyService();
+            const newTree = await service.expandTreeUp(tree);
+            if (newTree.root.id !== tree.root.id) {
+                this.state.setTree(newTree);
+            }
+        } else {
+            // Nur sicherstellen dass Parent im Baum existiert (optional)
+            const taxonomyServiceMod = await import('../../services/TaxonomyService');
+            const service = new taxonomyServiceMod.TaxonomyService();
+            const taxon = tree.findTaxonById(targetId);
+            if (taxon && !taxon.parent) {
+                await service.resolveParent(taxon);
+                this.state.treeHasChanged();
+            }
+        }
+    }
+
+    // Event Handler für Children Fetch
+    private onFetchChildren = async (ev: CustomEvent<any>) => {
+        const tree = this.state.getTree();
+        if (!tree) return;
+        const targetId = ev.detail?.id as number | undefined;
+        if (targetId === undefined) return;
+        const taxon = tree.findTaxonById(targetId);
+        if (!taxon) return;
+        const taxonomyServiceMod = await import('../../services/TaxonomyService');
+        const service = new taxonomyServiceMod.TaxonomyService();
+        await service.resolveMissingChildren(taxon);
+        this.state.treeHasChanged();
+    }
+
+    // Event Handler für Collapse/Expand (entspricht Klick auf den Node)
+    private onToggleNode = async (ev: CustomEvent<any>) => {
+        const tree = this.state.getTree();
+        if (!tree || !this.renderer) return;
+        const targetId = ev.detail?.id as number | undefined;
+        if (targetId === undefined) return;
+        if (this.renderer.constructor.name === 'D3Tree' && typeof (this.renderer as any).toggleNodeById === 'function') {
+            const toggledNode = (this.renderer as any).toggleNodeById(targetId);
+            if (toggledNode) {
+                // Wenn Popover sichtbar ist, aktualisiere es mit dem exakten d3-Node
+                this.taxonPopoverEl?.setNode(toggledNode);
+                this.taxonPopoverEl?.show();
+            }
+            return;
+        }
+    }
+
+    // (connectedCallback override oben zusammengeführt)
 }
 
 customElements.define("vitax-canvas", VisualizationComponent);

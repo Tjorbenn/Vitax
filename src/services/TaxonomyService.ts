@@ -10,7 +10,8 @@ export class TaxonomyService {
      * @returns A promise that resolves to a TaxonomyTree with the query taxon as the root.
      */
     public async getTaxonTree(query: Taxon): Promise<TaxonomyTree> {
-        const taxon = await this.api.getTaxaByIds([query.id])[0];
+        const taxa = await this.api.getTaxaByIds([query.id]);
+        const taxon = taxa.first();
         if (!taxon) {
             throw new Error(`Taxon with id ${query.id} not found.`);
         }
@@ -107,7 +108,11 @@ export class TaxonomyService {
         if (taxon.parentId === undefined) {
             taxon.parentId = await this.api.getParentIdByTaxonId(taxon.id);
         }
-        const parent = await this.api.getFullTaxaByIds([taxon.parentId])[0];
+        const parents = await this.api.getFullTaxaByIds([taxon.parentId]);
+        const parent = parents.first();
+        if (!parent) {
+            throw new Error(`Parent taxon ${taxon.parentId} not resolved for ${taxon.id}`);
+        }
         return parent;
     }
 
@@ -125,5 +130,14 @@ export class TaxonomyService {
     public async resolveChildren(taxon: Taxon) {
         const children = await this.getChildren(taxon);
         taxon.setChildren(children);
+    }
+
+    public async resolveMissingChildren(taxon: Taxon): Promise<void> {
+        const fresh = await this.getChildren(taxon);
+        fresh.forEach(child => {
+            if (!taxon.hasChild(child)) {
+                taxon.addChild(child);
+            }
+        });
     }
 }

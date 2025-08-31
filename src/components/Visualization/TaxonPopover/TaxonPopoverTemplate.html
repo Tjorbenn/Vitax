@@ -1,37 +1,102 @@
-<div class="card-body flex flex-col items-center gap-2">
+<ul class="card-body flex flex-col items-stretch gap-2">
   <hgroup class="card-title flex flex-row gap-2 justify-between items-center">
-    <h3
+    <span
       id="taxon-name"
-      class="m-0 text-primary"
-    ></h3>
+      class="m-0 text-primary text-lg tooltip"
+      data-tip="Name"
+    ></span>
     <span
       id="taxon-id"
-      class="badge badge-primary badge-xs"
+      class="badge badge-primary badge-xs tooltip"
+      data-tip="ID"
     ></span>
   </hgroup>
-  <div class="card card-border bg-base-100 mx-4">
-    <div class="card-body">
-      <h4 class="card-title">Genomes</h4>
-      <div class="flex flex-row">
-        <div
-          id="genome-count"
-          class="stats stats-vertical text-center"
-        ></div>
-        <div
-          id="genome-count-recursive"
-          class="stats stats-vertical text-center"
-        ></div>
-      </div>
+  <div
+    id="rank"
+    class="stats"
+  >
+    <div class="stat">
+      <div class="stat-title">Rank</div>
+      <div class="stat-value capitalize text-neutral"></div>
+      <div class="stat-figure text-primary drop-shadow-lg"></div>
     </div>
   </div>
-  <div class="card-actions justify-end">
-    <button class="btn btn-primary btn-xs">
+  <div
+    class="card card-border bg-base-100 shadow-sm mx-4 p-0 [&:has(tbody:empty)]:hidden"
+    data-tip="Genomes"
+  >
+    <div
+      class="card-body p-0 tooltip"
+      data-tip="Genomes"
+    >
+      <table
+        id="genomes-table"
+        class="table table-sm"
+      >
+        <thead>
+          <tr>
+            <th>Level</th>
+            <th>Direct</th>
+            <th>Recursive</th>
+          </tr>
+        </thead>
+        <tbody id="genomes-body"></tbody>
+        <tfoot>
+          <tr>
+            <td class="text-center"></td>
+            <td class="text-center">
+              <button
+                class="btn btn-sm btn-ghost"
+                id="genomes-download-direct"
+              >
+                <span
+                  class="icon-[material-symbols--download-rounded]"
+                  style="width: 1.5em; height: 1.5em"
+                ></span>
+              </button>
+            </td>
+            <td class="text-center">
+              <button
+                class="btn btn-sm btn-ghost"
+                id="genomes-download-recursive"
+              >
+                <span
+                  class="icon-[material-symbols--download-rounded]"
+                  style="width: 1.5em; height: 1.5em"
+                ></span>
+              </button>
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+  <div class="card-actions flex flex-row justify-between mt-4">
+    <button
+      class="btn btn-primary btn-xs tooltip"
+      data-tip="Fetch Parent"
+      id="parent-button"
+    >
       <span class="icon-[material-symbols--arrow-upward-rounded]"></span>
       Parent
     </button>
-    <button class="btn btn-primary btn-xs">
-      <span class="icon-[material-symbols--arrow-downward-rounded]"></span>
+    <button
+      class="btn btn-neutral btn-circle btn-xs tooltip"
+      data-tip="Collapse/Expand"
+      id="collapse-button"
+    >
+      <span
+        class="icon-[material-symbols--expand-content-rounded]"
+        style="width: 2em; height: 2em"
+      ></span>
+    </button>
+    <button
+      class="btn btn-primary btn-xs tooltip"
+      data-tip="Fetch Children"
+      id="children-button"
+    >
       Children
+      <span class="icon-[material-symbols--arrow-downward-rounded]"></span>
     </button>
   </div>
-</div>
+</ul>

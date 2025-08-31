@@ -29,10 +29,14 @@ export class Orchestrator {
     }
 
     public async resolveTree(): Promise<void> {
-        this.state.setStatus(Status.Loading);
         const query = this.state.getQuery();
+        if (!query || !query.first()) {
+            // Nichts zu tun -> Idle lassen
+            return;
+        }
 
-        if (query && query.first()) {
+        this.state.setStatus(Status.Loading);
+        try {
             let tree: TaxonomyTree;
             switch (this.state.getTaxonomyType()) {
                 case TaxonomyType.Taxon:
@@ -52,6 +56,11 @@ export class Orchestrator {
                     throw new Error("Taxonomy type is not set or invalid. Please select a valid taxonomy type.");
             }
             this.state.setTree(tree);
+            // Daten erfolgreich geladen – Rendering wird asynchron gestartet; wir markieren als Success.
+            this.state.setStatus(Status.Success);
+        } catch (err) {
+            console.error("Failed to resolve tree", err);
+            this.state.setStatus(Status.Error);
         }
     }
 }

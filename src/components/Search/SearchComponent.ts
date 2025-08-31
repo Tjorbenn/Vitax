@@ -5,6 +5,7 @@ import { Orchestrator } from "../../core/Orchestrator.ts";
 import { SuggestionsService } from "../../services/SuggestionsService.ts";
 import { Router } from "../../core/Routing.ts";
 import { State } from "../../core/State.ts";
+import { Status } from "../../types/Application";
 
 // Ensure subcomponents are defined
 import "./Selection/SelectionComponent.ts";
@@ -24,7 +25,6 @@ export class SearchComponent extends BaseComponent {
     private state: State = State.getInstance();
 
     private debounceTimer?: number;
-    // Debounce Delay (ms) aus Env oder Fallback 300
     private readonly debounceDelay: number = (() => {
         const raw = (import.meta as any).env?.VITAX_SUGGESTIONS_DEBOUNCE;
         const n = Number(raw);
@@ -57,6 +57,8 @@ export class SearchComponent extends BaseComponent {
 
         this.section.appendChild(this.selectionComp);
         this.section.appendChild(this.suggestionsComp);
+
+        this.state.subscribeToStatus(this.onStatusChange.bind(this));
 
         // Outside click / focus handling
         this.outsideListener = (e: Event) => {
@@ -134,6 +136,18 @@ export class SearchComponent extends BaseComponent {
                 this.term = "";
                 await this.suggestionsComp.onInput("");
             }
+        }
+    }
+
+    public onStatusChange(status: Status): void {
+        if (!this.button) {
+            throw new Error("Button not defined");
+        }
+        if (status === Status.Loading) {
+            this.button.innerHTML = "<span class=\"loading loading-spinner\"></span>";
+        }
+        else {
+            this.button.innerHTML = "Visualize";
         }
     }
 

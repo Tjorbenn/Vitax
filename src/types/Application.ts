@@ -23,9 +23,7 @@ export enum VisualizationType {
   Tree = "tree",
   Graph = "graph",
   Radial = "radial",
-  Cluster = "cluster",
   Pack = "pack",
-  Partition = "partition",
   Treemap = "treemap"
 }
 
