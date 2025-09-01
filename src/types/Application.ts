@@ -3,6 +3,7 @@ import { Taxon } from "./Taxonomy";
 export interface Suggestion {
   id: number;
   name: string;
+  commonName?: string;
 }
 
 export enum Status {
@@ -22,9 +23,9 @@ export enum TaxonomyType {
 export enum VisualizationType {
   Tree = "tree",
   Graph = "graph",
-  Radial = "radial",
+  // Radial = "radial",
   Pack = "pack",
-  Treemap = "treemap"
+  // Treemap = "treemap"
 }
 
 export function SuggestionToTaxon(suggestion: Suggestion): Taxon {
@@ -67,7 +68,7 @@ function compareByRank(a: Suggestion, b: Suggestion, term: string): number {
     return rankA - rankB;
   }
   else {
-    return a.id - b.id; // Arbitrary tie-breaker
+    return a.id - b.id; // tie-breaker
   }
 }
 

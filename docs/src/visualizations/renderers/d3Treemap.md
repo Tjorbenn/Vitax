@@ -1,17 +1,18 @@
+
+```ts
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 import * as d3 from "d3";
 import type { Taxon } from "../../types/Taxonomy";
 import { D3Visualization, type D3VisualizationExtents } from "../d3Visualization";
-
-/**
- * Treemap Darstellung (Rechteck-Flächen proportional zur rekursiven Genome-Anzahl).
- * Umsetzung angelehnt an das offizielle d3 Beispiel, jedoch angepasst an das Vitax Architektur-Pattern.
- * Highlights:
- *  - Farbskala je Top-Level Child (oder fallback Theme Neutral / Primary bei Query-Treffern)
- *  - Tooltip via <title> plus vitax:taxonHover Events (Popover Integration)
- *  - Dynamische Größenanpassung an Layer-BBox
- *  - Einfache Label-Heuristik (Name Zeile 1, optional Wert Zeile 2 falls Platz)
- */
+```
+Treemap Darstellung (Rechteck-Flächen proportional zur rekursiven Genome-Anzahl).
+Umsetzung angelehnt an das offizielle d3 Beispiel, jedoch angepasst an das Vitax Architektur-Pattern.
+Highlights:
+ - Farbskala je Top-Level Child (oder fallback Theme Neutral / Primary bei Query-Treffern)
+ - Tooltip via <title> plus vitax:taxonHover Events (Popover Integration)
+ - Dynamische Größenanpassung an Layer-BBox
+ - Einfache Label-Heuristik (Name Zeile 1, optional Wert Zeile 2 falls Platz)
+```ts
 export class D3Treemap extends D3Visualization {
     private gCells: d3.Selection<SVGGElement, unknown, null, undefined>;
     private treemapLayout: d3.TreemapLayout<Taxon>;
@@ -192,3 +193,4 @@ export class D3Treemap extends D3Visualization {
         return { minX: 0, maxX: this.height, minY: 0, maxY: this.width };
     }
 }
+```

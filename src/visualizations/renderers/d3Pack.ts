@@ -3,12 +3,6 @@ import * as d3 from "d3";
 import type { Taxon } from "../../types/Taxonomy";
 import { D3Visualization, type D3VisualizationExtents } from "../d3Visualization";
 
-/**
- * Circle Pack Darstellung – Kreisfläche proportional zur rekursiven Genome-Anzahl.
- * - Größe basiert auf Summe aller Genome-Level in genomeCountRecursive.
- * - Alle Hierarchie-Ebenen werden angezeigt (kein Collapse Handling hier – optional später).
- * - Hover feuert vitax:taxonHover analog zu anderen Renderern (inkl. d3 Node Referenz).
- */
 export class D3Pack extends D3Visualization {
     private packLayout: d3.PackLayout<Taxon>;
     private gNodes: d3.Selection<SVGGElement, unknown, null, undefined>;
@@ -47,7 +41,6 @@ export class D3Pack extends D3Visualization {
                 .sort((a, b) => (b.value || 0) - (a.value || 0))
         );
 
-        // Alle Nodes (Root zuerst) -> Positionierung
         const nodesData = rootPacked.descendants();
 
         const transition = this.layer.transition().duration(duration);
@@ -91,7 +84,7 @@ export class D3Pack extends D3Visualization {
                     .attr('stroke', style.stroke)
                     .attr('stroke-opacity', style.strokeOpacity)
                     .attr('stroke-width', style.strokeWidth);
-                // Hover-Effekte
+                // Hover
                 sel.on('mouseenter.packstyle', (event: any) => {
                     d3.select(event.currentTarget)
                         .attr('stroke-opacity', 0.95)
@@ -117,7 +110,6 @@ export class D3Pack extends D3Visualization {
             .attr("opacity", 0)
             .text(d => this.truncateLabel(d.data.name, 2 * d.r));
 
-        // MERGE
         const nodeMerge = nodeEnter.merge(nodeSel as any);
 
         nodeMerge.transition(transition as any)
@@ -154,7 +146,6 @@ export class D3Pack extends D3Visualization {
         return d3.format(",d")(Math.round(v));
     }
 
-    /** Liefert die Style-Werte (monochromatisch) für einen Kreis. */
     private computeCircleStyle(d: any): { fill: string; fillOpacity: number; stroke: string; strokeOpacity: number; strokeWidth: number; strokeWidthHover: number } {
         const theme = (this as any).getThemeColors();
         const inQuery = this.getQuery()?.some(t => t.id === d.data.id);
@@ -214,20 +205,17 @@ export class D3Pack extends D3Visualization {
     }
 
     private truncateLabel(name: string, maxDiameter: number): string {
-        // Grobe Schätzung: 6px pro Zeichen (10px font) – lasse etwas Puffer
+        // Grobe Schätzung: 6px pro Zeichen (10px font)
         const estCharWidth = 6;
         const maxChars = Math.floor((maxDiameter * 0.85) / estCharWidth);
-        if (maxChars <= 3) return ""; // zu wenig Platz -> kein Text
+        if (maxChars <= 3) return "";
         return name.length > maxChars ? name.slice(0, maxChars - 1) + '…' : name;
     }
 
     public override getExtents(): D3VisualizationExtents | undefined {
         if (!this.root) return undefined;
-        // Nach letztem Layout liegen x,y in einem Quadrat [0,size]
         const size = Math.min(this.width, this.height) - this.margin * 2;
         return { minX: -size / 2, maxX: size / 2, minY: -size / 2, maxY: size / 2 };
     }
 }
-
-// (Kein zusätzlicher Helper mehr nötig)
 

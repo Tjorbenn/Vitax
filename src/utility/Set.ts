@@ -1,4 +1,4 @@
-// Extend the Set prototype to include filter, some and all methods
+// Extending the Set prototype to include filter, some and all methods
 declare global {
     interface Set<T> {
         /**

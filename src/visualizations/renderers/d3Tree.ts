@@ -11,7 +11,6 @@ export class D3Tree extends D3Visualization {
   // Persistente Extents um horizontales "Zurückspringen" beim Collapse zu verhindern
   private persistedMaxLeft: number[] = [];
   private persistedMaxRight: number[] = [];
-  // Fixiere verticalGap nach erstem Layout, damit übergeordnete Ebenen vertikal stabil bleiben
   private baseVerticalGap?: number;
 
   constructor(layer: SVGGElement) {
@@ -31,7 +30,6 @@ export class D3Tree extends D3Visualization {
       .attr("cursor", "pointer")
       .attr("pointer-events", "all");
 
-    // Startwerte (werden bei jedem update dynamisch angepasst)
     const nodeWidth = 160;
     const nodeHeight = 20;
     this.layout
@@ -39,13 +37,12 @@ export class D3Tree extends D3Visualization {
       .separation((a: any, b: any) => {
         // Etwas mehr Abstand zwischen Teilbäumen; große Subtrees erhalten mehr Raum
         const siblingBoost = a.parent === b.parent ? 1 : 1.15;
-        const aSize = (a.children?.length || a._children?.length || 0) as number; // _children evtl. dynamisch
+        const aSize = (a.children?.length || a._children?.length || 0) as number;
         const bSize = (b.children?.length || b._children?.length || 0) as number;
         const sizeBoost = (aSize + bSize) > 14 ? 0.35 : (aSize + bSize) > 6 ? 0.15 : 0;
         return siblingBoost + sizeBoost;
       });
 
-    // Jetzt erst State abonnieren, nachdem alles eingerichtet ist
     this.activateStateSubscription();
   }
 
@@ -73,17 +70,15 @@ export class D3Tree extends D3Visualization {
     const visibleLeaves = visibleNodesAll.filter((d: any) => !(d.children && d.children.length) && !(d._children && d._children.length));
     const maxDepth = (d3.max(visibleNodesAll, (d: any) => d.depth) || 1) as number;
 
-    // Vertikale Abstandswahl (kein Überlappen vertikal)
     const verticalGapCurrent = Math.max(20, Math.min(34, this.height / Math.max(1, visibleLeaves.length + 1)));
     if (this.baseVerticalGap === undefined) {
       this.baseVerticalGap = verticalGapCurrent;
     }
     const verticalGap = this.baseVerticalGap;
-    this.layout.nodeSize([verticalGap, 1]); // temporär y=1 (wir überschreiben y gleich selbst komplett)
+    this.layout.nodeSize([verticalGap, 1]);
     this.layout(this.root as any);
 
-    // Schritt 1: Label-Metadaten vorbereiten (für bestehende Nodes könnten Werte schon existieren)
-    const estCharW = 6.2; // px bei 11px
+    const estCharW = 6.2;
     const maxLabelWidthLeftPx = 200;  // Obergrenze für linke Labels (intern)
     const maxLabelWidthRightPx = 260; // Obergrenze für rechte Labels (Leaves)
     const truncateLocal = (name: string, maxPx: number): string => {
@@ -103,7 +98,6 @@ export class D3Tree extends D3Visualization {
       if (!placeRight) anyN._leftExtension = anyN._labelWidthPx; else anyN._rightExtension = anyN._labelWidthPx;
     }
 
-    // Schritt 2: Pro Tiefe maximale Ausdehnung sammeln
     const maxLeft: number[] = new Array<number>(maxDepth + 1).fill(0);
     const maxRight: number[] = new Array<number>(maxDepth + 1).fill(0);
     for (const n of visibleNodesAll) {
@@ -115,17 +109,14 @@ export class D3Tree extends D3Visualization {
       }
     }
 
-    // Persistente (nicht schrumpfende) Extents aktualisieren
     for (let d = 0; d <= maxDepth; d++) {
       this.persistedMaxLeft[d] = Math.max(this.persistedMaxLeft[d] || 0, maxLeft[d] || 0);
       this.persistedMaxRight[d] = Math.max(this.persistedMaxRight[d] || 0, maxRight[d] || 0);
     }
 
-    // Schritt 3: Kollisionsfreie Spaltenpositionen berechnen
     const baseGap = 50; // immer mindestens soviel Raum zwischen den Node-Punkten zweier Tiefen
     const depthOffset: number[] = new Array<number>(maxDepth + 1).fill(0);
     for (let d = 0; d < maxDepth; d++) {
-      // Verwende persistente Maxima statt aktueller (verhindert horizontales Zusammenziehen)
       const leftExtentNext = this.persistedMaxLeft[d + 1] || 0;
       const rightExtentCurrent = this.persistedMaxRight[d] || 0;
       depthOffset[d + 1] = depthOffset[d] + baseGap + rightExtentCurrent + leftExtentNext;
@@ -137,11 +128,11 @@ export class D3Tree extends D3Visualization {
     const widthScale = totalWidth > maxUsableWidth ? (maxUsableWidth / totalWidth) : 1;
 
     for (const n of visibleNodesAll) {
-      (n as any).y = depthOffset[n.depth] * widthScale; // Node Punkt
+      (n as any).y = depthOffset[n.depth] * widthScale;
     }
 
-    // Optional: Große Bäume -> Animation verkürzen
-    if (visibleNodesAll.length > 1800) duration = 0; else if (visibleNodesAll.length > 900) duration = Math.min(duration, 120);
+    if (visibleNodesAll.length > 1800) duration = 0;
+    else if (visibleNodesAll.length > 900) duration = Math.min(duration, 120);
 
     const nodes = visibleNodesAll.reverse();
     const links = this.root.links().filter(d => this.isNodeVisible(d.target));
@@ -157,8 +148,6 @@ export class D3Tree extends D3Visualization {
       .on("click", (event: any, d: any) => this.handleOnClick(event, d))
       .on("mouseenter", (event: any, d: any) => {
         const bbox = (event.currentTarget as SVGGElement).getBoundingClientRect();
-        // Debug: Event dispatch
-        // console.debug('Dispatch vitax:taxonHover', d.data.name, bbox);
         window.dispatchEvent(new CustomEvent('vitax:taxonHover', {
           detail: {
             id: d.data.id,
@@ -184,7 +173,6 @@ export class D3Tree extends D3Visualization {
       .attr("stroke-width", 1)
       .attr("stroke", "var(--color-base-content)");
 
-    // Für Enter-Phase nutzen wir dieselben Parameter wie oben
     const maxLabelWidthLeft = 200;
     const maxLabelWidthRight = 260;
     const estCharWEnter = 6.2;
@@ -216,7 +204,6 @@ export class D3Tree extends D3Visualization {
 
     const nodeMerge = (nodeSel as any).merge(nodeEnter as any);
 
-    // Text-Aktualisierung (z.B. wenn Node kollabiert/expandiert wurde)
     nodeMerge.select('text').each(function (this: SVGTextElement, d: any) {
       const isLeaf = !(d.children && d.children.length) && !(d._children && d._children.length);
       const placeRight = isLeaf || d.collapsed;
@@ -226,7 +213,6 @@ export class D3Tree extends D3Visualization {
           .attr("x", placeRight ? 9 : -9)
           .attr("text-anchor", placeRight ? "start" : "end");
       }
-      // Falls expandiert -> evtl. wieder linke Seite & evtl. kürzerer Truncation nötig
       const maxPx = placeRight ? maxLabelWidthRight : maxLabelWidthLeft;
       const truncated = truncateEnter(d._fullLabel || d.data.name, maxPx);
       if (truncated !== d._label) {
@@ -272,9 +258,6 @@ export class D3Tree extends D3Visualization {
     return this.update(event, datum);
   }
 
-  /** Programmatic toggle by taxon id (used by Popover button)
-   * Returns the toggled d3 node or null if not found.
-   */
   public toggleNodeById(id: number): any | null {
     if (!this.root) return null;
     const all: any[] = (this.root as any).descendants();
@@ -284,6 +267,4 @@ export class D3Tree extends D3Visualization {
     void this.update(undefined, node, 180);
     return node;
   }
-
-  // Sichtbarkeit & NodeFill kommen jetzt aus der Basisklasse
 }

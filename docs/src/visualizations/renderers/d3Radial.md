@@ -1,15 +1,16 @@
+
+```ts
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 import * as d3 from "d3";
 import type { Taxon } from "../../types/Taxonomy";
 import { D3Visualization, type D3VisualizationExtents } from "../d3Visualization";
-
-/**
- * Radial (Cluster) Tree – inspiriert vom offiziellen d3 "Tree of Life" Beispiel.
- * Anpassungen:
- *  - Verwendet vorhandene Taxon-Hierarchie (ohne Newick length). Radien basieren auf depth (konstant) oder optional rekursiver Genome-Summe.
- *  - Collapse/Expand via Klick analog zum normalen Tree (blendert Subtree aus, Layout bleibt global stabil, da Cluster weiterhin alle Nodes berechnet – Tradeoff akzeptiert für Einfachheit).
- *  - Hover feuert vitax:taxonHover mit d3 Node Referenz für Popover.
- */
+```
+Radial (Cluster) Tree – inspiriert vom offiziellen d3 "Tree of Life" Beispiel.
+Anpassungen:
+ - Verwendet vorhandene Taxon-Hierarchie (ohne Newick length). Radien basieren auf depth (konstant) oder optional rekursiver Genome-Summe.
+ - Collapse/Expand via Klick analog zum normalen Tree (blendert Subtree aus, Layout bleibt global stabil, da Cluster weiterhin alle Nodes berechnet – Tradeoff akzeptiert für Einfachheit).
+ - Hover feuert vitax:taxonHover mit d3 Node Referenz für Popover.
+```ts
 export class D3Radial extends D3Visualization {
     private cluster: d3.ClusterLayout<Taxon>;
     private gLinks: d3.Selection<SVGGElement, unknown, null, undefined>;
@@ -213,8 +214,9 @@ export class D3Radial extends D3Visualization {
         if (!isFinite(minX)) return undefined;
         return { minX, maxX, minY, maxY };
     }
-
-    /** Programmatic Toggle analog zu D3Tree (für Popover Button). */
+```
+Programmatic Toggle analog zu D3Tree (für Popover Button).
+```ts
     public toggleNodeById(id: number): any | null {
         if (!this.root) return null;
         const all: any[] = (this.root as any).descendants();
@@ -225,4 +227,4 @@ export class D3Radial extends D3Visualization {
         return node;
     }
 }
-
+```

@@ -35,10 +35,8 @@ export class VisualizationComponent extends BaseComponent {
 
     initialize(): void {
         this.setupSVG();
-        // Abonnements für State-Änderungen
         this.state.subscribeToTree(_tree => {
             this.renderVisualization();
-            // Root-ID global aktualisieren und evtl. Popover refreshen
             const tree = this.state.getTree();
             (window as any).vitaxCurrentRootId = tree?.root.id;
             this.taxonPopoverEl?.refresh();
@@ -72,7 +70,6 @@ export class VisualizationComponent extends BaseComponent {
         const node = this.svg!.node();
         if (node) this.appendChild(node);
 
-        // Standard d3 Zoom/Pan (verwende d3 defaults für Wheel/Drag/Touch/Keys)
         this.zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
             .on('zoom', (event) => {
                 if (this.mainGroup) this.mainGroup.attr('transform', event.transform.toString());
@@ -80,21 +77,20 @@ export class VisualizationComponent extends BaseComponent {
             });
 
         this.svg.call(this.zoomBehavior as any);
-        // Auf globalen Reset hören
+
         window.addEventListener('vitax:resetView', this.onExternalReset as any);
 
-        // ResizeObserver damit Grid & ViewBox sich an ändernede Aspect Ratios anpassen
+        // ResizeObserver
         this.resizeObserver = new ResizeObserver(() => {
             if (!this.svg) return;
             const r = this.getBoundingClientRect();
             const wNew = r.width || 800;
             const hNew = r.height || 600;
-            // ViewBox aktualisieren (behält contenScale durch d3-zoom)
+            // ViewBox aktualisieren
             this.svg.attr('viewBox', `0 0 ${wNew} ${hNew}`);
-            // initial Maße aktualisieren für AutoCenter Logik
-            this.initialWidth = this.initialWidth ?? wNew; // initialWidth fix lassen
+            this.initialWidth = this.initialWidth ?? wNew;
             this.initialHeight = this.initialHeight ?? hNew;
-            // Aktuellen Transform holen und Grid neu zeichnen
+
             const t = d3.zoomTransform(this.svg.node() as any);
             this.updateGridForTransform(t);
         });
@@ -103,7 +99,6 @@ export class VisualizationComponent extends BaseComponent {
 
     private buildGrid() {
         if (!this.gridGroup) return;
-        // Initial einmal mit Identity erzeugen
         this.updateGridForTransform(d3.zoomIdentity);
     }
 
@@ -111,7 +106,7 @@ export class VisualizationComponent extends BaseComponent {
         if (!this.gridGroup || !this.svg) return;
         const minor = 10; // Welt-Einheiten
         const major = 100;
-        // Dynamisches Padding abhängig von aktueller Weltgröße im Viewport, verhindert abgeschnittene Ränder bei extremen Aspect Ratios
+        // Dynamisches Padding
         const rect = this.getBoundingClientRect();
         const wPx = rect.width || this.initialWidth || 800;
         const hPx = rect.height || this.initialHeight || 600;
@@ -119,11 +114,10 @@ export class VisualizationComponent extends BaseComponent {
         const worldHeightVisible = hPx / transform.k;
         const padding = Math.max(200, Math.max(worldWidthVisible, worldHeightVisible) * 0.6);
 
-        // Sichtbare Screen-Größe
         const w = wPx;
         const h = hPx;
 
-        // Screen -> Welt: (sx - tx)/k
+        // Screen -> Welt
         const worldMinX = (0 - transform.x) / transform.k;
         const worldMinY = (0 - transform.y) / transform.k;
         const worldMaxX = (w - transform.x) / transform.k;
@@ -133,13 +127,12 @@ export class VisualizationComponent extends BaseComponent {
         let maxX = Math.ceil((worldMaxX + padding) / minor) * minor;
         let minY = Math.floor((worldMinY - padding) / minor) * minor;
         let maxY = Math.ceil((worldMaxY + padding) / minor) * minor;
-        // Extra Rand um sicherzustellen dass obere/untere Linie nicht direkt am Bildschirm abgeschnitten wirkt
+        // Extra Rand
         minX -= minor;
         minY -= minor;
         maxX += minor;
         maxY += minor;
 
-        // Daten vorbereiten
         const vertical: { x1: number; y1: number; x2: number; y2: number; isMajor: boolean }[] = [];
         for (let x = minX; x <= maxX; x += minor) {
             vertical.push({ x1: x, y1: minY, x2: x, y2: maxY, isMajor: x % major === 0 });
@@ -179,7 +172,7 @@ export class VisualizationComponent extends BaseComponent {
         const displayType = this.state.getDisplayType();
         if (!displayType) return;
 
-        // Falls Typ gewechselt -> alten Renderer entsorgen
+        // alten Renderer entsorgen
         if (!this.renderer || !this.isRendererOfType(displayType)) {
             this.disposeRenderer();
             this.clearContent();
@@ -204,7 +197,7 @@ export class VisualizationComponent extends BaseComponent {
                 }
             });
         } else {
-            // Nur Update (Renderer existiert bereits)
+            // Nur Update
             void this.renderer.update();
         }
     }
@@ -216,10 +209,10 @@ export class VisualizationComponent extends BaseComponent {
                 return this.renderer.constructor.name === 'D3Tree';
             case VisualizationType.Pack:
                 return this.renderer.constructor.name === 'D3Pack';
-            case VisualizationType.Radial:
-                return this.renderer.constructor.name === 'D3Radial';
-            case VisualizationType.Treemap:
-                return this.renderer.constructor.name === 'D3Treemap';
+            // case VisualizationType.Radial:
+            //     return this.renderer.constructor.name === 'D3Radial';
+            // case VisualizationType.Treemap:
+            //     return this.renderer.constructor.name === 'D3Treemap';
             default:
                 return false;
         }
@@ -234,11 +227,11 @@ export class VisualizationComponent extends BaseComponent {
 
     private autoCenter(extents: VisualizationExtents, rootId: number) {
         if (!this.svg || !this.centerGroup) return;
-        // Verwende initiale Maße, um Sprünge nach Layout-Interaktionen zu vermeiden
+        // Sprünge vermeiden
         const width = this.initialWidth || this.clientWidth || 800;
         const height = this.initialHeight || this.clientHeight || 600;
 
-        // Baum Breite/Höhe aus Extents ermitteln (Achsentausch wegen Layout .x/.y)
+        // Baum Breite/Höhe aus Extents ermitteln 
         const treeHeight = extents.maxX - extents.minX;
         const treeWidth = extents.maxY - extents.minY;
 
@@ -277,7 +270,7 @@ export class VisualizationComponent extends BaseComponent {
     /** Öffentliche Methode um Zoom/Pan auf Ausgangspunkt zurückzusetzen */
     public resetView(): void {
         if (!this.svg || !this.zoomBehavior) return;
-        const t = d3.zoomIdentity; // Identity, danach wird autoCenter beim Render greifen
+        const t = d3.zoomIdentity;
         this.svg.transition().duration(300).call(this.zoomBehavior.transform, t);
         this.updateGridForTransform(t);
     }
@@ -286,7 +279,7 @@ export class VisualizationComponent extends BaseComponent {
     private setupPopover(): void {
         if (!this.taxonPopoverEl) {
             this.taxonPopoverEl = new TaxonPopoverComponent();
-            // Direkt als Child des Hosts (über dem SVG) anhängen
+            
             this.appendChild(this.taxonPopoverEl);
             // Hover-Events auf dem Popover selbst
             this.taxonPopoverEl.addEventListener('mouseenter', () => {
@@ -313,13 +306,13 @@ export class VisualizationComponent extends BaseComponent {
         if (!this.taxonPopoverEl) return;
         const { id, x, y, node } = ev.detail || {};
         if (id === undefined || x === undefined || y === undefined) return;
-        // Node aus Event bevorzugen (vom Renderer übergeben)
+        
         const hierarchyNode: (d3.HierarchyNode<Taxon> & { collapsed?: boolean }) | undefined = node;
         const tree = this.state.getTree();
         if (!hierarchyNode && tree) {
             const t = tree.findTaxonById(id);
             if (!t) return;
-            // Fallback: künstlicher HierarchyNode wrapper falls Renderer kein node geschickt hat
+            
             const rootTaxon = tree.root;
             const rootNode = d3.hierarchy<Taxon>(rootTaxon, r => Array.from(r.children || []));
             const found = rootNode.descendants().find(d => d.data.id === id) as any;
@@ -335,7 +328,7 @@ export class VisualizationComponent extends BaseComponent {
         const canvasRect = this.getBoundingClientRect();
         this.taxonPopoverEl.positionAt(canvasRect, x, y);
         this.taxonPopoverEl.show();
-        // Falls ein Hide geplant war -> abbrechen
+
         if (this.hidePopoverTimeout) {
             window.clearTimeout(this.hidePopoverTimeout);
             this.hidePopoverTimeout = undefined;
@@ -343,7 +336,7 @@ export class VisualizationComponent extends BaseComponent {
     }
 
     private onTaxonUnhover = (): void => {
-        // Nicht sofort schließen – Gelegenheit geben auf das Popover zu fahren
+        // Nicht sofort schließen
         this.scheduleHidePopover(80);
     }
 
@@ -374,7 +367,6 @@ export class VisualizationComponent extends BaseComponent {
                 this.state.setTree(newTree);
             }
         } else {
-            // Nur sicherstellen dass Parent im Baum existiert (optional)
             const taxonomyServiceMod = await import('../../services/TaxonomyService');
             const service = new taxonomyServiceMod.TaxonomyService();
             const taxon = tree.findTaxonById(targetId);
@@ -399,7 +391,7 @@ export class VisualizationComponent extends BaseComponent {
         this.state.treeHasChanged();
     }
 
-    // Event Handler für Collapse/Expand (entspricht Klick auf den Node)
+    // Event Handler für Collapse/Expand
     private onToggleNode = async (ev: CustomEvent<any>) => {
         const tree = this.state.getTree();
         if (!tree || !this.renderer) return;
@@ -408,15 +400,12 @@ export class VisualizationComponent extends BaseComponent {
         if (this.renderer.constructor.name === 'D3Tree' && typeof (this.renderer as any).toggleNodeById === 'function') {
             const toggledNode = (this.renderer as any).toggleNodeById(targetId);
             if (toggledNode) {
-                // Wenn Popover sichtbar ist, aktualisiere es mit dem exakten d3-Node
                 this.taxonPopoverEl?.setNode(toggledNode);
                 this.taxonPopoverEl?.show();
             }
             return;
         }
     }
-
-    // (connectedCallback override oben zusammengeführt)
 }
 
 customElements.define("vitax-canvas", VisualizationComponent);

@@ -16,7 +16,7 @@ export class SuggestionsComponent extends BaseComponent {
     constructor() {
         super(HTMLtemplate);
 
-        this.classList.add("hidden", "opacity-0", "animated", "card", "bg-primary/2", "backdrop-blur-xs", "shadow-lg", "max-h-60", "w-full", "overflow-y-auto");
+        this.classList.add("hidden", "opacity-0", "animated", "card", "bg-base-100/40", "backdrop-blur-sm", "shadow-lg", "max-h-60", "w-full", "overflow-y-auto");
         this.style.scrollbarWidth = "none";
 
         this.loadTemplate();
@@ -44,7 +44,6 @@ export class SuggestionsComponent extends BaseComponent {
     }
 
     public hide(): void {
-        // Sofort schließen ohne weitere Anfragen
         this.latestTerm = "";
         this.session = undefined;
         this.resetSuggestions();
@@ -141,14 +140,12 @@ export class SuggestionsComponent extends BaseComponent {
             }
         });
 
-        // Reihenfolge & Einfügen / Aktualisieren
         let prevRow: HTMLTableRowElement | null = null;
         for (const suggestion of sortedSuggestions) {
             const idStr = suggestion.id.toString();
             let row = existingRows.get(idStr);
 
             if (!row) {
-                // Neue Zeile erstellen
                 row = document.createElement("tr");
                 row.dataset.id = idStr;
                 row.dataset.name = suggestion.name;
@@ -160,6 +157,15 @@ export class SuggestionsComponent extends BaseComponent {
                 nameCell.classList.add("pl-6");
                 row.appendChild(nameCell);
 
+                const commonNameCell = document.createElement("td");
+                if (suggestion.commonName) {
+                    const nameBadge = document.createElement("span");
+                    nameBadge.classList.add("badge", "badge-soft", "badge-primary", "capitalize");
+                    nameBadge.textContent = suggestion.commonName || "";
+                    commonNameCell.appendChild(nameBadge);
+                }
+                row.appendChild(commonNameCell);
+
                 const idCell = document.createElement("td");
                 idCell.textContent = idStr;
                 idCell.classList.add("pr-6", "text-right");
@@ -167,7 +173,6 @@ export class SuggestionsComponent extends BaseComponent {
 
                 existingRows.set(idStr, row);
             } else {
-                // Name ggf. aktualisieren
                 if (row.dataset.name !== suggestion.name) {
                     row.dataset.name = suggestion.name;
                     if (row.cells[0]) {
@@ -176,11 +181,9 @@ export class SuggestionsComponent extends BaseComponent {
                 }
             }
 
-            // Disabled Style anwenden / entfernen
             const isSelected = selectedIds.has(suggestion.id);
             this.applyDisabledStyle(row, isSelected);
 
-            // Korrekte Position sicherstellen
             const desiredNextSibling = prevRow ? prevRow.nextSibling : tbody.firstChild;
             if (row !== desiredNextSibling) {
                 tbody.insertBefore(row, desiredNextSibling);

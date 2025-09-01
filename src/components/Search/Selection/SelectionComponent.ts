@@ -13,7 +13,7 @@ export class SelectionComponent extends BaseComponent {
     constructor() {
         super(HTMLtemplate);
 
-        this.classList.add("hidden", "h-fit", "min-h-8", "w-8/12", "animated", "card", "card-xs", "bg-primary/2", "backdrop-blur-xs", "shadow-lg");
+        this.classList.add("hidden", "h-fit", "min-h-8", "w-8/12", "animated", "card", "card-border", "card-xs", "bg-base-100/40", "backdrop-blur-sm", "shadow-lg");
 
         this.loadTemplate();
     }

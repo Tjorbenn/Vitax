@@ -4,7 +4,6 @@ import * as d3 from "d3";
 import HTMLtemplate from "./TaxonPopoverTemplate.html?raw";
 
 export class TaxonPopoverComponent extends BaseComponent {
-    // D3 HierarchyNode (mit Taxon Daten) statt direkter Taxon Referenz
     private node?: (d3.HierarchyNode<Taxon> & { collapsed?: boolean });
 
     private nameElement?: HTMLHeadingElement;
@@ -17,15 +16,11 @@ export class TaxonPopoverComponent extends BaseComponent {
 
     constructor() {
         super(HTMLtemplate);
-        this.classList.add("hidden", "opacity-0", "pointer-events-none", "animated", "absolute", "z-50", "card", "card-sm", "card-border", "bg-primary/2", "backdrop-blur-xs", "shadow-lg");
+        this.classList.add("hidden", "opacity-0", "pointer-events-none", "animated", "absolute", "z-50", "card", "card-sm", "card-border", "bg-base-100/40", "backdrop-blur-sm", "shadow-lg");
         this.style.position = "absolute";
         this.loadTemplate();
     }
 
-    /**
-     * Setzt den aktuell anzuzeigenden HierarchyNode.
-     * Vereinfacht zukünftige direkte Aktionen (expand/collapse), da der Zustand (collapsed, children, parent) direkt vorliegt.
-     */
     public setNode(node: d3.HierarchyNode<Taxon> & { collapsed?: boolean }): void {
         this.node = node;
         this.updateContent();
@@ -118,7 +113,7 @@ export class TaxonPopoverComponent extends BaseComponent {
                 figureElement.innerHTML = "<span class=\"icon-[material-symbols--identity-platform-rounded]\" ></span>";
                 break;
             default:
-                figureElement.innerHTML = "<span class=\"icon-[material-symbols--account-tree-rounded]\" ></span>";
+                figureElement.innerHTML = "<span class=\"icon-[material-symbols--question-mark-rounded]\"></span>";
         }
         const icon = figureElement.querySelector("span");
         if (icon) {
@@ -172,13 +167,13 @@ export class TaxonPopoverComponent extends BaseComponent {
 
     /** Popover an Bildschirm/Canvas-Koordinaten positionieren */
     public positionAt(canvasRect: DOMRect, viewportX: number, viewportY: number): void {
-        // Offset relativ zum Canvas berechnen (ursprüngliches Verhalten: rechts/unten versetzt)
+        // Offset relativ zum Canvas
         const localX = viewportX - canvasRect.left;
         const localY = viewportY - canvasRect.top;
         const offset = 10;
         this.style.left = `${localX + offset}px`;
         this.style.top = `${localY + offset}px`;
-        // Bounds-Korrektur simpel
+        // Bounds-Korrektur
         const ownRect = this.getBoundingClientRect();
         const overflowX = ownRect.right - canvasRect.right;
         const overflowY = ownRect.bottom - canvasRect.bottom;

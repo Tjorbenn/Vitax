@@ -7,7 +7,6 @@ import { Router } from "../../core/Routing.ts";
 import { State } from "../../core/State.ts";
 import { Status } from "../../types/Application";
 
-// Ensure subcomponents are defined
 import "./Selection/SelectionComponent.ts";
 import { SelectionComponent } from "./Selection/SelectionComponent.ts";
 import "./Suggestions/SuggestionsComponent.ts";
@@ -25,11 +24,7 @@ export class SearchComponent extends BaseComponent {
     private state: State = State.getInstance();
 
     private debounceTimer?: number;
-    private readonly debounceDelay: number = (() => {
-        const raw = (import.meta as any).env?.VITAX_SUGGESTIONS_DEBOUNCE;
-        const n = Number(raw);
-        return Number.isFinite(n) && n > 0 ? n : 300;
-    })();
+    private debounceDelay: number = import.meta.env.VITAX_DEBOUNCE_TIME;
 
     private orchestrator: Orchestrator = Orchestrator.getInstance();
 
@@ -122,7 +117,6 @@ export class SearchComponent extends BaseComponent {
             const term = this.input.value.trim();
             if (!term) return;
 
-            // Laufenden Debounce abbrechen, damit keine nachträgliche Anfrage mehr feuert
             if (this.debounceTimer) {
                 clearTimeout(this.debounceTimer);
                 this.debounceTimer = undefined;
@@ -153,7 +147,6 @@ export class SearchComponent extends BaseComponent {
 
 }
 
-// Timer aufräumen wenn das Element aus dem DOM entfernt wird
 (SearchComponent.prototype as any).disconnectedCallback = function () {
     if (this.debounceTimer) {
         clearTimeout(this.debounceTimer);

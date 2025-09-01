@@ -6,10 +6,6 @@ import { State } from "../core/State";
 
 export interface D3VisualizationExtents { minX: number; maxX: number; minY: number; maxY: number; }
 
-/**
- * Base-Klasse für D3-Renderer innerhalb des neuen Architektur-Layouts.
- * Sie erhält lediglich eine Layer-<g>-Gruppe als Zeichenfläche. Zoom/Pan erfolgt außerhalb.
- */
 export abstract class D3Visualization {
   protected layer: d3.Selection<SVGGElement, unknown, null, undefined>;
   protected width = 0;
@@ -25,7 +21,6 @@ export abstract class D3Visualization {
     this.height = bbox.height || 600;
   }
 
-  /** Muss von Subklassen nach deren eigener Initialisierung aufgerufen werden. */
   protected activateStateSubscription(): void {
     this.state.subscribeToTree(this.updateHierarchy.bind(this));
     this.updateHierarchy(this.state.getTree());
@@ -44,7 +39,6 @@ export abstract class D3Visualization {
     void this.update();
   }
 
-  /** Standard-Initialisierung für das erste Rendern. */
   protected initializeRootForRender(): void {
     if (!this.root) return;
     if (this.root.x0 === undefined) this.root.x0 = this.height / 2;
@@ -62,8 +56,6 @@ export abstract class D3Visualization {
 
   protected getNodeFill(d: any): string {
     const q = this.getQuery();
-    // Farbdefinitionen dynamisch anhand DaisyUI CSS Variablen (Theme-abhängig)
-    // Wir lesen sie lazily aus :root (bzw. html[data-theme]) und cachen lokal.
     const themeVars = this.getThemeColors();
     if (q?.some(t => t.id === d.data.id)) return themeVars.primary; // Treffer -> Primary
     return d.children ? themeVars.neutral : themeVars.base300; // Eltern vs. Blätter
@@ -73,9 +65,8 @@ export abstract class D3Visualization {
   private getThemeColors(): { primary: string; neutral: string; base200: string; base300: string; base100: string; text: string; link: string } {
     const now = Date.now();
     if (this._cachedTheme && (now - this._cachedTheme.ts) < 2000) return this._cachedTheme.values; // 2s Cache
-    const docEl = document.documentElement; // html Element trägt data-theme
+    const docEl = document.documentElement;
     const styles = getComputedStyle(docEl);
-    // DaisyUI legt Variablen als --color-<name> ab
     const read = (name: string, fallback: string) => styles.getPropertyValue(name).trim() || fallback;
     const values = {
       primary: read('--color-primary', '#0d9488'),
@@ -90,9 +81,6 @@ export abstract class D3Visualization {
     return values;
   }
 
-  /**
-   * Baum eine Ebene nach oben erweitern (Parent als neuen Root holen) und State aktualisieren.
-   */
   protected async upRoot(): Promise<void> {
     const tree = this.state.getTree();
     if (!tree) return;
@@ -102,17 +90,11 @@ export abstract class D3Visualization {
     }
   }
 
-  /**
-   * Fehlende Kinder für einen Knoten nachladen und State aktualisieren.
-   */
   protected async getChildren(datum: d3.HierarchyNode<Taxon>): Promise<void> {
     await this.taxonomyService.resolveChildren(datum.data);
     this.state.treeHasChanged();
   }
 
-  /**
-   * Extents des aktuellen Layouts berechnen (zur Zentrierung außerhalb).
-   */
   public getExtents(): D3VisualizationExtents | undefined {
     if (!this.root) return undefined;
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
@@ -126,26 +108,14 @@ export abstract class D3Visualization {
     return { minX, maxX, minY, maxY };
   }
 
-  /**
-   * Zeichenfläche leeren.
-   */
   public clear(): void {
     this.layer.selectAll("*").remove();
   }
 
-  /**
-   * Muss initiales Rendern durchführen; liefert optional Extents zurück.
-   */
   public abstract render(): Promise<D3VisualizationExtents | undefined>;
 
-  /**
-   * Update nach Interaktion/State-Änderung.
-   */
   public abstract update(event?: MouseEvent, source?: any, duration?: number): Promise<void>;
 
-  /**
-   * Ressourcen freigeben.
-   */
   public dispose(): void {
     this.clear();
   }

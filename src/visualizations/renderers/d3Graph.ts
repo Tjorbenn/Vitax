@@ -3,10 +3,6 @@ import * as d3 from "d3";
 import type { Taxon } from "../../types/Taxonomy";
 import { D3Visualization, type D3VisualizationExtents } from "../d3Visualization";
 
-/**
- * Force-gerichteter Graph (Parent-Kind-Kanten) auf Basis der Taxonomie-Hierarchie.
- * Nutzt Kollaps-Logik wie der Tree-Renderer: eingeklappte Knoten blenden Nachkommen aus.
- */
 export class D3Graph extends D3Visualization {
     private simulation: d3.Simulation<d3.HierarchyNode<Taxon>, undefined>;
     private gLink: d3.Selection<SVGGElement, unknown, null, undefined>;
@@ -30,7 +26,6 @@ export class D3Graph extends D3Visualization {
             .attr("cursor", "pointer")
             .attr("pointer-events", "all");
 
-        // Grundsimulation – Details (distance, strength, collision) werden dynamisch pro Update gesetzt
         this.simulation = d3.forceSimulation<d3.HierarchyNode<Taxon>>([])
             .force("link", d3.forceLink<d3.HierarchyNode<Taxon>, d3.HierarchyLink<Taxon>>([])
                 .id((d: any) => d.data.id))
@@ -39,7 +34,6 @@ export class D3Graph extends D3Visualization {
             .force("center", d3.forceCenter(0, 0))
             .force("x", d3.forceX().strength(0.02))
             .force("y", d3.forceY().strength(0.02))
-            // Ausgewogenere Decay-Werte: weniger Dämpfung als zuletzt, bessere Bewegung für Ordnung
             .velocityDecay(0.2)
             .alphaDecay(0.02);
 
@@ -69,7 +63,6 @@ export class D3Graph extends D3Visualization {
     }
 
     public async render(): Promise<D3VisualizationExtents | undefined> {
-        // Erstes Update startet Simulation
         await this.update();
         return this.getExtents();
     }
@@ -78,26 +71,20 @@ export class D3Graph extends D3Visualization {
         if (!this.root) return;
         this.initializeRootForRender();
 
-        // IDs sicherstellen
         this.root.each((d: any) => { d.id = d.data.id; });
 
-        // Alle Knoten / Links anzeigen (keine Collapse-Logik im Graph)
+        // Alle Knoten / Links anzeigen (kein Collapse im Graph)
         const visibleNodes = this.root.descendants() as unknown as Array<d3.HierarchyNode<Taxon> & { _metrics?: any }>;
         const visibleLinks = this.root.links();
 
         // Metriken berechnen (Größen-/Abstands-Skalierung)
         this.computeNodeMetrics(visibleNodes as any);
 
-        // Lightweight renderer: skip long-link accumulation to reduce CPU.
-        // We rely on simple distance/strength heuristics below.
-
-        // JOIN: Links
         const linkSel = this.gLink.selectAll<SVGLineElement, d3.HierarchyPointLink<Taxon>>("line")
             .data(visibleLinks as any, (d: any) => (d.target as any).id);
         linkSel.enter().append("line");
         linkSel.exit().remove();
 
-        // JOIN: Nodes (als <g> für Kreis + Text)
         const nodeSel = this.gNode.selectAll<SVGGElement, d3.HierarchyNode<Taxon>>("g")
             .data(visibleNodes as any, (d: any) => (d as any).id);
 
@@ -144,7 +131,6 @@ export class D3Graph extends D3Visualization {
             .attr("stroke-width", 3)
             .attr("paint-order", "stroke");
 
-        // Hide label for leaf nodes and nodes deeper than labelDepthLimit
         nodeEnter.selectAll("text")
             .style("display", (d: any) => {
                 if ((d.depth || 0) > this.labelDepthLimit) return "none";
@@ -155,25 +141,19 @@ export class D3Graph extends D3Visualization {
 
         const mergedNodes = nodeEnter.merge(nodeSel as any);
 
-        // Simulation aktualisieren
-        // Link Force feinjustieren (Distanz & Stärke nach Knotengröße und Children-Count)
         (this.simulation.force("link") as d3.ForceLink<d3.HierarchyNode<Taxon>, any>)
             .links(visibleLinks as any)
             .distance((l: any) => this.linkDistance(l.source as any, l.target as any))
             .strength((l: any) => this.linkStrength(l.source as any, l.target as any));
-        // record node count for adaptive tuning
         this.nodeCountForForces = visibleNodes.length;
 
-        // determine label depth limit: only first N layers get labels (proportional to tree depth)
+        // determine label depth limit, only first N layers get labels (proportional to tree depth)
         const maxDepth = d3.max(visibleNodes, (n: any) => n.depth) || 1;
         this.labelDepthLimit = Math.max(1, Math.ceil(maxDepth * 0.5));
         const chargeForce = this.simulation.force("charge") as d3.ForceManyBody<d3.HierarchyNode<Taxon>>;
-        // Vereinfachte, mildere Abstoßung: verringert extreme Repulsion, verbessert Packen
         chargeForce.strength((d: any) => this.chargeStrength(d));
 
-        // Collision Radius aktualisieren (vereinfacht für weniger CPU)
         const collideForce = this.simulation.force("collide") as d3.ForceCollide<d3.HierarchyNode<Taxon>>;
-        // adaptive collide iterations: mehr Knoten -> weniger Iterationen
         const adaptiveCollideIters = Math.max(1, Math.floor(4 - Math.log10(Math.max(10, this.nodeCountForForces || 10))));
         collideForce.radius((d: any) => this.collideRadius(d)).iterations(adaptiveCollideIters);
 
@@ -184,10 +164,8 @@ export class D3Graph extends D3Visualization {
         this.simulation.nodes(visibleNodes as any);
         (this.simulation.force("link") as d3.ForceLink<any, any>).links(visibleLinks as any);
 
-        // light reheating on structural change
         const nodeCountChanged = visibleNodes.length !== this.lastNodeCount;
         if (nodeCountChanged || source) {
-            // Reheat moderate and perform a short synchronous tick burst scaled by node count
             const burst = Math.max(8, Math.floor(2000 / Math.max(10, this.nodeCountForForces))); // smaller graphs -> larger bursts
             this.simulation.alpha(0.6).restart();
             try {
@@ -195,11 +173,10 @@ export class D3Graph extends D3Visualization {
             } catch (e) {
                 // ignore
             }
-            // reduce alpha so it continues finer adjustments without heavy CPU
             this.simulation.alphaTarget(0.02);
         }
 
-        // minimal tick handler to update DOM positions (lightweight) with throttling
+        // minimal tick handler to update DOM positions with throttling
         this.simulation.on("tick", () => {
             this.tickCounter = (this.tickCounter + 1) % Math.max(1, Math.floor(Math.log10(Math.max(10, this.nodeCountForForces)) + 1));
             // Only update DOM every N ticks based on graph size
@@ -247,7 +224,6 @@ export class D3Graph extends D3Visualization {
             const r = radiusScale(useGenome ? gTotal : degree + 1);
             n._metrics = { r, degree, gTotal, childrenCount };
         });
-        // global max children (für maßgeschneiderte Kräfte)
         this.maxChildrenCount = d3.max(nodes, n => (n._metrics?.childrenCount || 0)) || 0;
     }
 
@@ -256,7 +232,6 @@ export class D3Graph extends D3Visualization {
         return Object.values(gc).reduce((acc: number, v: any) => acc + (typeof v === "number" ? v : 0), 0);
     }
 
-    // --- Helper functions to keep force logic compact and testable ---
     private isLeaf(n: any): boolean {
         return (n._metrics?.childrenCount || 0) === 0;
     }
@@ -275,11 +250,11 @@ export class D3Graph extends D3Visualization {
         let base = 0.85;
         if (this.isLeaf(t)) base += 0.18;
         base += Math.min(0.2, (Math.sqrt(sChildren) + Math.sqrt(tChildren)) * 0.04);
-        // If either node has very many children (relative to max), slightly reduce strength to avoid oscillation
+        // If either node has very many children, slightly reduce strength to avoid oscillation
         const maxCh = this.maxChildrenCount || 1;
         const highThresh = Math.max(6, Math.floor(maxCh * 0.6));
         if (sChildren >= highThresh || tChildren >= highThresh) {
-            base *= 0.85;
+            base *= 0.75;
         }
         return Math.min(0.995, base);
     }

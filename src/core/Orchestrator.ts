@@ -31,8 +31,7 @@ export class Orchestrator {
     public async resolveTree(): Promise<void> {
         const query = this.state.getQuery();
         if (!query || !query.first()) {
-            // Nichts zu tun -> Idle lassen
-            return;
+            throw new Error("No valid query found");
         }
 
         this.state.setStatus(Status.Loading);

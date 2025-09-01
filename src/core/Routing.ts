@@ -9,9 +9,6 @@ export class Router {
     private orchestrator: Orchestrator = Orchestrator.getInstance();
 
     private constructor() {
-        // Do not auto-update the URL on every state change.
-        // URL updates should only happen when the user explicitly requests it
-        // (for example by pressing the "Visualize" button).
     }
 
     public static getInstance(): Router {
@@ -23,6 +20,7 @@ export class Router {
 
     public async setupRouting() {
         await this.initRoutingFromUrl();
+        await this.handleBaseUrlRouting();
         this.registerPopStateHandler();
     }
 
@@ -37,6 +35,13 @@ export class Router {
 
         await this.orchestrator.resolveTree();
         window.dispatchEvent(new CustomEvent('vitax:resetView'));
+    }
+
+    public async handleBaseUrlRouting(): Promise<void> {
+        const { pathname } = window.location;
+        if (pathname === "/") {
+            window.location.replace(`${this.visualizePath}?taxa=9605&type=descendants&display=tree`);
+        }
     }
 
     public registerPopStateHandler() {

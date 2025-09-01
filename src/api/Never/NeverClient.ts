@@ -255,7 +255,8 @@ export class NeverAPI {
         }
         const suggestions = new Set(response.map(entry => ({
             id: entry.taxid!,
-            name: entry.name!
+            name: entry.name!,
+            commonName: entry.common_name
         })));
         return suggestions;
     }

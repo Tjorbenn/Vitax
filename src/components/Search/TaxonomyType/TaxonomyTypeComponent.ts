@@ -30,13 +30,18 @@ export class TaxonomyTypeComponent extends BaseComponent {
         if (!currentType) {
             throw new Error("Current taxonomy type not found");
         }
-        this.label.textContent = currentType.toString();
 
         Object.values(TaxonomyType).forEach((type) => {
             const item = document.createElement("li");
             const anchor = document.createElement("a");
             anchor.dataset.type = type;
-            anchor.classList.add("cursor-pointer", "animated", "capitalize");
+            anchor.classList.add("cursor-pointer", "animated");
+            if (type === "mrca") {
+                anchor.classList.add("uppercase");
+            }
+            else {
+                anchor.classList.add("capitalize");
+            }
 
             if (type === currentType) {
                 this.addStatus(anchor);
