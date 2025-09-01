@@ -1,0 +1,113 @@
+@utility card {
+    @apply border-base-300;
+}
+
+@plugin "daisyui/theme" {
+    name: "mpg-light";
+    default: true;
+    prefersdark: false;
+    color-scheme: "light";
+    --color-primary: oklch(50.06% 0.118 168.43);
+    /* MPG-Grün */
+    --color-primary-content: oklch(100% 0 0);
+    /* White */
+    --color-secondary: oklch(41.16% 0.088 179.62);
+    /* Sekundäres Grün */
+    --color-secondary-content: oklch(100% 0 0);
+    /* White */
+    --color-accent: oklch(84.13% 0.224 111.45);
+    /* Akzentfarbe Lime */
+    --color-accent-content: oklch(25.31% 0.052 111.45);
+    /* Darker Lime for contrast */
+    --color-neutral: oklch(37.18% 0.001 268.44);
+    /* MPG-Grau */
+    --color-neutral-content: oklch(100% 0 0);
+    /* White */
+    --color-base-100: oklch(100% 0 0);
+    /* White */
+    --color-base-200: oklch(98.05% 0.003 283.44);
+    /* Hellgrau */
+    --color-base-300: oklch(95.7% 0.003 283.44);
+    /* Hintergrund-Grau */
+    --color-base-content: oklch(0% 0 0);
+    /* Black */
+    --color-info: oklch(71.46% 0.141 229.05);
+    /* Akzentfarbe Blau */
+    --color-info-content: oklch(100% 0 0);
+    /* White */
+    --color-success: oklch(50.06% 0.118 168.43);
+    /* MPG-Grün */
+    --color-success-content: oklch(100% 0 0);
+    /* White */
+    --color-warning: oklch(71.85% 0.155 79.73);
+    /* Akzentfarbe Orange */
+    --color-warning-content: oklch(100% 0 0);
+    /* White */
+    --color-error: oklch(62.79% 0.224 19.69);
+    /* Standard Red */
+    --color-error-content: oklch(100% 0 0);
+    /* White */
+    --radius-selector: 0.5rem;
+    --radius-field: 0.5rem;
+    --radius-box: 0.5rem;
+    --size-selector: 0.25rem;
+    --size-field: 0.25rem;
+    --border: 1.5px;
+    --depth: 1;
+    --noise: 0;
+}
+
+@plugin "daisyui/theme" {
+    name: "mpg-dark";
+    default: false;
+    prefersdark: true;
+    color-scheme: "dark";
+    --color-primary: oklch(60% 0.12 168.43);
+    /* Lighter MPG-Grün */
+    --color-primary-content: oklch(24.9% 0.015 237.58);
+    /* Dark Blue-Gray for content */
+    --color-secondary: oklch(55% 0.09 179.62);
+    /* Lighter Sekundäres Grün */
+    --color-secondary-content: oklch(24.9% 0.015 237.58);
+    /* Dark Blue-Gray for content */
+    --color-accent: oklch(85% 0.22 111.45);
+    /* Lighter Akzentfarbe Lime */
+    --color-accent-content: oklch(24.9% 0.015 237.58);
+    /* Dark Blue-Gray for content */
+    --color-neutral: oklch(98.05% 0.003 283.44);
+    /* Light Gray (inverted MPG-Grau) */
+    --color-neutral-content: oklch(24.9% 0.015 237.58);
+    /* Dark Blue-Gray for content */
+    --color-base-100: oklch(24.9% 0.015 237.58);
+    /* Blaugrau Dark */
+    --color-base-200: oklch(34.9% 0.015 237.58);
+    /* Blaugrau Medium */
+    --color-base-300: oklch(44.9% 0.015 237.58);
+    /* Blaugrau Light */
+    --color-base-content: oklch(98.05% 0.003 283.44);
+    /* Hellgrau (for text) */
+    --color-info: oklch(71.46% 0.141 229.05);
+    /* Akzentfarbe Blau */
+    --color-info-content: oklch(24.9% 0.015 237.58);
+    /* Dark Blue-Gray for content */
+    --color-success: oklch(60% 0.12 168.43);
+    /* Lighter MPG-Grün */
+    --color-success-content: oklch(24.9% 0.015 237.58);
+    /* Dark Blue-Gray for content */
+    --color-warning: oklch(71.85% 0.155 79.73);
+    /* Akzentfarbe Orange */
+    --color-warning-content: oklch(24.9% 0.015 237.58);
+    /* Dark Blue-Gray for content */
+    --color-error: oklch(62.79% 0.224 19.69);
+    /* Standard Red */
+    --color-error-content: oklch(24.9% 0.015 237.58);
+    /* Dark Blue-Gray for content */
+    --radius-selector: 0.5rem;
+    --radius-field: 0.5rem;
+    --radius-box: 0.5rem;
+    --size-selector: 0.25rem;
+    --size-field: 0.25rem;
+    --border: 1.5px;
+    --depth: 1;
+    --noise: 0;
+}

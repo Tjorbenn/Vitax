@@ -1,7 +1,44 @@
+export interface Accession {
+  accession: string;
+  level: GenomeLevel;
+}
+
+export enum Rank {
+  None = "no rank",
+  Domain = "domain",
+  Kingdom = "kingdom",
+  Phylum = "phylum",
+  Class = "class",
+  Order = "order",
+  Family = "family",
+  Subfamily = "subfamily",
+  Genus = "genus",
+  Group = "species group",
+  Subgroup = "species subgroup",
+  Species = "species"
+}
+
+export interface GenomeCount {
+  [GenomeLevel.Complete]?: number;
+  [GenomeLevel.Chromosome]?: number;
+  [GenomeLevel.Scaffold]?: number;
+  [GenomeLevel.Contig]?: number;
+}
+
+export enum GenomeLevel {
+  Complete = "complete",
+  Chromosome = "chromosome",
+  Scaffold = "scaffold",
+  Contig = "contig"
+}
+
 export class Taxon {
   public id: number;
   public name: string;
-  public rank?: string;
+  public commonName?: string;
+  public isLeaf?: boolean;
+  public accessions?: Accession[];
+  public rank?: Rank;
   public parentId?: number;
   public parent?: Taxon;
   public children: Set<Taxon>;
@@ -12,10 +49,6 @@ export class Taxon {
     this.id = id;
     this.name = name;
     this.children = new Set();
-  }
-
-  public toString(): string {
-    return `Taxon: ${this.name} (ID: ${this.id}) [Parent ID: ${this.parentId || "N/A"} | Parent: ${this.parent?.name || "N/A"} | Children Count: ${this.children.size}]`;
   }
 
   public setParent(parent: Taxon): this {
@@ -43,6 +76,12 @@ export class Taxon {
     else {
       return this.children.some(c => c.id === child.id);
     }
+  }
+
+  public setChildren(children: Set<Taxon>): this {
+    this.children = children;
+    children.forEach(child => child.setParent(this));
+    return this;
   }
 
   public addChild(child: Taxon): this {
@@ -129,16 +168,29 @@ export class IndexedTaxa {
   }
 }
 
-export interface GenomeCount {
-  [GenomeLevel.Complete]?: number;
-  [GenomeLevel.Chromosome]?: number;
-  [GenomeLevel.Scaffold]?: number;
-  [GenomeLevel.Contig]?: number;
-}
+/**
+ * Converts an array of Taxon objects into a TaxonomyTree.
+ * The first taxon in the array that has no parent or is its own parent is considered the root.
+ * Each taxon will have its children populated based on the parentId.
+ * @param taxa - An array of Taxon objects.
+ * @returns A TaxonomyTree with the root taxon and its children populated.
+ * @throws Will throw an error if the taxa array is empty or if no root taxon is found.
+*/
+export function TaxaToTree(taxa: Set<Taxon>): TaxonomyTree {
+  if (taxa.size === 0) {
+    throw new Error("Cannot create tree from empty taxa array.");
+  }
 
-export enum GenomeLevel {
-  Complete = "complete",
-  Chromosome = "chromosome",
-  Scaffold = "scaffold",
-  Contig = "contig"
+  // Find the root taxon, which is either the one without a parent in the array or the one that is its own parent
+  const root = taxa.find(taxon => !taxa.some(child => child.id === taxon.parentId) || taxon.parentId === taxon.id);
+  if (!root) {
+    throw new Error("No root taxon found in: " + JSON.stringify(taxa));
+  }
+
+  for (const taxon of taxa) {
+    taxon.addChildren(new Set(taxa.filter(child => child.parentId === taxon.id)));
+  }
+
+  const tree = new TaxonomyTree(root);
+  return tree;
 }

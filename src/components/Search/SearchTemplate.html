@@ -1,0 +1,31 @@
+<search class="relative w-full">
+  <fieldset
+    class="shadow-lg card card-border animated bounce bounce-within join flex flex-row w-full max-w-full"
+  >
+    <taxonomy-type class="join-item"></taxonomy-type>
+    <label
+      class="input border-none join-item grow focus-within:outline-none bg-base-100/40 backdrop-blur-sm !shadow-none"
+    >
+      <span class="icon-[material-symbols--search-rounded] text-[1.5em]"></span>
+      <input
+        type="search"
+        id="search-input"
+        placeholder="Search taxa..."
+      />
+      <div>
+        <kbd class="kbd kbd-sm">CTRL</kbd>
+        +
+        <kbd class="kbd kbd-sm">K</kbd>
+      </div>
+    </label>
+    <button
+      type="submit"
+      class="btn btn-primary border-none join-item"
+    >
+      Visualize
+    </button>
+  </fieldset>
+  <section
+    class="absolute left-0 right-0 flex flex-col mt-4 gap-4 items-center animated"
+  ></section>
+</search>

@@ -1,7 +1,7 @@
-import { GenomeLevel, Taxon, type TaxonomyTree } from "../../types/Taxonomy";
+import { Taxon, Rank, type Accession, type TaxonomyTree, type GenomeCount } from "../../types/Taxonomy";
 import type { Suggestion } from "../../types/Application"
 import * as Never from "./Never";
-import { TaxaToTree } from "../../core/Utility";
+import { TaxaToTree } from "../../types/Taxonomy";
 
 export class NeverAPI {
     /**
@@ -18,21 +18,10 @@ export class NeverAPI {
             .addParameter(Never.ParameterKey.PageSize, 1);
 
         const response = await request.Send();
-        return EntryToTaxon(response[0]);
-    }
-
-    /**
-     * Get a taxon by its ID.
-     * @param taxonId The ID of the taxon to get.
-     * @returns A promise that resolves to the taxon.
-     */
-    public async getTaxonById(taxonId: number): Promise<Taxon> {
-        const request = new Never.Request(Never.Endpoint.TaxonInfo);
-        request.addParameter(Never.ParameterKey.Term, taxonId);
-
-        const response = await request.Send();
-
-        return EntryToTaxon(response[0]);
+        const taxa = this.MapResponseToTaxa(response);
+        const taxon = taxa.first();
+        if (!taxon) throw new Error(`Taxon '${name}' not found.`);
+        return taxon;
     }
 
     /**
@@ -40,25 +29,12 @@ export class NeverAPI {
      * @param taxonIds The IDs of the taxa to get.
      * @returns A promise that resolves to an array of taxa.
      */
-    public async getTaxaByTaxonIds(taxonIds: number[]): Promise<Set<Taxon>> {
+    public async getTaxaByIds(taxonIds: number[]): Promise<Set<Taxon>> {
         const request = new Never.Request(Never.Endpoint.TaxonInfo);
         request.addParameter(Never.ParameterKey.Term, taxonIds.join(","));
 
         const response = await request.Send();
-        return new Set(response.map(EntryToTaxon));
-    }
-
-    /**
-     * Get the name of a taxon by its ID.
-     * @param taxonId The ID of the taxon to get the name of.
-     * @returns A promise that resolves to the name of the taxon.
-     */
-    public async getNameByTaxonId(taxonId: number): Promise<string> {
-        const name = await this.getNamesByTaxonIds([taxonId]);
-        if (name.length === 0) {
-            throw new Error(`No taxon name found with ID: ${taxonId}`);
-        }
-        return name[0];
+        return await this.MapResponseToTaxa(response);
     }
 
     /**
@@ -79,6 +55,36 @@ export class NeverAPI {
         });
     }
 
+    public async getAccessionsFromTaxonId(taxonId: number): Promise<Accession[]> {
+        const request = new Never.Request(Never.Endpoint.Accessions);
+        request.addParameter(Never.ParameterKey.Term, taxonId);
+
+        const response = await request.Send();
+        return response.map(entry => {
+            if (!entry.accession || !entry.level) {
+                throw new Error("Missing accession in entry: " + JSON.stringify(entry));
+            }
+            return {
+                accession: entry.accession,
+                level: entry.level
+            };
+        });
+    }
+
+    public async getRanksByTaxonIds(taxonIds: number[]): Promise<Map<number, Rank>> {
+        const request = new Never.Request(Never.Endpoint.Ranks);
+        request.addParameter(Never.ParameterKey.Term, taxonIds.join(","));
+
+        const response = await request.Send();
+        const ranks: Map<number, Rank> = new Map();
+        for (const entry of response) {
+            if (entry.taxid && entry.rank) {
+                ranks.set(entry.taxid, entry.rank);
+            }
+        }
+        return ranks;
+    }
+
     /**
      * Get suggestions for a given name.
      * @param name The name to get suggestions for.
@@ -96,7 +102,7 @@ export class NeverAPI {
 
         const response = await request.Send();
 
-        return new Set(response.map(EntryToSuggestion));
+        return this.ResponseToSuggestions(response);
     }
 
     /**
@@ -110,7 +116,7 @@ export class NeverAPI {
 
         const response = await request.Send();
 
-        return new Set(response.map(EntryToTaxon));
+        return await this.ResponseToFullTaxa(response);
     }
 
     /**
@@ -140,9 +146,22 @@ export class NeverAPI {
         request.addParameter(Never.ParameterKey.Term, taxonId);
 
         const response = await request.Send();
-        const taxa = await this.getTaxaByTaxonIds(response.filter(entry => entry.taxid !== undefined).map(entry => entry.taxid as number));
+        const taxa = await this.getFullTaxaByIds(response.filter(entry => entry.taxid !== undefined).map(entry => entry.taxid as number));
 
         return TaxaToTree(taxa);
+    }
+
+    /**
+     * Get the subtree of a taxon by its ID as a flat array.
+     * @param taxonId The ID of the taxon to get the subtree of.
+    * @returns A promise that resolves to an array of taxa in the subtree.
+    */
+    public async getSubtreeByTaxonIdAsArray(taxonId: number): Promise<Set<Taxon>> {
+        const request = new Never.Request(Never.Endpoint.Subtree);
+        request.addParameter(Never.ParameterKey.Term, taxonId);
+
+        const response = await request.Send();
+        return this.ResponseToFullTaxa(response);
     }
 
     /**
@@ -159,21 +178,8 @@ export class NeverAPI {
             throw new Error(`No lineage found between ancestor ID ${ancestorId} and descendant ID ${descendantId}`);
         }
 
-        const taxa = await Promise.all(response.map(entry => this.EntryToFullTaxon(entry)));
-        return TaxaToTree(new Set(taxa));
-    }
-
-    /**
-     * Get the subtree of a taxon by its ID as a flat array.
-     * @param taxonId The ID of the taxon to get the subtree of.
-     * @returns A promise that resolves to an array of taxa in the subtree.
-     */
-    public async getSubtreeByTaxonIdAsArray(taxonId: number): Promise<Set<Taxon>> {
-        const request = new Never.Request(Never.Endpoint.Subtree);
-        request.addParameter(Never.ParameterKey.Term, taxonId);
-
-        const response = await request.Send();
-        return new Set(response.map(EntryToTaxon));
+        const taxa = await this.ResponseToFullTaxa(response);
+        return TaxaToTree(taxa);
     }
 
     /**
@@ -186,70 +192,81 @@ export class NeverAPI {
         request.addParameter(Never.ParameterKey.Term, taxonIds.join(","));
 
         const response = await request.Send();
-        const mrca = await this.getTaxonById(response[0].taxid as number);
 
+        if (!response[0].taxid) {
+            throw new Error("No MRCA found");
+        }
+        const mrcaSet = await this.getFullTaxaByIds([response[0].taxid]);
+        const mrca = mrcaSet.first();
+        if (!mrca) throw new Error("MRCA not resolved");
         return mrca;
     }
 
-    /**
-     * Converts a Never.Entry to a full Taxon object.
-     * @param entry The entry to convert.
-     * @returns A promise that resolves to the full Taxon object.
-     */
-    private async EntryToFullTaxon(entry: Never.Entry): Promise<Taxon> {
-        if (entry.taxid) {
-            const taxon = await this.getTaxonById(entry.taxid);
-            return taxon;
+    public async getFullTaxaByIds(taxonIds: number[]): Promise<Set<Taxon>> {
+        const taxa = await this.getTaxaByIds(taxonIds);
+        const ranks = await this.getRanksByTaxonIds(taxonIds);
+
+        await Promise.all(taxa.map(async taxon => {
+            taxon.rank = ranks.get(taxon.id);
+            taxon.accessions = await this.getAccessionsFromTaxonId(taxon.id);
+        }));
+
+        return taxa;
+    }
+
+    public async getFullTaxonByName(name: string): Promise<Taxon> {
+        const preTaxon = await this.getTaxonByName(name);
+        const full = await this.getFullTaxaByIds([preTaxon.id]);
+        const fullTaxon = full.first();
+        if (!fullTaxon) throw new Error(`Full taxon data for '${name}' not found.`);
+        return fullTaxon;
+    }
+
+    private MapResponseToTaxa(response: Never.Response): Set<Taxon> {
+        if (response.some(entry => !entry.taxid || !entry.name)) {
+            throw new Error("Incomplete taxon entry found: " + JSON.stringify(response.find(entry => !entry.taxid || !entry.name)));
         }
-        else if (entry.name) {
-            const preTaxon = await this.getTaxonByName(entry.name);
-            const taxon = await this.getTaxonById(preTaxon.id);
-            return taxon;
+        const taxa = new Set<Taxon>();
+        response.forEach(entry => {
+            const taxon = new Taxon(entry.taxid!, entry.name!);
+            taxon.commonName = entry.common_name;
+            taxon.isLeaf = entry.is_leaf;
+            taxon.parentId = entry.parent;
+            taxon.genomeCount = this.FormatGenomeCount(entry.raw_genome_counts);
+            taxon.genomeCountRecursive = this.FormatGenomeCount(entry.rec_genome_counts);
+            taxa.add(taxon);
+        });
+        return taxa;
+    }
+
+    private async ResponseToFullTaxa(response: Never.Response): Promise<Set<Taxon>> {
+        if (response.some(entry => entry.taxid === undefined)) {
+            throw new Error("Incomplete taxon entry found: " + JSON.stringify(response.find(entry => entry.taxid === undefined)));
         }
         else {
-            throw new Error("Incomplete taxon entry: " + JSON.stringify(entry));
+            const taxonIds = response.map(entry => entry.taxid!);
+            return await this.getFullTaxaByIds(taxonIds);
         }
     }
-}
 
-/**
- * Converts a Never.Entry to a Taxon.
- * @param entry The entry to convert.
- * @returns The converted taxon.
- */
-function EntryToTaxon(entry: Never.Entry): Taxon {
-    if (!entry.taxid || !entry.name) {
-        throw new Error("Incomplete taxon entry: " + JSON.stringify(entry));
+    private ResponseToSuggestions(response: Never.Response): Set<Suggestion> {
+        if (response.some(entry => !entry.taxid || !entry.name)) {
+            throw new Error("Incomplete suggestion entry found: " + JSON.stringify(response.find(entry => !entry.taxid || !entry.name)));
+        }
+        const suggestions = new Set(response.map(entry => ({
+            id: entry.taxid!,
+            name: entry.name!,
+            commonName: entry.common_name
+        })));
+        return suggestions;
     }
-    const taxon = new Taxon(entry.taxid, entry.name);
-    taxon.rank = entry.rank ?? undefined;
-    taxon.parentId = entry.parent ?? undefined;
-    taxon.genomeCount = {
-        [GenomeLevel.Complete]: entry.raw_genome_counts?.find(count => count.level === GenomeLevel.Complete)?.count ?? undefined,
-        [GenomeLevel.Chromosome]: entry.raw_genome_counts?.find(count => count.level === GenomeLevel.Chromosome)?.count ?? undefined,
-        [GenomeLevel.Scaffold]: entry.raw_genome_counts?.find(count => count.level === GenomeLevel.Scaffold)?.count ?? undefined,
-        [GenomeLevel.Contig]: entry.raw_genome_counts?.find(count => count.level === GenomeLevel.Contig)?.count ?? undefined,
-    };
-    taxon.genomeCountRecursive = {
-        [GenomeLevel.Complete]: entry.rec_genome_counts?.find(count => count.level === GenomeLevel.Complete)?.count ?? undefined,
-        [GenomeLevel.Chromosome]: entry.rec_genome_counts?.find(count => count.level === GenomeLevel.Chromosome)?.count ?? undefined,
-        [GenomeLevel.Scaffold]: entry.rec_genome_counts?.find(count => count.level === GenomeLevel.Scaffold)?.count ?? undefined,
-        [GenomeLevel.Contig]: entry.rec_genome_counts?.find(count => count.level === GenomeLevel.Contig)?.count ?? undefined,
-    };
-    return taxon;
-}
 
-/**
- * Converts a Never.Entry to a Suggestion.
- * @param entry The entry to convert.
- * @returns The converted suggestion.
- */
-function EntryToSuggestion(entry: Never.Entry): Suggestion {
-    if (!entry.taxid || !entry.name) {
-        throw new Error("Incomplete suggestion entry: " + JSON.stringify(entry));
+    private FormatGenomeCount(neverGenomeCounts?: Never.NeverGenomeCount[]): GenomeCount | undefined {
+        if (!neverGenomeCounts) return;
+        const genomeCount: GenomeCount = {};
+        neverGenomeCounts.forEach(neverGenomeCount => {
+            genomeCount[neverGenomeCount.level] = neverGenomeCount.count;
+        });
+        return genomeCount;
     }
-    return {
-        id: entry.taxid,
-        name: entry.name
-    };
 }

@@ -1,6 +1,5 @@
 import { Taxon, TaxonomyTree } from "../types/Taxonomy";
 import { NeverAPI } from "../api/Never/NeverClient";
-import { TaxaToTree } from "../core/Utility"
 
 export class TaxonomyService {
     private api: NeverAPI = new NeverAPI();
@@ -11,7 +10,8 @@ export class TaxonomyService {
      * @returns A promise that resolves to a TaxonomyTree with the query taxon as the root.
      */
     public async getTaxonTree(query: Taxon): Promise<TaxonomyTree> {
-        const taxon = await this.api.getTaxonById(query.id);
+        const taxa = await this.api.getTaxaByIds([query.id]);
+        const taxon = taxa.first();
         if (!taxon) {
             throw new Error(`Taxon with id ${query.id} not found.`);
         }
@@ -27,10 +27,7 @@ export class TaxonomyService {
      */
     public async getDescendantsTree(query: Taxon): Promise<TaxonomyTree> {
         const subtree = await this.api.getSubtreeByTaxonId(query.id);
-        const taxa = subtree.toSet();
-        const fullTaxa = await this.getFullTaxa(taxa);
-        const descTree = TaxaToTree(fullTaxa);
-        return descTree;
+        return subtree;
     }
 
     /**
@@ -111,46 +108,36 @@ export class TaxonomyService {
         if (taxon.parentId === undefined) {
             taxon.parentId = await this.api.getParentIdByTaxonId(taxon.id);
         }
-        const parent = await this.api.getTaxonById(taxon.parentId);
+        const parents = await this.api.getFullTaxaByIds([taxon.parentId]);
+        const parent = parents.first();
+        if (!parent) {
+            throw new Error(`Parent taxon ${taxon.parentId} not resolved for ${taxon.id}`);
+        }
         return parent;
     }
 
-    public async getChildren(taxon: Taxon): Promise<Set<Taxon>> {
-        const children = await this.api.getChildrenByTaxonId(taxon.id);
-        const fullChildren = await this.getFullTaxa(children);
-        return new Set(fullChildren);
-    }
-
-    public async resolveParent(taxon: Taxon): Promise<Taxon> {
+    public async resolveParent(taxon: Taxon) {
         const parent = await this.getParent(taxon);
         taxon.setParent(parent);
         return taxon;
     }
 
-    /**
-     * Get the children of a taxon that are not already set and add them to the taxon.
-     * @param taxon The taxon to resolve children for.
-     * @returns A promise that resolves to the taxon with its missing children set.
-     */
-    public async resolveMissingChildren(taxon: Taxon): Promise<Taxon> {
-        const remoteChildren = await this.getChildren(taxon);
-        const missingChildren = remoteChildren.filter(child => !taxon.hasChild(child));
-        taxon.addChildren(missingChildren);
-        return taxon;
+    public async getChildren(taxon: Taxon): Promise<Set<Taxon>> {
+        const children = await this.api.getChildrenByTaxonId(taxon.id);
+        return children;
     }
 
-    public async hasMissingChildren(taxon: Taxon): Promise<boolean> {
-        const remoteChildren = await this.getChildren(taxon);
-        return remoteChildren.some(child => !taxon.hasChild(child));
+    public async resolveChildren(taxon: Taxon) {
+        const children = await this.getChildren(taxon);
+        taxon.setChildren(children);
     }
 
-    private async getFullTaxa(query: Set<Taxon>): Promise<Set<Taxon>> {
-        if (query.all(taxon => taxon.id !== undefined)) {
-            const taxIds = query.map(taxon => taxon.id);
-            return new Set(await this.api.getTaxaByTaxonIds(taxIds));
-        }
-        else {
-            throw new Error("All taxa in the query must have an id.");
-        }
+    public async resolveMissingChildren(taxon: Taxon): Promise<void> {
+        const fresh = await this.getChildren(taxon);
+        fresh.forEach(child => {
+            if (!taxon.hasChild(child)) {
+                taxon.addChild(child);
+            }
+        });
     }
 }

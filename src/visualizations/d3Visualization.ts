@@ -1,96 +1,122 @@
 /* eslint-disable  @typescript-eslint/no-explicit-any */
-
+import * as d3 from "d3";
 import { Taxon, TaxonomyTree } from "../types/Taxonomy";
 import { TaxonomyService } from "../services/TaxonomyService";
-import { Vitax } from "../main";
-import * as d3 from "d3";
+import { State } from "../core/State";
+
+export interface D3VisualizationExtents { minX: number; maxX: number; minY: number; maxY: number; }
 
 export abstract class D3Visualization {
-  protected canvas: HTMLDivElement;
-  protected width: number = 0;
-  protected height: number = 0;
+  protected layer: d3.Selection<SVGGElement, unknown, null, undefined>;
+  protected width = 0;
+  protected height = 0;
+  protected taxonomyService = new TaxonomyService();
+  protected state = State.getInstance();
+  protected root?: d3.HierarchyNode<Taxon> & { x0?: number; y0?: number; collapsed?: boolean };
 
-  protected taxonomyService: TaxonomyService = new TaxonomyService();
-
-  protected zoom: d3.ZoomBehavior<Element, unknown>
-
-  protected root?: any;
-
-  protected svg: any;
-  protected g: any;
-
-  constructor(canvas: HTMLDivElement) {
-    this.canvas = canvas;
-    this.width = canvas.clientWidth;
-    this.height = canvas.clientHeight;
-
-    this.zoom = d3.zoom();
-
-    this.svg = d3.create("svg");
-
-    Vitax.subscribeToTree(this.updateHierarchy.bind(this));
-
-    this.updateHierarchy(Vitax.getTree());
-
-    this.g = this.svg.append("g");
-    this.setupScalingAndDragging();
+  constructor(layer: SVGGElement) {
+    this.layer = d3.select(layer);
+    const bbox = (layer.ownerSVGElement || layer).getBoundingClientRect();
+    this.width = bbox.width || 800;
+    this.height = bbox.height || 600;
   }
 
-  protected setupScalingAndDragging(): void {
-    this.svg.attr("id", "plot")
-      .attr("viewBox", [0, 0, this.width, this.height])
-      .classed("w-full", true)
-      .classed("h-full", true)
-      .classed("text-xs", true)
-      .classed("select-none", true);
-
-    this.zoom.on("zoom", (event: any) => {
-      this.g.attr("transform", event.transform);
-    });
-    this.svg.call(this.zoom);
+  protected activateStateSubscription(): void {
+    this.state.subscribeToTree(this.updateHierarchy.bind(this));
+    this.updateHierarchy(this.state.getTree());
   }
 
-  protected centerAndFit(): void {
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-    this.root?.descendants().forEach((d: any) => {
-      minX = Math.min(minX, d.y);
-      maxX = Math.max(maxX, d.y);
-      minY = Math.min(minY, d.x);
-      maxY = Math.max(maxY, d.x);
-    });
-
-    const treeWidth = maxX - minX;
-    const treeHeight = maxY - minY;
-
-    const scale = Math.min(this.width / treeWidth, this.height / treeHeight) * 0.9;
-    const translateX = (this.width / 2) - (minX + treeWidth / 2) * scale;
-    const translateY = (this.height / 2) - (minY + treeHeight / 2) * scale;
-
-    this.svg.call(this.zoom.transform, d3.zoomIdentity.translate(translateX, translateY).scale(scale));
-  }
-
+  /**
+   * Hierarchiedaten neu aufbauen, wenn der State-Baum sich ändert.
+   */
   protected updateHierarchy(tree: TaxonomyTree | undefined): void {
     if (!tree) {
       this.root = undefined;
+      this.clear();
       return;
     }
-    else {
-      this.root = d3.hierarchy<Taxon>(tree.root);
-    }
-    this.update();
+    this.root = d3.hierarchy<Taxon>(tree.root);
+    void this.update();
+  }
+
+  protected initializeRootForRender(): void {
+    if (!this.root) return;
+    if (this.root.x0 === undefined) this.root.x0 = this.height / 2;
+    if (this.root.y0 === undefined) this.root.y0 = 0;
+    this.root.descendants().forEach(d => { (d as any).collapsed = (d as any).collapsed ?? false; });
+  }
+
+  /** Sichtbarkeit: alle Vorfahren dürfen nicht collapsed sein. */
+  protected isNodeVisible(node: any): boolean {
+    const ancestors = node.ancestors().filter((a: any) => a !== node);
+    return ancestors.every((a: any) => !a.collapsed);
+  }
+
+  protected getQuery(): Set<Taxon> { return this.state.getQuery(); }
+
+  protected getNodeFill(d: any): string {
+    const q = this.getQuery();
+    const themeVars = this.getThemeColors();
+    if (q?.some(t => t.id === d.data.id)) return themeVars.primary; // Treffer -> Primary
+    return d.children ? themeVars.neutral : themeVars.base300; // Eltern vs. Blätter
+  }
+
+  private _cachedTheme?: { ts: number; values: any };
+  private getThemeColors(): { primary: string; neutral: string; base200: string; base300: string; base100: string; text: string; link: string } {
+    const now = Date.now();
+    if (this._cachedTheme && (now - this._cachedTheme.ts) < 2000) return this._cachedTheme.values; // 2s Cache
+    const docEl = document.documentElement;
+    const styles = getComputedStyle(docEl);
+    const read = (name: string, fallback: string) => styles.getPropertyValue(name).trim() || fallback;
+    const values = {
+      primary: read('--color-primary', '#0d9488'),
+      neutral: read('--color-neutral', '#555555'),
+      base200: read('--color-base-200', '#cccccc'),
+      base300: read('--color-base-300', '#999999'),
+      base100: read('--color-base-100', '#ffffff'),
+      text: read('--color-base-content', '#111111'),
+      link: read('--color-accent', '#2563eb')
+    };
+    this._cachedTheme = { ts: now, values };
+    return values;
   }
 
   protected async upRoot(): Promise<void> {
-    await Vitax.expandTreeUp();
+    const tree = this.state.getTree();
+    if (!tree) return;
+    const newTree = await this.taxonomyService.expandTreeUp(tree);
+    if (newTree.root.id !== tree.root.id) {
+      this.state.setTree(newTree);
+    }
   }
 
   protected async getChildren(datum: d3.HierarchyNode<Taxon>): Promise<void> {
-    await Vitax.resolveChildrenOfTreeTaxon(datum.data);
+    await this.taxonomyService.resolveChildren(datum.data);
+    this.state.treeHasChanged();
   }
 
-  public abstract render(): Promise<SVGSVGElement>
+  public getExtents(): D3VisualizationExtents | undefined {
+    if (!this.root) return undefined;
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    this.root.descendants().forEach((d: any) => {
+      minX = Math.min(minX, d.x);
+      maxX = Math.max(maxX, d.x);
+      minY = Math.min(minY, d.y);
+      maxY = Math.max(maxY, d.y);
+    });
+    if (!isFinite(minX)) return undefined;
+    return { minX, maxX, minY, maxY };
+  }
 
-  public abstract update(event?: MouseEvent, source?: any, duration?: number): Promise<void>
+  public clear(): void {
+    this.layer.selectAll("*").remove();
+  }
 
-  protected abstract handleOnClick(event: MouseEvent, datum: d3.HierarchyNode<Taxon>): void;
+  public abstract render(): Promise<D3VisualizationExtents | undefined>;
+
+  public abstract update(event?: MouseEvent, source?: any, duration?: number): Promise<void>;
+
+  public dispose(): void {
+    this.clear();
+  }
 }
