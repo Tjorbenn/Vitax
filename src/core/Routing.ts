@@ -20,7 +20,6 @@ export class Router {
 
     public async setupRouting() {
         await this.initRoutingFromUrl();
-        await this.handleBaseUrlRouting();
         this.registerPopStateHandler();
     }
 
@@ -37,6 +36,7 @@ export class Router {
         window.dispatchEvent(new CustomEvent('vitax:resetView'));
     }
 
+    // Still problematic
     public async handleBaseUrlRouting(): Promise<void> {
         const { pathname } = window.location;
         if (pathname === "/") {

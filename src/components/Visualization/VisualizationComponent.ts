@@ -7,6 +7,7 @@ import { createVisualizationRenderer, type D3Visualization } from "../../visuali
 import './TaxonPopover/TaxonPopoverComponent';
 import { TaxonPopoverComponent } from './TaxonPopover/TaxonPopoverComponent';
 import type { Taxon } from '../../types/Taxonomy';
+import { TaxonomyService } from '../../services/TaxonomyService';
 
 // Allgemeines Extents-Interface für alle Visualizer
 export interface VisualizationExtents { minX: number; maxX: number; minY: number; maxY: number; }
@@ -364,15 +365,13 @@ export class VisualizationComponent extends BaseComponent {
         if (targetId === undefined) return;
         if (tree.root.id === targetId) {
             // Root -> expand nach oben
-            const taxonomyServiceMod = await import('../../services/TaxonomyService');
-            const service = new taxonomyServiceMod.TaxonomyService();
+            const service = new TaxonomyService();
             const newTree = await service.expandTreeUp(tree);
             if (newTree.root.id !== tree.root.id) {
                 this.state.setTree(newTree);
             }
         } else {
-            const taxonomyServiceMod = await import('../../services/TaxonomyService');
-            const service = new taxonomyServiceMod.TaxonomyService();
+            const service = new TaxonomyService();
             const taxon = tree.findTaxonById(targetId);
             if (taxon && !taxon.parent) {
                 await service.resolveParent(taxon);
@@ -389,9 +388,8 @@ export class VisualizationComponent extends BaseComponent {
         if (targetId === undefined) return;
         const taxon = tree.findTaxonById(targetId);
         if (!taxon) return;
-        const taxonomyServiceMod = await import('../../services/TaxonomyService');
-        const service = new taxonomyServiceMod.TaxonomyService();
-        await service.resolveMissingChildren(taxon);
+    const service = new TaxonomyService();
+    await service.resolveMissingChildren(taxon);
         this.state.treeHasChanged();
     }
 
