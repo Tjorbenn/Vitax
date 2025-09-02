@@ -91,6 +91,8 @@ export class D3Graph extends D3Visualization {
         const nodeEnter = nodeSel.enter().append("g")
             .on("mouseenter", (event: any, d: any) => {
                 const bbox = (event.currentTarget as SVGGElement).getBoundingClientRect();
+                const clientX = event.clientX ?? (bbox.x + bbox.width / 2);
+                const clientY = event.clientY ?? (bbox.y + bbox.height / 2);
                 window.dispatchEvent(new CustomEvent('vitax:taxonHover', {
                     detail: {
                         id: d.data.id,
@@ -101,7 +103,9 @@ export class D3Graph extends D3Visualization {
                         genomeCountRecursive: d.data.genomeCountRecursive,
                         childrenCount: d.children ? d.children.length : (d._children ? d._children.length : 0),
                         x: bbox.x + bbox.width / 2,
-                        y: bbox.y + bbox.height / 2
+                        y: bbox.y + bbox.height / 2,
+                        cursorX: clientX,
+                        cursorY: clientY
                     }
                 }));
             })

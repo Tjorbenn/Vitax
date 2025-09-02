@@ -304,8 +304,8 @@ export class VisualizationComponent extends BaseComponent {
 
     private onTaxonHover = (ev: CustomEvent<any>): void => {
         if (!this.taxonPopoverEl) return;
-        const { id, x, y, node } = ev.detail || {};
-        if (id === undefined || x === undefined || y === undefined) return;
+    const { id, x, y, cursorX, cursorY, node } = ev.detail || {};
+    if (id === undefined || (x === undefined && cursorX === undefined) || (y === undefined && cursorY === undefined)) return;
         
         const hierarchyNode: (d3.HierarchyNode<Taxon> & { collapsed?: boolean }) | undefined = node;
         const tree = this.state.getTree();
@@ -325,9 +325,13 @@ export class VisualizationComponent extends BaseComponent {
         } else {
             return;
         }
-        const canvasRect = this.getBoundingClientRect();
-        this.taxonPopoverEl.positionAt(canvasRect, x, y);
-        this.taxonPopoverEl.show();
+    // Erst anzeigen, damit getBoundingClientRect() tatsächliche Größe liefert (war vorher hidden -> 0 Höhe)
+    this.taxonPopoverEl.show();
+    const canvasRect = this.getBoundingClientRect();
+    // Cursor-Koordinaten bevorzugen, ansonsten BBox-Center
+    const posX = cursorX ?? x;
+    const posY = cursorY ?? y;
+    this.taxonPopoverEl.positionAt(canvasRect, posX, posY);
 
         if (this.hidePopoverTimeout) {
             window.clearTimeout(this.hidePopoverTimeout);
@@ -337,7 +341,7 @@ export class VisualizationComponent extends BaseComponent {
 
     private onTaxonUnhover = (): void => {
         // Nicht sofort schließen
-        this.scheduleHidePopover(80);
+        this.scheduleHidePopover(100);
     }
 
     private scheduleHidePopover(delay: number): void {

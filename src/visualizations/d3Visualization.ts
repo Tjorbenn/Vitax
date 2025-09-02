@@ -57,12 +57,13 @@ export abstract class D3Visualization {
   protected getNodeFill(d: any): string {
     const q = this.getQuery();
     const themeVars = this.getThemeColors();
+    if (d.data.id === 0) return themeVars.primary;
     if (q?.some(t => t.id === d.data.id)) return themeVars.primary; // Treffer -> Primary
     return d.children ? themeVars.neutral : themeVars.base300; // Eltern vs. Blätter
   }
 
   private _cachedTheme?: { ts: number; values: any };
-  private getThemeColors(): { primary: string; neutral: string; base200: string; base300: string; base100: string; text: string; link: string } {
+  protected getThemeColors(): { primary: string; neutral: string; base200: string; base300: string; base100: string; text: string; link: string } {
     const now = Date.now();
     if (this._cachedTheme && (now - this._cachedTheme.ts) < 2000) return this._cachedTheme.values; // 2s Cache
     const docEl = document.documentElement;

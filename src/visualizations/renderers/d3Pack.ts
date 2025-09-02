@@ -54,6 +54,8 @@ export class D3Pack extends D3Visualization {
             .on("mouseenter", (event: any, d: any) => {
                 const el = event.currentTarget as SVGGElement;
                 const bbox = el.getBoundingClientRect();
+                const clientX = event.clientX ?? (bbox.x + bbox.width / 2);
+                const clientY = event.clientY ?? (bbox.y + bbox.height / 2);
                 window.dispatchEvent(new CustomEvent('vitax:taxonHover', {
                     detail: {
                         id: d.data.id,
@@ -65,6 +67,8 @@ export class D3Pack extends D3Visualization {
                         childrenCount: d.children ? d.children.length : 0,
                         x: bbox.x + bbox.width / 2,
                         y: bbox.y + bbox.height / 2,
+                        cursorX: clientX,
+                        cursorY: clientY,
                         node: d
                     }
                 }));

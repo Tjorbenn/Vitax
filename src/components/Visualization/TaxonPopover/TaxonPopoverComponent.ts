@@ -45,7 +45,6 @@ export class TaxonPopoverComponent extends BaseComponent {
         });
         this.collapseButton?.addEventListener('click', () => {
             if (!this.node) return;
-            // Direkt Toggle Event auslösen – Visualisierung übernimmt tatsächliche Änderung
             window.dispatchEvent(new CustomEvent('vitax:toggleNode', { detail: { id: this.node.data.id } }));
         });
     }
@@ -165,24 +164,44 @@ export class TaxonPopoverComponent extends BaseComponent {
         }
     }
 
-    /** Popover an Bildschirm/Canvas-Koordinaten positionieren */
+    /** Positioniert das Popover so, dass seine Bottom-Left-Ecke beim (Cursor-)Ankerpunkt liegt.
+     *  Primäre Platzierung: rechts oberhalb des Cursors (Popover wächst nach rechts/oben).
+     *  Fallbacks bei Platzmangel: erst nach links oben, dann unten (rechts oder links) innerhalb der Canvas-Grenzen.
+     */
     public positionAt(canvasRect: DOMRect, viewportX: number, viewportY: number): void {
-        // Offset relativ zum Canvas
-        const localX = viewportX - canvasRect.left;
-        const localY = viewportY - canvasRect.top;
-        const offset = 10;
-        this.style.left = `${localX + offset}px`;
-        this.style.top = `${localY + offset}px`;
-        // Bounds-Korrektur
-        const ownRect = this.getBoundingClientRect();
-        const overflowX = ownRect.right - canvasRect.right;
-        const overflowY = ownRect.bottom - canvasRect.bottom;
-        if (overflowX > 0) {
-            this.style.left = `${localX - overflowX - offset}px`;
+        const rectNow = this.getBoundingClientRect();
+        const popWidth = rectNow.width || 260;
+        const popHeight = rectNow.height || 200;
+
+        // Cursor relativ zur Canvas
+        const anchorLocalX = viewportX - canvasRect.left;
+        const anchorLocalY = viewportY - canvasRect.top;
+        const offset = 8;
+        const slightUp = 4;
+
+        const canvasWidth = canvasRect.width;
+        const canvasHeight = canvasRect.height;
+
+        let left = anchorLocalX + offset;
+        let top = anchorLocalY - popHeight - offset - slightUp;
+
+        if (top < 0) {
+            top = anchorLocalY + offset;
         }
-        if (overflowY > 0) {
-            this.style.top = `${localY - overflowY - offset}px`;
+
+        if (left + popWidth > canvasWidth) {
+            left = anchorLocalX - popWidth - offset;
         }
+
+        if (left < 0) left = Math.max(0, Math.min(anchorLocalX + offset, canvasWidth - popWidth));
+
+        if (top + popHeight > canvasHeight) {
+            const candidateTop = anchorLocalY - popHeight - offset - slightUp;
+            if (candidateTop >= 0) top = candidateTop; else top = Math.max(0, canvasHeight - popHeight);
+        }
+
+        this.style.left = `${left}px`;
+        this.style.top = `${top}px`;
     }
 
     public show(): void {

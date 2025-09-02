@@ -1,6 +1,6 @@
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 import * as d3 from "d3";
-import type { Taxon } from "../../types/Taxonomy";
+import { Rank, type Taxon, type TaxonomyTree } from "../../types/Taxonomy";
 import { D3Visualization, type D3VisualizationExtents } from "../d3Visualization";
 
 export class D3Tree extends D3Visualization {
@@ -8,10 +8,9 @@ export class D3Tree extends D3Visualization {
   private diagonal: d3.Link<any, d3.HierarchyPointLink<Taxon>, d3.HierarchyPointNode<Taxon>>;
   private gLink: d3.Selection<SVGGElement, unknown, null, undefined>;
   private gNode: d3.Selection<SVGGElement, unknown, null, undefined>;
-  // Persistente Extents um horizontales "Zurückspringen" beim Collapse zu verhindern
+
   private persistedMaxLeft: number[] = [];
   private persistedMaxRight: number[] = [];
-  private baseVerticalGap?: number;
 
   constructor(layer: SVGGElement) {
     super(layer);
@@ -35,7 +34,6 @@ export class D3Tree extends D3Visualization {
     this.layout
       .nodeSize([nodeHeight, nodeWidth])
       .separation((a: any, b: any) => {
-        // Etwas mehr Abstand zwischen Teilbäumen; große Subtrees erhalten mehr Raum
         const siblingBoost = a.parent === b.parent ? 1 : 1.15;
         const aSize = (a.children?.length || a._children?.length || 0) as number;
         const bSize = (b.children?.length || b._children?.length || 0) as number;
@@ -44,6 +42,35 @@ export class D3Tree extends D3Visualization {
       });
 
     this.activateStateSubscription();
+  }
+
+  protected updateHierarchy(tree: TaxonomyTree | undefined): void {
+    if (!tree) {
+      this.root = undefined;
+      this.clear();
+      return;
+    }
+
+    this.persistedMaxLeft = [];
+    this.persistedMaxRight = [];
+
+    const currentRoot = tree.root;
+    if (currentRoot.id === 1 && currentRoot.name === 'root') {
+      this.root = d3.hierarchy<Taxon>(currentRoot);
+    } else {
+      const virtualRootData: Taxon = {
+        id: 0,
+        name: 'Uproot',
+        rank: Rank.None,
+        children: new Set([currentRoot]),
+        parent: undefined,
+        genomeCount: {},
+        genomeCountRecursive: currentRoot.genomeCountRecursive,
+      } as unknown as Taxon;
+      this.root = d3.hierarchy<Taxon>(virtualRootData);
+    }
+
+    void this.update();
   }
 
   public async render(): Promise<D3VisualizationExtents | undefined> {
@@ -65,16 +92,10 @@ export class D3Tree extends D3Visualization {
     }
 
     const currentDuration = event?.altKey ? 2500 : duration;
-    // Sichtbare Knoten bestimmen
     const visibleNodesAll = (this.root as any).descendants().filter((d: any) => this.isNodeVisible(d));
-    const visibleLeaves = visibleNodesAll.filter((d: any) => !(d.children && d.children.length) && !(d._children && d._children.length));
     const maxDepth = (d3.max(visibleNodesAll, (d: any) => d.depth) || 1) as number;
 
-    const verticalGapCurrent = Math.max(20, Math.min(34, this.height / Math.max(1, visibleLeaves.length + 1)));
-    if (this.baseVerticalGap === undefined) {
-      this.baseVerticalGap = verticalGapCurrent;
-    }
-    const verticalGap = this.baseVerticalGap;
+    const verticalGap = 28; // Fixed vertical gap
     this.layout.nodeSize([verticalGap, 1]);
     this.layout(this.root as any);
 
@@ -86,6 +107,7 @@ export class D3Tree extends D3Visualization {
       return name.length > maxChars ? name.slice(0, maxChars - 1) + '…' : name;
     };
     for (const n of visibleNodesAll) {
+      if ((n as any).data.id === 0) continue;
       const anyN: any = n;
       const isLeaf = !(anyN.children && anyN.children.length) && !(anyN._children && anyN._children.length);
       const placeRight = isLeaf || anyN.collapsed;
@@ -101,6 +123,7 @@ export class D3Tree extends D3Visualization {
     const maxLeft: number[] = new Array<number>(maxDepth + 1).fill(0);
     const maxRight: number[] = new Array<number>(maxDepth + 1).fill(0);
     for (const n of visibleNodesAll) {
+      if ((n as any).data.id === 0) continue;
       const anyN: any = n;
       if (anyN._placeRight) {
         if (anyN._rightExtension > maxRight[n.depth]) maxRight[n.depth] = anyN._rightExtension;
@@ -122,10 +145,10 @@ export class D3Tree extends D3Visualization {
       depthOffset[d + 1] = depthOffset[d] + baseGap + rightExtentCurrent + leftExtentNext;
     }
 
-    // Gesamtbreite & ggf. Skalierung falls größer als View
-    const totalWidth = depthOffset[maxDepth] + (this.persistedMaxRight[maxDepth] || maxRight[maxDepth]);
-    const maxUsableWidth = this.width - 40;
-    const widthScale = totalWidth > maxUsableWidth ? (maxUsableWidth / totalWidth) : 1;
+  const totalWidth = depthOffset[maxDepth] + (this.persistedMaxRight[maxDepth] || maxRight[maxDepth]);
+  const maxUsableWidth = this.width - 40;
+  // Skaliere falls nötig, um nicht über Breite hinauszugehen
+  const widthScale = totalWidth > maxUsableWidth && totalWidth > 0 ? (maxUsableWidth / totalWidth) : 1;
 
     for (const n of visibleNodesAll) {
       (n as any).y = depthOffset[n.depth] * widthScale;
@@ -147,7 +170,10 @@ export class D3Tree extends D3Visualization {
       .attr("stroke-opacity", 0)
       .on("click", (event: any, d: any) => this.handleOnClick(event, d))
       .on("mouseenter", (event: any, d: any) => {
+        if (d.data.id === 0) return;
         const bbox = (event.currentTarget as SVGGElement).getBoundingClientRect();
+        const clientX = event.clientX ?? (bbox.x + bbox.width / 2);
+        const clientY = event.clientY ?? (bbox.y + bbox.height / 2);
         window.dispatchEvent(new CustomEvent('vitax:taxonHover', {
           detail: {
             id: d.data.id,
@@ -159,26 +185,44 @@ export class D3Tree extends D3Visualization {
             childrenCount: d.children ? d.children.length : (d._children ? d._children.length : 0),
             x: bbox.x + bbox.width / 2,
             y: bbox.y + bbox.height / 2,
+            cursorX: clientX,
+            cursorY: clientY,
             node: d
           }
         }));
       })
-      .on("mouseleave", (_event: any, _d: any) => {
+      .on("mouseleave", (_event: any, d: any) => {
+        if (d.data.id === 0) return;
         window.dispatchEvent(new CustomEvent('vitax:taxonUnhover'));
       });
 
+    const themeColors = this.getThemeColors();
+
     nodeEnter.append("circle")
-      .attr("r", 4)
-      .attr("fill", (d: any) => this.getNodeFill(d))
+      .attr("r", (d: any) => d.data.id === 0 ? 6 : 4)
+      .attr("fill", (d: any) => {
+          if (d.data.id === 0) return themeColors.link; // accent color
+          return this.getNodeFill(d);
+      })
       .attr("stroke-width", 1)
       .attr("stroke", "var(--color-base-content)");
+
+    // Chevron arrow for virtual root
+    nodeEnter.filter((d: any) => d.data.id === 0)
+        .append("path")
+        .attr("d", "M 2,-3 L -2,0 L 2,3")
+        .attr("fill", "none")
+        .attr("stroke", themeColors.text) // black
+        .attr("stroke-width", 1.5);
+
+    const regularNodeEnter = nodeEnter.filter((d: any) => d.data.id !== 0);
 
     const maxLabelWidthLeft = 200;
     const maxLabelWidthRight = 260;
     const estCharWEnter = 6.2;
     const truncateEnter = (name: string, maxPx: number): string => { const maxChars = Math.max(3, Math.floor(maxPx / estCharWEnter)); return name.length > maxChars ? name.slice(0, maxChars - 1) + '…' : name; };
 
-    nodeEnter.append("text")
+    regularNodeEnter.append("text")
       .attr("dy", "0.31em")
       .attr("stroke-linejoin", "round")
       .attr("stroke-width", 3)
@@ -205,6 +249,7 @@ export class D3Tree extends D3Visualization {
     const nodeMerge = (nodeSel as any).merge(nodeEnter as any);
 
     nodeMerge.select('text').each(function (this: SVGTextElement, d: any) {
+      if (d.data.id === 0) return;
       const isLeaf = !(d.children && d.children.length) && !(d._children && d._children.length);
       const placeRight = isLeaf || d.collapsed;
       if (placeRight !== d._placeRight) {
@@ -250,10 +295,35 @@ export class D3Tree extends D3Visualization {
       });
 
     (this.root as any).eachBefore((d: any) => { d.x0 = d.x; d.y0 = d.y; });
+
+    // Pulsing animation for virtual root
+    const virtualRoot = nodeMerge.filter((d: any) => d.data.id === 0);
+    if (!virtualRoot.empty()) {
+        const elementsToAnimate = virtualRoot.selectAll('circle, path');
+
+        function pulse() {
+            elementsToAnimate.transition()
+                .duration(1000)
+                .attr("transform", "scale(1.15)")
+                .transition()
+                .duration(1000)
+                .attr("transform", "scale(1)")
+                .on("end", function(_d: any, i: number) {
+                    // Run the next pulse only for the first element in the selection
+                    if (i === 0) {
+                        pulse();
+                    }
+                });
+        }
+        pulse();
+    }
   }
 
   // Collapse or expand node
   protected async handleOnClick(event: MouseEvent, datum: any): Promise<void> {
+    if (datum.data.id === 0) {
+      return this.upRoot();
+    }
     datum.collapsed = !datum.collapsed;
     return this.update(event, datum);
   }
