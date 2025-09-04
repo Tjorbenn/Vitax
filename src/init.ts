@@ -6,7 +6,7 @@ import "./utility/Set.ts";
 // Features
 import { initDraggableWindows } from "./features/DraggableWindows";
 import { handleKeyCombos } from "./features/KeyCombos.ts";
-import { runTutorial } from "./features/Tutorial.ts";
+import { initTutorial } from "./features/Tutorial.ts";
 
 // Components
 import "./components/Attribution/AttributionComponent.ts";
@@ -22,4 +22,4 @@ import "./components/Visualization/VisualizationComponent.ts";
 // Features
 document.addEventListener("keydown", handleKeyCombos);
 initDraggableWindows();
-runTutorial();
+initTutorial();

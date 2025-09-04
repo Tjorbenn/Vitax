@@ -3,7 +3,19 @@ import "driver.js/dist/driver.css";
 import { State } from "../core/State";
 import type { TaxonomyTypeComponent } from "../components/Search/TaxonomyType/TaxonomyTypeComponent";
 
+export function initTutorial() {
+  const tutorialCompleted = localStorage.getItem("tutorialCompleted");
+  console.debug("Tutorial completed:", tutorialCompleted);
+  if (!tutorialCompleted) {
+    runTutorial();
+  }
+}
+
 export function runTutorial() {
+  drive();
+}
+
+function drive() {
   const state = State.instance;
   const taxonomyTypeComponent = document.querySelector("taxonomy-type") as TaxonomyTypeComponent;
   const searchComponentEl = document.querySelector("vitax-search") as HTMLElement | null;
@@ -26,7 +38,6 @@ export function runTutorial() {
   if (!visualizeButton) {
     throw new Error("Could not find visualize button");
   }
-  // Attribut setzen, damit die Suche offen bleibt
   searchComponentEl.setAttribute("keep-open-on-blur", "");
 
   const driverObj = driver({
@@ -336,6 +347,10 @@ export function runTutorial() {
           title: "Theme Selector",
           description:
             "Vitax uses your systems preferred theme by default. This button allows you to change between the light and dark theme.",
+          onNextClick: () => {
+            localStorage.setItem("tutorialCompleted", "true");
+            driverObj.moveNext();
+          },
         },
       },
     ],
