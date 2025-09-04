@@ -1,31 +1,20 @@
 <search class="relative w-full">
   <fieldset
-    class="shadow-lg card card-border animated bounce bounce-within join flex flex-row w-full max-w-full"
+    class="card card-border animated bounce bounce-within join flex w-full max-w-full flex-row shadow-lg"
   >
     <taxonomy-type class="join-item"></taxonomy-type>
     <label
-      class="input border-none join-item grow focus-within:outline-none bg-base-100/40 backdrop-blur-sm !shadow-none"
+      class="input join-item bg-base-100/40 grow border-none !shadow-none backdrop-blur-sm focus-within:outline-none"
     >
       <span class="icon-[material-symbols--search-rounded] text-[1.5em]"></span>
-      <input
-        type="search"
-        id="search-input"
-        placeholder="Search taxa..."
-      />
+      <input type="search" id="search-input" placeholder="Search taxa..." />
       <div>
         <kbd class="kbd kbd-sm">CTRL</kbd>
         +
         <kbd class="kbd kbd-sm">K</kbd>
       </div>
     </label>
-    <button
-      type="submit"
-      class="btn btn-primary border-none join-item"
-    >
-      Visualize
-    </button>
+    <button type="submit" class="btn btn-primary join-item border-none">Visualize</button>
   </fieldset>
-  <section
-    class="absolute left-0 right-0 flex flex-col mt-4 gap-4 items-center animated"
-  ></section>
+  <section class="animated absolute right-0 left-0 mt-4 flex flex-col items-center gap-4"></section>
 </search>

@@ -2,46 +2,31 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link
-      rel="icon"
-      type="image/svg+xml"
-      href="images/logo.svg"
-    />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0"
-    />
+    <link rel="icon" type="image/svg+xml" href="images/logo.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Vitax</title>
   </head>
 
-  <body
-    id="app"
-    class="h-full w-full"
-  >
-    <main class="h-full w-full relative">
+  <body id="app" class="h-full w-full">
+    <main class="relative h-full w-full">
       <div
         id="menu-overlay"
-        class="z-10 relative flex h-full w-full flex-col justify-between gap-6 p-6 pointer-events-none"
+        class="pointer-events-none relative z-10 flex h-full w-full flex-col justify-between gap-6 p-6"
       >
         <header
           id="menu-header"
           class="relative grid h-fit w-full grid-cols-[1fr_minmax(0,2fr)_1fr] items-center gap-4"
         >
           <vitax-title
-            class="shadow-lg card card-xs card-border bg-base-100/40 backdrop-blur-sm bounce animated justify-self-start pointer-events-auto"
+            class="card card-xs card-border bg-base-100/40 bounce animated pointer-events-auto justify-self-start shadow-lg backdrop-blur-sm"
           ></vitax-title>
-          <vitax-search
-            class="w-full justify-self-center pointer-events-auto"
-          ></vitax-search>
+          <vitax-search class="pointer-events-auto w-full justify-self-center"></vitax-search>
           <vitax-theme
-            class="shadow-lg card card-xs card-border bg-base-100/40 backdrop-blur-sm bounce animated justify-self-end pointer-events-auto tooltip tooltip-left"
+            class="card card-xs card-border bg-base-100/40 bounce animated tooltip tooltip-left pointer-events-auto justify-self-end shadow-lg backdrop-blur-sm"
             data-tip="Toggle Light/Dark Theme"
           ></vitax-theme>
         </header>
-        <div
-          id="menu-middle"
-          class="h-full w-full"
-        >
+        <div id="menu-middle" class="h-full w-full">
           <vitax-list class=""></vitax-list>
         </div>
         <footer
@@ -49,22 +34,19 @@
           class="relative grid w-full grid-cols-[1fr_auto_1fr] items-center gap-4"
         >
           <vitax-attribution
-            class="card card-xs card-border shadow-lg bg-base-100/40 backdrop-blur-sm justify-self-start bounce animated pointer-events-auto"
+            class="card card-xs card-border bg-base-100/40 bounce animated pointer-events-auto justify-self-start shadow-lg backdrop-blur-sm"
           ></vitax-attribution>
           <display-type
-            class="card card-xs card-border shadow-lg bg-base-100/40 backdrop-blur-sm justify-self-center bounce animated tooltip pointer-events-auto p-0"
+            class="card card-xs card-border bg-base-100/40 bounce animated tooltip pointer-events-auto justify-self-center p-0 shadow-lg backdrop-blur-sm"
             data-tip="Display Type"
           ></display-type>
           <vitax-version
-            class="card card-xs card-border shadow-lg bg-base-100/40 backdrop-blur-sm justify-self-end bounce animated pointer-events-auto"
+            class="card card-xs card-border bg-base-100/40 bounce animated pointer-events-auto justify-self-end shadow-lg backdrop-blur-sm"
           ></vitax-version>
         </footer>
       </div>
       <vitax-canvas class="absolute inset-0 h-full w-full"></vitax-canvas>
     </main>
-    <script
-      type="module"
-      src="/src/init.ts"
-    ></script>
+    <script type="module" src="/src/init.ts"></script>
   </body>
 </html>
