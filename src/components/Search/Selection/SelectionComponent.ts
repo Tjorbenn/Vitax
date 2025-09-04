@@ -6,7 +6,7 @@ import { BaseComponent } from "../../BaseComponent";
 import HTMLtemplate from "./SelectionTemplate.html?raw";
 
 export class SelectionComponent extends BaseComponent {
-  private state: State = State.getInstance();
+  private state: State = State.instance;
   private container?: HTMLDivElement;
 
   constructor() {
@@ -45,7 +45,7 @@ export class SelectionComponent extends BaseComponent {
 
   public addSelection(suggestion: Suggestion): void {
     if (
-      !this.state.getQuery().find((s) => {
+      !this.state.query.find((s) => {
         return s.id === suggestion.id;
       })
     ) {
@@ -59,7 +59,7 @@ export class SelectionComponent extends BaseComponent {
   }
 
   private async setVisibility(): Promise<void> {
-    await toggleState(this, this.state.getQuery().size > 0);
+    await toggleState(this, this.state.query.size > 0);
   }
 
   // Adds new Badges for Taxons that are not yet present and removes all badges of taxons that are not in the query anymore
@@ -148,7 +148,7 @@ export class SelectionComponent extends BaseComponent {
       throw new Error("Selection is missing name or id");
     }
 
-    const taxon = this.state.getQuery().find((s) => {
+    const taxon = this.state.query.find((s) => {
       return s.name === name && s.id === parseInt(id);
     });
     if (taxon) {

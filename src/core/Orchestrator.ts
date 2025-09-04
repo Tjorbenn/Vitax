@@ -14,32 +14,25 @@ export class Orchestrator {
   private taxonomyService: TaxonomyService = new TaxonomyService();
 
   private constructor() {
-    this.state = State.getInstance();
+    this.state = State.instance;
   }
 
-  public static getInstance(): Orchestrator {
-    return Orchestrator.instance;
-  }
-
-  /**
-   * Singleton accessor used across the codebase as `Orchestrator.instance`.
-   */
   public static get instance(): Orchestrator {
     Orchestrator._instance ??= new Orchestrator();
     return Orchestrator._instance;
   }
 
   public async resolveTree(): Promise<void> {
-    const query = this.state.getQuery();
+    const query = this.state.query;
     const first = query.first();
     if (!first) {
       throw new Error("No valid query found");
     }
 
-    this.state.setStatus(Status.Loading);
+    this.state.status = Status.Loading;
     try {
       let tree: TaxonomyTree;
-      switch (this.state.getTaxonomyType()) {
+      switch (this.state.taxonomyType) {
         case TaxonomyType.Taxon:
           tree = await this.taxonomyService.getTaxonTree(first);
           break;
@@ -53,17 +46,17 @@ export class Orchestrator {
           tree = await this.taxonomyService.getMrcaTree(query);
           break;
         default:
-          console.log(this.state.getTaxonomyType());
+          console.log(this.state.taxonomyType);
           throw new Error(
             "Taxonomy type is not set or invalid. Please select a valid taxonomy type.",
           );
       }
-      this.state.setTree(tree);
+      this.state.tree = tree;
 
-      this.state.setStatus(Status.Success);
+      this.state.status = Status.Success;
     } catch (err) {
       console.error("Failed to resolve tree", err);
-      this.state.setStatus(Status.Error);
+      this.state.status = Status.Error;
     }
   }
 }

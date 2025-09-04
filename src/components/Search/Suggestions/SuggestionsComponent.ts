@@ -16,7 +16,7 @@ export class SuggestionsComponent extends BaseComponent {
 
   private table?: HTMLTableElement;
   private loader?: HTMLElement;
-  private state: State = State.getInstance();
+  private state: State = State.instance;
 
   constructor() {
     super(HTMLtemplate);
@@ -144,7 +144,7 @@ export class SuggestionsComponent extends BaseComponent {
 
     // Aktuell ausgewählte IDs für Disabled-Status
     const selectedIds = new Set(
-      Array.from(this.state.getQuery()).map((t) => {
+      Array.from(this.state.query).map((t) => {
         return t.id;
       }),
     );
@@ -250,7 +250,7 @@ export class SuggestionsComponent extends BaseComponent {
       return;
     }
     const selectedIds = new Set(
-      Array.from(this.state.getQuery()).map((t) => {
+      Array.from(this.state.query).map((t) => {
         return t.id;
       }),
     );

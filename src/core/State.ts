@@ -1,6 +1,7 @@
 import { NeverAPI } from "../api/Never/NeverClient";
 import { Status, TaxonomyType, VisualizationType } from "../types/Application";
 import type { Taxon, TaxonomyTree } from "../types/Taxonomy";
+import { parseTaxonomy, parseVisualization } from "../utility/Environment";
 
 // A serializable snapshot of the state that can be hydrated
 export interface StateSpore {
@@ -11,14 +12,14 @@ export interface StateSpore {
 
 // Singleton State management class
 export class State {
-  private static instance?: State;
+  private static _instance?: State;
   private api: NeverAPI = new NeverAPI();
 
-  private query = new Set<Taxon>();
-  private tree?: TaxonomyTree;
-  private status: Status = Status.Idle;
-  private displayType: VisualizationType;
-  private taxonomyType: TaxonomyType;
+  private _query = new Set<Taxon>();
+  private _tree?: TaxonomyTree;
+  private _status: Status = Status.Idle;
+  private _displayType: VisualizationType;
+  private _taxonomyType: TaxonomyType;
 
   private querySubscribers = new Set<(query: Set<Taxon>) => void>();
   private treeSubscribers = new Set<(tree: TaxonomyTree | undefined) => void>();
@@ -27,33 +28,17 @@ export class State {
   private taxonomyTypeSubscribers = new Set<(taxonomyType: TaxonomyType) => void>();
 
   private constructor() {
-    // initialize defaults from environment safely
-    const parseVisualization = (v: unknown): VisualizationType => {
-      if (
-        typeof v === "string" &&
-        Object.values(VisualizationType).includes(v as VisualizationType)
-      ) {
-        return v as VisualizationType;
-      }
-      return VisualizationType.Tree;
-    };
-    const parseTaxonomy = (v: unknown): TaxonomyType => {
-      if (typeof v === "string" && Object.values(TaxonomyType).includes(v as TaxonomyType)) {
-        return v as TaxonomyType;
-      }
-      return TaxonomyType.Taxon;
-    };
-    this.displayType = parseVisualization(import.meta.env.VITAX_DISPLAYTYPE_DEFAULT as unknown);
-    this.taxonomyType = parseTaxonomy(import.meta.env.VITAX_TAXONOMYTYPE_DEFAULT as unknown);
+    this._displayType = parseVisualization(import.meta.env.VITAX_DISPLAYTYPE_DEFAULT as unknown);
+    this._taxonomyType = parseTaxonomy(import.meta.env.VITAX_TAXONOMYTYPE_DEFAULT as unknown);
   }
 
   public static init() {
-    State.instance ??= new State();
+    State._instance ??= new State();
   }
 
-  public static getInstance(): State {
+  public static get instance(): State {
     State.init();
-    const inst = State.instance;
+    const inst = State._instance;
     if (!inst) {
       throw new Error("State failed to initialize");
     }
@@ -69,21 +54,21 @@ export class State {
   }
 
   public async hydrate(spore: StateSpore): Promise<void> {
-    this.setTaxonomyType(spore.taxonomyType);
-    this.setDisplayType(spore.displayType);
+    this.taxonomyType = spore.taxonomyType;
+    this.displayType = spore.displayType;
 
     const query = await this.api.getFullTaxaByIds(Array.from(spore.taxonIds));
     if (query.size > 0) {
-      this.setQuery(query);
+      this.query = query;
     }
   }
 
-  public getQuery(): Set<Taxon> {
-    return this.query;
+  public get query(): Set<Taxon> {
+    return this._query;
   }
 
-  public setQuery(query: Set<Taxon>): void {
-    this.query = query;
+  public set query(query: Set<Taxon>) {
+    this._query = query;
     this.callQuerySubscribers();
     console.debug("Query: ", this.query);
   }
@@ -100,12 +85,12 @@ export class State {
     console.debug("Query: ", this.query);
   }
 
-  public getTree(): TaxonomyTree | undefined {
-    return this.tree;
+  public get tree(): TaxonomyTree | undefined {
+    return this._tree;
   }
 
-  public setTree(tree: TaxonomyTree): void {
-    this.tree = tree;
+  public set tree(tree: TaxonomyTree | undefined) {
+    this._tree = tree;
     this.treeHasChanged();
     console.debug("Tree: ", this.tree);
   }
@@ -115,32 +100,32 @@ export class State {
     this.callTreeSubscribers();
   }
 
-  public getStatus(): Status {
-    return this.status;
+  public get status(): Status {
+    return this._status;
   }
 
-  public setStatus(status: Status): void {
-    this.status = status;
+  public set status(status: Status) {
+    this._status = status;
     this.callStatusSubscribers();
     console.debug("Status: ", this.status);
   }
 
-  public getDisplayType(): VisualizationType {
-    return this.displayType;
+  public get displayType(): VisualizationType {
+    return this._displayType;
   }
 
-  public setDisplayType(value: VisualizationType) {
-    this.displayType = value;
+  public set displayType(value: VisualizationType) {
+    this._displayType = value;
     this.callDisplayTypeSubscribers();
     console.debug("DisplayType: ", this.displayType);
   }
 
-  public getTaxonomyType(): TaxonomyType {
-    return this.taxonomyType;
+  public get taxonomyType(): TaxonomyType {
+    return this._taxonomyType;
   }
 
-  public setTaxonomyType(value: TaxonomyType) {
-    this.taxonomyType = value;
+  public set taxonomyType(value: TaxonomyType) {
+    this._taxonomyType = value;
     this.callTaxonomyTypeSubscribers();
     console.debug("TaxonomyType: ", this.taxonomyType);
   }

@@ -4,7 +4,7 @@ import { BaseComponent } from "../BaseComponent";
 import HTMLtemplate from "./DisplayTypeTemplate.html?raw";
 
 export class DisplayTypeComponent extends BaseComponent {
-  private state: State = State.getInstance();
+  private state: State = State.instance;
   private tabs?: HTMLDivElement;
 
   constructor() {
@@ -21,7 +21,7 @@ export class DisplayTypeComponent extends BaseComponent {
 
     this.tabs.addEventListener("change", this.onChange.bind(this));
 
-    const currentDisplayType = this.state.getDisplayType();
+    const currentDisplayType = this.state.displayType;
     Object.values(VisualizationType).forEach((type) => {
       const radio = document.createElement("input");
       radio.type = "radio";
@@ -42,8 +42,8 @@ export class DisplayTypeComponent extends BaseComponent {
     const target = event.target as HTMLInputElement;
     if (target.name === "display-type") {
       const type = target.value as VisualizationType;
-      if (this.state.getDisplayType() !== type) {
-        this.state.setDisplayType(type);
+      if (this.state.displayType !== type) {
+        this.state.displayType = type;
       }
     }
   }

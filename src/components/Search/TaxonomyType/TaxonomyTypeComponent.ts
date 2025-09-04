@@ -7,7 +7,7 @@ export class TaxonomyTypeComponent extends BaseComponent {
   private button?: HTMLButtonElement;
   private label?: HTMLSpanElement;
   private list?: HTMLUListElement;
-  private state: State = State.getInstance();
+  private state: State = State.instance;
 
   constructor() {
     super(HTMLtemplate);
@@ -25,7 +25,7 @@ export class TaxonomyTypeComponent extends BaseComponent {
       throw new Error("List, button or label element not found");
     }
 
-    const currentType = this.state.getTaxonomyType();
+    const currentType = this.state.taxonomyType;
 
     Object.values(TaxonomyType).forEach((type) => {
       const item = document.createElement("li");
@@ -97,7 +97,7 @@ export class TaxonomyTypeComponent extends BaseComponent {
     if (!this.list) {
       throw new Error("List not found");
     }
-    this.state.setTaxonomyType(item.dataset.type as TaxonomyType);
+    this.state.taxonomyType = item.dataset.type as TaxonomyType;
     this.list.hidePopover();
   }
 }

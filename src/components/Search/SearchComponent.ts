@@ -2,7 +2,6 @@ import { BaseComponent } from "../BaseComponent";
 import HTMLtemplate from "./SearchTemplate.html?raw";
 
 import { Orchestrator } from "../../core/Orchestrator.ts";
-import { Router } from "../../core/Routing.ts";
 import { State } from "../../core/State.ts";
 import { SuggestionsService } from "../../services/SuggestionsService.ts";
 import { Status, type Suggestion } from "../../types/Application";
@@ -20,8 +19,7 @@ export class SearchComponent extends BaseComponent {
   private suggestionsComp: SuggestionsComponent = new SuggestionsComponent();
   private selectionComp: SelectionComponent = new SelectionComponent();
   private service: SuggestionsService = new SuggestionsService();
-  private router: Router = Router.instance;
-  private state: State = State.getInstance();
+  private state: State = State.instance;
 
   private debounceTimer?: number;
   private debounceDelay: number = import.meta.env.VITAX_DEBOUNCE_TIME as number;
@@ -108,8 +106,7 @@ export class SearchComponent extends BaseComponent {
   }
 
   private onVisualize(): void {
-    if (this.state.getQuery().size > 0) {
-      this.router.updateUrlFromState();
+    if (this.state.query.size > 0) {
       void this.orchestrator.resolveTree();
       window.dispatchEvent(new CustomEvent("vitax:resetView"));
       this.closeSuggestions();

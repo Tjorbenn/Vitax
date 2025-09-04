@@ -2,7 +2,6 @@ import "./styles/main.css";
 import "./utility/Set.ts";
 
 // Core
-import { Router } from "./core/Routing.ts";
 
 // Features
 import { initDraggableWindows } from "./features/DraggableWindows";
@@ -22,4 +21,3 @@ import "./components/Visualization/VisualizationComponent.ts";
 // Features
 document.addEventListener("keydown", handleKeyCombos);
 initDraggableWindows();
-void Router.instance.setupRouting();

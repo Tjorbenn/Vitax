@@ -35,7 +35,7 @@ export class VisualizationComponent extends BaseComponent {
   private gridGroup?: d3.Selection<SVGGElement, undefined, SVGGElement, undefined>;
   private centerGroup?: d3.Selection<SVGGElement, undefined, SVGGElement, undefined>;
   private contentGroup?: d3.Selection<SVGGElement, undefined, SVGGElement, undefined>;
-  private state: State = State.getInstance();
+  private state: State = State.instance;
   private initialWidth?: number;
   private initialHeight?: number;
   private lastCenteredTreeRootId?: number;
@@ -50,7 +50,7 @@ export class VisualizationComponent extends BaseComponent {
     this.setupSVG();
     this.state.subscribeToTree((_tree) => {
       this.renderVisualization();
-      const tree = this.state.getTree();
+      const tree = this.state.tree;
       window.vitaxCurrentRootId = tree?.root.id;
       if (this.taxonPopoverEl) {
         this.taxonPopoverEl.refresh();
@@ -275,13 +275,13 @@ export class VisualizationComponent extends BaseComponent {
     if (!this.svg || !this.contentGroup) {
       return;
     }
-    const tree: TaxonomyTree | undefined = this.state.getTree();
+    const tree: TaxonomyTree | undefined = this.state.tree;
     if (!tree) {
       this.disposeRenderer();
       this.clearContent();
       return;
     }
-    const displayType = this.state.getDisplayType();
+    const displayType = this.state.displayType;
     if (!displayType) {
       return;
     }
@@ -451,7 +451,7 @@ export class VisualizationComponent extends BaseComponent {
     }
 
     const hierarchyNode: (d3.HierarchyNode<Taxon> & { collapsed?: boolean }) | undefined = node;
-    const tree = this.state.getTree();
+    const tree = this.state.tree;
     if (!hierarchyNode && tree) {
       const t = tree.findTaxonById(id);
       if (!t) {
@@ -513,7 +513,7 @@ export class VisualizationComponent extends BaseComponent {
 
   // Event Handler für Parent Fetch
   private onFetchParent = async (ev: CustomEvent) => {
-    const tree = this.state.getTree();
+    const tree = this.state.tree;
     if (!tree) {
       return;
     }
@@ -526,7 +526,7 @@ export class VisualizationComponent extends BaseComponent {
       const service = new TaxonomyService();
       const newTree = await service.expandTreeUp(tree);
       if (newTree.root.id !== tree.root.id) {
-        this.state.setTree(newTree);
+        this.state.tree = newTree;
       }
     } else {
       const service = new TaxonomyService();
@@ -540,7 +540,7 @@ export class VisualizationComponent extends BaseComponent {
 
   // Event Handler für Children Fetch
   private onFetchChildren = async (ev: CustomEvent) => {
-    const tree = this.state.getTree();
+    const tree = this.state.tree;
     if (!tree) {
       return;
     }
@@ -559,7 +559,7 @@ export class VisualizationComponent extends BaseComponent {
 
   // Event Handler für Collapse/Expand
   private onToggleNode = (ev: CustomEvent) => {
-    const tree = this.state.getTree();
+    const tree = this.state.tree;
     if (!tree || !this.renderer) {
       return;
     }

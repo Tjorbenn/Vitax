@@ -15,7 +15,7 @@ export abstract class D3Visualization {
   protected width = 0;
   protected height = 0;
   protected taxonomyService = new TaxonomyService();
-  protected state = State.getInstance();
+  protected state = State.instance;
   protected root?: d3.HierarchyNode<Taxon> & {
     x0?: number;
     y0?: number;
@@ -31,7 +31,7 @@ export abstract class D3Visualization {
 
   protected activateStateSubscription(): void {
     this.state.subscribeToTree(this.updateHierarchy.bind(this));
-    this.updateHierarchy(this.state.getTree());
+    this.updateHierarchy(this.state.tree);
   }
 
   /**
@@ -67,7 +67,7 @@ export abstract class D3Visualization {
   }
 
   protected getQuery(): Set<Taxon> {
-    return this.state.getQuery();
+    return this.state.query;
   }
 
   protected getNodeFill(d: d3.HierarchyNode<Taxon>): string {
@@ -118,13 +118,13 @@ export abstract class D3Visualization {
   }
 
   protected async upRoot(): Promise<void> {
-    const tree = this.state.getTree();
+    const tree = this.state.tree;
     if (!tree) {
       return;
     }
     const newTree = await this.taxonomyService.expandTreeUp(tree);
     if (newTree.root.id !== tree.root.id) {
-      this.state.setTree(newTree);
+      this.state.tree = newTree;
     }
   }
 
