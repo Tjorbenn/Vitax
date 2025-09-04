@@ -1,9 +1,4 @@
 {
-    "outputFormat": "markdown",
-    "updateToc": true,
-    "exclude": [
-        ".git",
-        "node_modules",
-        "dist"
-    ]
+  "outputFormat": "markdown",
+  "exclude": [".git", "node_modules", "dist", "public"]
 }

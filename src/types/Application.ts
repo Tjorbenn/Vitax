@@ -10,14 +10,14 @@ export enum Status {
   Idle,
   Loading,
   Success,
-  Error
+  Error,
 }
 
 export enum TaxonomyType {
   Taxon = "taxon",
   Descendants = "descendants",
   Neighbors = "neighbors",
-  MRCA = "mrca"
+  MRCA = "mrca",
 }
 
 export enum VisualizationType {
@@ -40,7 +40,7 @@ export function SuggestionsToTaxa(suggestions: Set<Suggestion>): Set<Taxon> {
 export function TaxonToSuggestion(taxon: Taxon): Suggestion {
   return {
     id: taxon.id,
-    name: taxon.name
+    name: taxon.name,
   };
 }
 
@@ -52,10 +52,18 @@ function getRank(name: string, term: string): number {
   const t = term.toLowerCase();
 
   const n = name.toLowerCase();
-  if (n.startsWith(t)) return 0;
+  if (n.startsWith(t)) {
+    return 0;
+  }
 
   const parts = n.split(/[^a-z0-9]+/).filter(Boolean);
-  if (parts.some(p => p.startsWith(t))) return 1;
+  if (
+    parts.some((p) => {
+      return p.startsWith(t);
+    })
+  ) {
+    return 1;
+  }
 
   return 2;
 }
@@ -66,12 +74,13 @@ function compareByRank(a: Suggestion, b: Suggestion, term: string): number {
 
   if (rankA !== rankB) {
     return rankA - rankB;
-  }
-  else {
+  } else {
     return a.id - b.id; // tie-breaker
   }
 }
 
 export function sortSuggestions(suggestions: Set<Suggestion>, term: string): Suggestion[] {
-  return Array.from(suggestions).sort((a, b) => compareByRank(a, b, term));
+  return Array.from(suggestions).sort((a, b) => {
+    return compareByRank(a, b, term);
+  });
 }

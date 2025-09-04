@@ -1,13 +1,12 @@
 /**
  * # Never-API
- * 
+ *
  * The Never-API is a custom-built RESTful API for retrieving the taxonomic data contained in the NCBI.
  * This API was built to provide a more streamlined and efficient way to access the taxonomic data compared to the already existing NCBI Entrez API, as well as to have full control over the full stack.
  * To keep the database of the Never-API in sync with the NCBI, it is updated and rebuilt with the latest data on a daily basis.
  *
  * Since the Never-API is still in development, we implement a Set of low-level abstractions that allow for easy modification and extensions of our API-Client.
  */
-
 
 //#region never-imports
 import type { GenomeLevel } from "../../types/Taxonomy";
@@ -16,7 +15,7 @@ import { Rank } from "../../types/Taxonomy";
 
 /**
  * ## Endpoints
- * 
+ *
  * To be able to painlessly extend our API-Client, we define an enum `Endpoint` that contains the available Endpoints of the Never-API.
  * This way we have a single source of truth for all API endpoints, that can be easily referenced and modified.
  */
@@ -34,15 +33,15 @@ export enum Endpoint {
   Subtree = "subtree",
   Taxon = "taxi",
   TaxonID = "taxids",
-  TaxonInfo = "taxa_info"
-};
+  TaxonInfo = "taxa_info",
+}
 
-/** 
- * # Entry 
- * 
+/**
+ * # Entry
+ *
  * To be able to restrict the returned data from the Never-API to our specific set of expected values we import our custom enums `GenomeLevel` and `Rank`.
  * <<r:never-imports>>
-*/
+ */
 
 /**
  * We also define an interface for the genome counts in the way the Never-API returns them.
@@ -68,12 +67,12 @@ export interface Entry {
   level?: GenomeLevel;
   raw_genome_counts?: NeverGenomeCount[];
   rec_genome_counts?: NeverGenomeCount[];
-};
+}
 
 /**
  * Since the Never-API usually returns a set of results, we define a custom type called `Response` as an array of our `Entry` objects.
  */
-export type Response = Entry[]
+export type Response = Entry[];
 
 /**
  * # Request
@@ -89,12 +88,12 @@ export enum ParameterKey {
   Term = "t",
   Exact = "e",
   Page = "p",
-  PageSize = "n"
+  PageSize = "n",
 }
 
 //#region request
 export class Request {
-  baseURL: string = "https://neighbors.evolbio.mpg.de/";
+  baseURL = "https://neighbors.evolbio.mpg.de/";
   endpoint?: Endpoint;
   parameters: URLSearchParams = new URLSearchParams();
 
@@ -122,26 +121,26 @@ export class Request {
     this.endpoint = endpoint;
     return this;
   }
-//#endregion
+  //#endregion
 
-/**
- * We implement the `Request` class using the Builder pattern.
- *
- * Since the location of the Never-API does not change, we can hardcode the base URL, reducing the need for another parameter.
- * The `Request` class contains methods for setting the endpoint and adding query parameters (Builder pattern).
- *
- * <<r:request>>
- */
+  /**
+   * We implement the `Request` class using the Builder pattern.
+   *
+   * Since the location of the Never-API does not change, we can hardcode the base URL, reducing the need for another parameter.
+   * The `Request` class contains methods for setting the endpoint and adding query parameters (Builder pattern).
+   *
+   * <<r:request>>
+   */
 
   /**
    * The `Send` method constructs the full request URL using the base URL, endpoint, and query parameters and fetches the response from the Never-API.
    * We check if the response is ok (status code 2XX) before returning the JSON data.
    * @returns A Promise that resolves to the response from the Never-API.
-   * 
+   *
    * <<r:request-send>>
    */
 
-//#region request-send
+  //#region request-send
   async Send(): Promise<Response> {
     if (!this.endpoint) {
       throw new Error("Endpoint is not set!");
@@ -154,20 +153,19 @@ export class Request {
     if (!response.ok) {
       throw new Error("Never-API response was not ok: " + response.statusText);
     }
-    const json = await response.json();
+    const json = (await response.json()) as Response;
 
     // Workaround for the MRCA endpoint that does not return an array, but just an object that looks like this: { "taxid": 9606 } -> The endpoint will be changed later to return an array.
-    if (this.endpoint === Endpoint.MRCA && json.taxid || this.endpoint === Endpoint.Parent && json.taxid) {
-      return [json];
-    }
-
-    if (!json) {
-      throw new Error(`Empty response to ${requestUrl} from Never-API`);
+    if (
+      this.endpoint === Endpoint.MRCA ||
+      this.endpoint === Endpoint.Parent
+    ) {
+      return [json as unknown as Entry];
     }
 
     return json;
   }
-//endregion
+  //endregion
 }
 
 /**
@@ -176,5 +174,3 @@ export class Request {
  *
  * We also get the added benefit of keeping our code "DRY", by reusing the `Request` class for all API calls.
  */
-
-

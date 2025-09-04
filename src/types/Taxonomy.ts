@@ -15,7 +15,7 @@ export enum Rank {
   Genus = "genus",
   Group = "species group",
   Subgroup = "species subgroup",
-  Species = "species"
+  Species = "species",
 }
 
 export interface GenomeCount {
@@ -29,7 +29,7 @@ export enum GenomeLevel {
   Complete = "complete",
   Chromosome = "chromosome",
   Scaffold = "scaffold",
-  Contig = "contig"
+  Contig = "contig",
 }
 
 export class Taxon {
@@ -60,39 +60,45 @@ export class Taxon {
     return this;
   }
 
+  public hasParentWithId(parentId: number): boolean {
+    return this.parent ? this.parent.id === parentId : false;
+  }
+
   public hasParent(parent: Taxon): boolean {
-    if (!this.parent) {
+    return this.hasParentWithId(parent.id);
+  }
+
+  public hasChildWithId(childId: number): boolean {
+    if (this.children.size === 0) {
       return false;
     }
-    else {
-      return this.parent.id === parent.id;
-    }
+    return Array.from(this.children).some((c) => c.id === childId);
   }
 
   public hasChild(child: Taxon): boolean {
-    if (!this.children || this.children.size === 0) {
-      return false;
-    }
-    else {
-      return this.children.some(c => c.id === child.id);
-    }
+    return this.hasChildWithId(child.id);
   }
 
   public setChildren(children: Set<Taxon>): this {
     this.children = children;
-    children.forEach(child => child.setParent(this));
+    children.forEach((child) => {
+      return child.setParent(this);
+    });
     return this;
   }
 
   public addChild(child: Taxon): this {
     this.children.add(child);
-    if (!child.hasParent(this))
+    if (!child.hasParent(this)) {
       child.setParent(this);
+    }
     return this;
   }
 
   public addChildren(children: Set<Taxon>): this {
-    children.forEach(child => this.addChild(child));
+    children.forEach((child) => {
+      return this.addChild(child);
+    });
     return this;
   }
 }
@@ -107,7 +113,7 @@ export class TaxonomyTree {
   }
 
   public toString(): string {
-    return `TaxonomyTree with root: ${this.root.name} (ID: ${this.root.id}) | Entries: ${this.taxonMap.toString()}`;
+    return `TaxonomyTree with root: ${this.root.name} (ID: ${String(this.root.id)}) | Entries: ${this.taxonMap.toString()}`;
   }
 
   public toSet(): Set<Taxon> {
@@ -130,8 +136,10 @@ export class TaxonomyTree {
     const taxa = new Set<Taxon>();
     const traverse = (taxon: Taxon) => {
       taxa.add(taxon);
-      taxon.children.forEach(child => traverse(child));
-    }
+      taxon.children.forEach((child) => {
+        traverse(child);
+      });
+    };
     traverse(root);
     return new IndexedTaxa(taxa);
   }
@@ -144,15 +152,22 @@ export class IndexedTaxa {
   constructor(taxa: Set<Taxon>) {
     this.idMap = new Map();
     this.nameMap = new Map();
-    taxa.forEach(taxon => {
+    for (const taxon of taxa) {
       this.idMap.set(taxon.id, taxon);
       this.nameMap.set(taxon.name, taxon);
-    });
+    }
   }
 
   public toString(): string {
     const entries = Array.from(this.idMap.entries());
-    return "Entries: " + entries.map(([id, taxon]) => `${id}: ${taxon.name}`).join(", ");
+    return (
+      "Entries: " +
+      entries
+        .map(([id, taxon]) => {
+          return `${String(id)}: ${taxon.name}`;
+        })
+        .join(", ")
+    );
   }
 
   public getAll(): Set<Taxon> {
@@ -175,20 +190,32 @@ export class IndexedTaxa {
  * @param taxa - An array of Taxon objects.
  * @returns A TaxonomyTree with the root taxon and its children populated.
  * @throws Will throw an error if the taxa array is empty or if no root taxon is found.
-*/
+ */
 export function TaxaToTree(taxa: Set<Taxon>): TaxonomyTree {
   if (taxa.size === 0) {
     throw new Error("Cannot create tree from empty taxa array.");
   }
 
   // Find the root taxon, which is either the one without a parent in the array or the one that is its own parent
-  const root = taxa.find(taxon => !taxa.some(child => child.id === taxon.parentId) || taxon.parentId === taxon.id);
+  const root = taxa.find((taxon) => {
+    return (
+      !taxa.some((child) => {
+        return child.id === taxon.parentId;
+      }) || taxon.parentId === taxon.id
+    );
+  });
   if (!root) {
-    throw new Error("No root taxon found in: " + JSON.stringify(taxa));
+    throw new Error("No root taxon found in: " + JSON.stringify(Array.from(taxa)));
   }
 
   for (const taxon of taxa) {
-    taxon.addChildren(new Set(taxa.filter(child => child.parentId === taxon.id)));
+    taxon.addChildren(
+      new Set(
+        taxa.filter((child) => {
+          return child.parentId === taxon.id;
+        }),
+      ),
+    );
   }
 
   const tree = new TaxonomyTree(root);

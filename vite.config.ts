@@ -11,9 +11,9 @@ export default defineConfig({
     Icons({
       compiler: "web-components",
       webComponents: {
-        autoDefine: true,
+        autoDefine: true
       },
-      autoInstall: true,
-    }),
-  ],
+      autoInstall: true
+    })
+  ]
 });
