@@ -8,11 +8,20 @@ import HTMLtemplate from "./SelectionTemplate.html?raw";
 export class SelectionComponent extends BaseComponent {
   private state: State = State.instance;
   private container?: HTMLDivElement;
+  private _keepOpenOnBlur = false; // Placeholder für Konsistenz mit SearchComponent
+
+  public get keepOpenOnBlur(): boolean {
+    return this._keepOpenOnBlur;
+  }
+  public set keepOpenOnBlur(v: boolean) {
+    this._keepOpenOnBlur = v;
+  }
 
   constructor() {
     super(HTMLtemplate);
 
     this.classList.add(
+      "pointer-events-auto",
       "hidden",
       "h-fit",
       "min-h-8",

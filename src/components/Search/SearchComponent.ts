@@ -28,6 +28,43 @@ export class SearchComponent extends BaseComponent {
 
   private term = "";
   private outsideListener?: (e: Event) => void;
+  private _keepOpenOnBlur = false;
+
+  // Wenn true, werden Vorschläge/Selections nicht bei Fokusverlust geschlossen
+  public get keepOpenOnBlur(): boolean {
+    return this._keepOpenOnBlur;
+  }
+  public set keepOpenOnBlur(value: boolean) {
+    if (this._keepOpenOnBlur === value) return;
+    this._keepOpenOnBlur = value;
+    // Boolean-Attribut synchron halten
+    if (value) {
+      if (!this.hasAttribute("keep-open-on-blur")) {
+        this.setAttribute("keep-open-on-blur", "");
+      }
+    } else if (this.hasAttribute("keep-open-on-blur")) {
+      this.removeAttribute("keep-open-on-blur");
+    }
+    this.propagateKeepOpenOnBlur();
+  }
+
+  private propagateKeepOpenOnBlur() {
+    (this.suggestionsComp as any).keepOpenOnBlur = this._keepOpenOnBlur;
+    (this.selectionComp as any).keepOpenOnBlur = this._keepOpenOnBlur;
+  }
+
+  static get observedAttributes(): string[] {
+    return ["keep-open-on-blur"]; // beobachte Boolean-Attribut
+  }
+  attributeChangedCallback(name: string, _oldValue: string | null, newValue: string | null) {
+    if (name === "keep-open-on-blur") {
+      const active = newValue !== null; // Präsenz => true
+      if (active !== this._keepOpenOnBlur) {
+        this._keepOpenOnBlur = active;
+        this.propagateKeepOpenOnBlur();
+      }
+    }
+  }
 
   constructor() {
     super(HTMLtemplate);
@@ -62,9 +99,18 @@ export class SearchComponent extends BaseComponent {
 
     this.state.subscribeToStatus(this.onStatusChange.bind(this));
 
+    // Initialen Attributstatus auswerten (falls im HTML gesetzt)
+    if (this.hasAttribute("keep-open-on-blur")) {
+      this._keepOpenOnBlur = true;
+      this.propagateKeepOpenOnBlur();
+    }
+
     // Outside click / focus handling
     this.outsideListener = (e: Event) => {
       const target = e.target as Node | null;
+      if (this._keepOpenOnBlur) {
+        return; // Auto-Close deaktiviert
+      }
       if (target && !this.contains(target)) {
         this.closeSuggestions();
       }

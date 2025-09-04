@@ -216,6 +216,8 @@ export class D3Tree extends D3Visualization {
     const nodeEnter = nodeSel
       .enter()
       .append("g")
+      .attr("data-id", (d: TreeNode) => String(d.data.id))
+      .attr("data-name", (d: TreeNode) => d.data.name)
       .attr("transform", (_d) => `translate(${String(src.y0)},${String(src.x0)})`)
       .attr("fill-opacity", 0)
       .attr("stroke-opacity", 0)

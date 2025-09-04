@@ -52,6 +52,24 @@ export class TaxonomyTypeComponent extends BaseComponent {
     });
   }
 
+  public open() {
+    this.list?.classList.remove("hidden");
+    this.list?.setAttribute("data-open", "true");
+    this.list?.setAttribute("aria-hidden", "false");
+    this.button?.setAttribute("aria-expanded", "true");
+  }
+
+  public close() {
+    this.list?.classList.add("hidden");
+    this.list?.removeAttribute("data-open");
+    this.list?.setAttribute("aria-hidden", "true");
+    this.button?.setAttribute("aria-expanded", "false");
+  }
+
+  public toggle() {
+    this.list?.classList.contains("hidden") ? this.open() : this.close();
+  }
+
   private addStatus(anchor: HTMLAnchorElement) {
     if (anchor.querySelector(".status")) {
       return;

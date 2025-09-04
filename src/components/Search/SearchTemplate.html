@@ -4,6 +4,7 @@
   >
     <taxonomy-type class="join-item"></taxonomy-type>
     <label
+      id="search-input-label"
       class="input join-item bg-base-100/40 grow border-none !shadow-none backdrop-blur-sm focus-within:outline-none"
     >
       <span class="icon-[material-symbols--search-rounded] text-[1.5em]"></span>
@@ -14,7 +15,11 @@
         <kbd class="kbd kbd-sm">K</kbd>
       </div>
     </label>
-    <button type="submit" class="btn btn-primary join-item border-none">Visualize</button>
+    <button id="visualize-button" type="submit" class="btn btn-primary join-item border-none">
+      Visualize
+    </button>
   </fieldset>
-  <section class="animated absolute right-0 left-0 mt-4 flex flex-col items-center gap-4"></section>
+  <section
+    class="animated pointer-events-none absolute right-0 left-0 mt-4 flex flex-col items-center gap-4"
+  ></section>
 </search>

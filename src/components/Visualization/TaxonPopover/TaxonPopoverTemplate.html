@@ -1,5 +1,8 @@
 <ul class="card-body flex flex-col items-stretch gap-2">
-  <hgroup class="card-title flex flex-row items-center justify-between gap-2">
+  <hgroup
+    id="taxon-popover-header"
+    class="card-title flex flex-row items-center justify-between gap-2"
+  >
     <span id="taxon-name" class="text-primary tooltip m-0 text-lg" data-tip="Name"></span>
     <span id="taxon-id" class="badge badge-primary badge-xs tooltip" data-tip="ID"></span>
   </hgroup>
@@ -48,7 +51,7 @@
       </table>
     </div>
   </div>
-  <div class="card-actions mt-4 flex flex-row justify-between">
+  <div id="taxon-popover-actions" class="card-actions mt-4 flex flex-row justify-between">
     <button class="btn btn-primary btn-xs tooltip" data-tip="Fetch Parent" id="parent-button">
       <span class="icon-[material-symbols--arrow-upward-rounded]"></span>
       Parent

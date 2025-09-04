@@ -17,11 +17,20 @@ export class SuggestionsComponent extends BaseComponent {
   private table?: HTMLTableElement;
   private loader?: HTMLElement;
   private state: State = State.instance;
+  private _keepOpenOnBlur = false; // Flag wird aktuell nur propagiert, zukünftige Nutzung möglich
+
+  public get keepOpenOnBlur(): boolean {
+    return this._keepOpenOnBlur;
+  }
+  public set keepOpenOnBlur(v: boolean) {
+    this._keepOpenOnBlur = v;
+  }
 
   constructor() {
     super(HTMLtemplate);
 
     this.classList.add(
+      "pointer-events-auto",
       "hidden",
       "opacity-0",
       "animated",

@@ -139,6 +139,8 @@ export class D3Graph extends D3Visualization {
     const nodeEnter = nodeSel
       .enter()
       .append("g")
+      .attr("data-id", (d: GraphHierarchyNode) => String(d.data.id))
+      .attr("data-name", (d: GraphHierarchyNode) => d.data.name)
       .on("mouseenter", (event: MouseEvent, d: GraphHierarchyNode) => {
         const bbox = (event.currentTarget as SVGGElement).getBoundingClientRect();
         const clientX = event.clientX;

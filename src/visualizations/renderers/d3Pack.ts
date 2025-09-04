@@ -75,6 +75,8 @@ export class D3Pack extends D3Visualization {
     const nodeEnter = nodeSel
       .enter()
       .append("g")
+      .attr("data-id", (d: any) => String(d.data.id))
+      .attr("data-name", (d: any) => d.data.name)
       .attr("transform", () => {
         return `translate(${rootPacked.x},${rootPacked.y})`;
       })
