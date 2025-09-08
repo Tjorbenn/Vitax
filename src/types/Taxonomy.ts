@@ -1,21 +1,37 @@
 export interface Accession {
+  taxid: number;
   accession: string;
   level: GenomeLevel;
 }
 
 export enum Rank {
   None = "no rank",
+  Unknown = "unknown",
   Domain = "domain",
   Kingdom = "kingdom",
   Phylum = "phylum",
   Class = "class",
   Order = "order",
+  Suborder = "suborder",
+  Superfamily = "superfamily",
   Family = "family",
   Subfamily = "subfamily",
   Genus = "genus",
+  Subgenus = "subgenus",
   Group = "species group",
   Subgroup = "species subgroup",
+  Subspecies = "subspecies",
   Species = "species",
+  Strain = "strain",
+  Varietas = "varietas",
+  Tribe = "tribe",
+  Subtribe = "subtribe",
+  Isolate = "isolate",
+  Clade = "clade",
+  Forma = "forma",
+  FormaSpecialis = "forma specialis",
+  Serotype = "serotype",
+  Section = "section",
 }
 
 export interface GenomeCount {
@@ -37,8 +53,8 @@ export class Taxon {
   public name: string;
   public commonName?: string;
   public isLeaf?: boolean;
-  public accessions?: Accession[];
-  public rank?: Rank;
+  private _accessions: Set<Accession>;
+  public rank?: string | Rank;
   public parentId?: number;
   public parent?: Taxon;
   public children: Set<Taxon>;
@@ -49,6 +65,7 @@ export class Taxon {
     this.id = id;
     this.name = name;
     this.children = new Set();
+    this._accessions = new Set();
   }
 
   public setParent(parent: Taxon): this {
@@ -98,6 +115,32 @@ export class Taxon {
   public addChildren(children: Set<Taxon>): this {
     children.forEach((child) => {
       return this.addChild(child);
+    });
+    return this;
+  }
+
+  public get directAccessions(): Set<Accession> {
+    const accessions = new Set<Accession>();
+
+    this._accessions.forEach((acc) => {
+      if (acc.taxid === this.id) {
+        accessions.add(acc);
+      }
+    });
+    return accessions;
+  }
+
+  public get recursiveAccessions(): Set<Accession> {
+    return this._accessions;
+  }
+
+  public set accessions(accessions: Set<Accession>) {
+    this._accessions = accessions;
+  }
+
+  public addAccessions(accessions: Set<Accession>): this {
+    accessions.forEach((acc) => {
+      this._accessions.add(acc);
     });
     return this;
   }

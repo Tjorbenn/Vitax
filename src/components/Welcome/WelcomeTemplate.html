@@ -1,0 +1,77 @@
+<dialog id="welcome-modal" class="modal">
+  <div class="modal-box">
+    <hgroup class="flex flex-col">
+      <h1 class="shrink-0">
+        Welcome to
+        <span class="gradient-text font-serif drop-shadow-xl">Vitax!</span>
+      </h1>
+      <p class="mb-0 ml-1 text-sm text-neutral-500">Explore. Discover. Understand.</p>
+    </hgroup>
+    <div class="mt-6 text-base leading-relaxed">
+      <p>Vitax enables you to explore, discover and understand complex taxonomic relationships.</p>
+      <p>
+        No matter if you are a <b>researcher</b>, <b>student</b> or <b>just curious</b>, Vitax
+        provides the tools you need to navigate and analyze taxonomic data effectively:
+      </p>
+    </div>
+    <ul class="list bg-base-200 card card-border mt-6">
+      <li class="list-row animated hover:bg-base-300 items-center">
+        <span
+          class="icon-[material-symbols--search-rounded] text-primary mr-4"
+          style="width: 1.5em; height: 1.5em"
+        ></span>
+        <span>Autocompleted & Responsive Search</span>
+        <span class="badge badge-accent badge-xs">Smart Suggestions</span>
+      </li>
+      <li class="list-row animated hover:bg-base-300 items-center">
+        <span
+          class="icon-[material-symbols--imagesmode-rounded] text-primary mr-4"
+          style="width: 1.5em; height: 1.5em"
+        ></span>
+        <span>Tree, Graph and Pack Visualizations</span
+        ><span class="badge badge-accent badge-xs">Quick Switch</span>
+      </li>
+      <li class="list-row animated hover:bg-base-300 items-center">
+        <span
+          class="icon-[material-symbols--list-alt-rounded] text-primary mr-4"
+          style="width: 1.5em; height: 1.5em"
+        ></span>
+        <span>Inspect Taxon Metadata</span
+        ><span class="badge badge-accent badge-xs">Name, ID, Rank ...</span>
+      </li>
+      <li class="list-row animated hover:bg-base-300 items-center">
+        <span
+          class="icon-[material-symbols--newspaper-rounded] text-primary mr-4"
+          style="width: 1.5em; height: 1.5em"
+        ></span>
+        <span>Find Research</span>
+        <span class="badge badge-accent badge-xs">Publications / Citations</span>
+      </li>
+      <li class="list-row animated hover:bg-base-300 items-center">
+        <span
+          class="icon-[material-symbols--download-for-offline-rounded] text-primary mr-4"
+          style="width: 1.5em; height: 1.5em"
+        ></span>
+        <span>Download Accessions</span><span class="badge badge-xs badge-accent">CSV, JSON</span>
+      </li>
+      <li class="list-row animated hover:bg-base-300 items-center">
+        <span
+          class="icon-[material-symbols--share] text-primary mr-4"
+          style="width: 1.5em; height: 1.5em"
+        ></span>
+        <span>Save & Share Visualizations</span
+        ><span class="badge badge-xs badge-accent">Custom URLs</span>
+      </li>
+    </ul>
+    <div class="mt-6 text-sm text-neutral-500">
+      Start the tour or close this window. The tour is available to you at any time from the main
+      screen.
+    </div>
+    <div class="modal-action">
+      <form method="dialog">
+        <vitax-tutorial role="button" class="btn btn-primary"></vitax-tutorial>
+        <button class="btn">Close</button>
+      </form>
+    </div>
+  </div>
+</dialog>

@@ -1,43 +1,23 @@
 import { driver } from "driver.js";
 import "driver.js/dist/driver.css";
-import { State } from "../core/State";
 import type { TaxonomyTypeComponent } from "../components/Search/TaxonomyType/TaxonomyTypeComponent";
 
-export function initTutorial() {
-  const tutorialCompleted = localStorage.getItem("tutorialCompleted");
-  console.debug("Tutorial completed:", tutorialCompleted);
-  if (!tutorialCompleted) {
-    runTutorial();
-  }
-}
-
-export function runTutorial() {
-  drive();
-}
-
-function drive() {
-  const state = State.instance;
-  const taxonomyTypeComponent = document.querySelector("taxonomy-type") as TaxonomyTypeComponent;
+export function startTutorial() {
+  const taxonomyTypeComponent = document.querySelector(
+    "taxonomy-type",
+  ) as TaxonomyTypeComponent | null;
   const searchComponentEl = document.querySelector("vitax-search") as HTMLElement | null;
   const taxonomyTypeButton = document.getElementById("taxonomy-type-button") as HTMLButtonElement;
   const searchInput = document.getElementById("search-input") as HTMLInputElement;
   const visualizeButton = document.getElementById("visualize-button") as HTMLButtonElement;
-  if (!state) {
-    throw new Error("Could not get State");
-  }
-  if (!taxonomyTypeButton) {
-    throw new Error("Could not find taxonomy type button");
-  }
-  if (!searchInput) {
-    throw new Error("Could not find search input");
-  }
 
+  if (!taxonomyTypeComponent) {
+    throw new Error("Could not find taxonomy type component");
+  }
   if (!searchComponentEl) {
     throw new Error("Could not find search component");
   }
-  if (!visualizeButton) {
-    throw new Error("Could not find visualize button");
-  }
+
   searchComponentEl.setAttribute("keep-open-on-blur", "");
 
   const driverObj = driver({
@@ -305,9 +285,6 @@ function drive() {
             "This button opens a drawer containing a hierarchical list view of the taxa in the currently displayed tree.",
           onNextClick: () => {
             const drawerButton = document.getElementById("drawer-button") as HTMLButtonElement;
-            if (!drawerButton) {
-              throw new Error("Could not find drawer button");
-            }
             drawerButton.click();
             driverObj.moveNext();
           },
@@ -323,9 +300,6 @@ function drive() {
             "This list shows all taxa in the currently displayed tree in a hierarchical manner. You can dynamically expand and collapse each taxon to explore its children.",
           onNextClick: () => {
             const drawerOverlay = document.getElementById("drawer-overlay") as HTMLLabelElement;
-            if (!drawerOverlay) {
-              throw new Error("Could not find drawer overlay");
-            }
             drawerOverlay.click();
             driverObj.moveNext();
           },
@@ -348,7 +322,7 @@ function drive() {
           description:
             "Vitax uses your systems preferred theme by default. This button allows you to change between the light and dark theme.",
           onNextClick: () => {
-            localStorage.setItem("tutorialCompleted", "true");
+            localStorage.setItem("vitax.tutorialCompleted", "true");
             driverObj.moveNext();
           },
         },
@@ -356,9 +330,7 @@ function drive() {
     ],
     onDestroyed: () => {
       // Flag zurücksetzen sobald Tutorial endet
-      if (searchComponentEl) {
-        searchComponentEl.removeAttribute("keep-open-on-blur");
-      }
+      searchComponentEl.removeAttribute("keep-open-on-blur");
     },
   });
   driverObj.drive();

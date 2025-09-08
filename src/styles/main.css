@@ -1,11 +1,18 @@
-@import "@fontsource-variable/merriweather";
 @import "@fontsource-variable/roboto";
+@import "@fontsource-variable/merriweather";
+@import "@fontsource-variable/geist-mono";
 
 @import "tailwindcss";
 @plugin "daisyui";
 @import "./daisy.css";
 
 @plugin "@iconify/tailwind4";
+
+@theme {
+  --font-sans: "Roboto Variable", sans-serif;
+  --font-serif: "Merriweather Variable", serif;
+  --font-mono: "Geist Mono Variable", monospace;
+}
 
 @layer base {
   html {
@@ -139,5 +146,9 @@
 
   .bounce-within {
     @apply focus-within:scale-105 focus-within:shadow-xl;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary to-secondary bg-clip-text font-black text-transparent;
   }
 }

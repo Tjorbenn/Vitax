@@ -16,6 +16,10 @@ export abstract class D3Visualization {
   protected height = 0;
   protected taxonomyService = new TaxonomyService();
   protected state = State.instance;
+  protected handlers?: {
+    onHover?: (payload: unknown) => void;
+    onUnhover?: () => void;
+  };
   protected root?: d3.HierarchyNode<Taxon> & {
     x0?: number;
     y0?: number;
@@ -27,6 +31,10 @@ export abstract class D3Visualization {
     const bbox = (layer.ownerSVGElement ?? layer).getBoundingClientRect();
     this.width = bbox.width || 800;
     this.height = bbox.height || 600;
+  }
+
+  public setHandlers(h: { onHover?: (payload: unknown) => void; onUnhover?: () => void }): void {
+    this.handlers = h;
   }
 
   protected activateStateSubscription(): void {
@@ -78,7 +86,7 @@ export abstract class D3Visualization {
     }
     if (q.some((t) => t.id === d.data.id)) {
       return themeVars.primary;
-    } // Treffer -> Primary
+    }
     return d.children && d.children.length > 0 ? themeVars.neutral : themeVars.base300; // Eltern vs. Blätter
   }
 

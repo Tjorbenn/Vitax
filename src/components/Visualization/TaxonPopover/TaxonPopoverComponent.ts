@@ -1,13 +1,14 @@
 import * as d3 from "d3";
-import { GenomeLevel, Rank, type Taxon } from "../../../types/Taxonomy";
+import { GenomeLevel, type Taxon } from "../../../types/Taxonomy";
 import { BaseComponent } from "../../BaseComponent";
 import HTMLtemplate from "./TaxonPopoverTemplate.html?raw";
+import { downloadObjectsAsFile, downloadObjectsAsCsv } from "../../../features/Download";
+import type { Accession } from "../../../types/Taxonomy";
+import { getRankIcon } from "../../../types/UI";
+import { createIconString } from "../../../utility/Icons";
+import { TaxonomyService } from "../../../services/TaxonomyService";
 
-declare global {
-  interface Window {
-    vitaxCurrentRootId?: number;
-  }
-}
+// entfernt: globale Window-Variable vitaxCurrentRootId – wird nun intern gesetzt
 
 interface CollapsibleHierarchyNode<T> extends d3.HierarchyNode<T> {
   collapsed?: boolean;
@@ -15,7 +16,14 @@ interface CollapsibleHierarchyNode<T> extends d3.HierarchyNode<T> {
 }
 
 export class TaxonPopoverComponent extends BaseComponent {
+  private taxonomyService = new TaxonomyService();
+
   private node?: CollapsibleHierarchyNode<Taxon>;
+  private handlers?: {
+    onFetchParent?: (id: number) => void;
+    onFetchChildren?: (id: number) => void;
+    onToggleNode?: (id: number) => void;
+  };
 
   private nameElement?: HTMLHeadingElement;
   private idElement?: HTMLSpanElement;
@@ -24,6 +32,10 @@ export class TaxonPopoverComponent extends BaseComponent {
   private parentButton?: HTMLButtonElement;
   private childrenButton?: HTMLButtonElement;
   private collapseButton?: HTMLButtonElement;
+  private accessionsDownloadButton?: HTMLButtonElement;
+  private recursiveAccessionsDownloadButton?: HTMLButtonElement;
+  private filetypeToggle?: HTMLInputElement;
+  private currentRootId?: number;
 
   constructor() {
     super(HTMLtemplate);
@@ -50,6 +62,18 @@ export class TaxonPopoverComponent extends BaseComponent {
     this.updateContent();
   }
 
+  public setCurrentRootId(id: number): void {
+    this.currentRootId = id;
+  }
+
+  public setHandlers(h: {
+    onFetchParent?: (id: number) => void;
+    onFetchChildren?: (id: number) => void;
+    onToggleNode?: (id: number) => void;
+  }): void {
+    this.handlers = h;
+  }
+
   initialize(): void {
     this.nameElement = this.querySelector<HTMLHeadingElement>("#taxon-name") ?? undefined;
     this.idElement = this.querySelector<HTMLSpanElement>("#taxon-id") ?? undefined;
@@ -58,24 +82,29 @@ export class TaxonPopoverComponent extends BaseComponent {
     this.parentButton = this.querySelector<HTMLButtonElement>("#parent-button") ?? undefined;
     this.childrenButton = this.querySelector<HTMLButtonElement>("#children-button") ?? undefined;
     this.collapseButton = this.querySelector<HTMLButtonElement>("#collapse-button") ?? undefined;
+    this.accessionsDownloadButton =
+      this.querySelector<HTMLButtonElement>("#accessions-download-direct") ?? undefined;
+    this.recursiveAccessionsDownloadButton =
+      this.querySelector<HTMLButtonElement>("#accessions-download-recursive") ?? undefined;
+    this.filetypeToggle = this.querySelector<HTMLInputElement>("#accessions-filetype") ?? undefined;
 
     this.parentButton?.addEventListener("click", () => {
       if (!this.node) return;
-      window.dispatchEvent(
-        new CustomEvent("vitax:fetchParent", { detail: { id: this.node.data.id } }),
-      );
+      this.handlers?.onFetchParent?.(this.node.data.id);
     });
     this.childrenButton?.addEventListener("click", () => {
       if (!this.node) return;
-      window.dispatchEvent(
-        new CustomEvent("vitax:fetchChildren", { detail: { id: this.node.data.id } }),
-      );
+      this.handlers?.onFetchChildren?.(this.node.data.id);
     });
     this.collapseButton?.addEventListener("click", () => {
       if (!this.node) return;
-      window.dispatchEvent(
-        new CustomEvent("vitax:toggleNode", { detail: { id: this.node.data.id } }),
-      );
+      this.handlers?.onToggleNode?.(this.node.data.id);
+    });
+    this.accessionsDownloadButton?.addEventListener("click", () => {
+      void this.downloadDirectAccessions();
+    });
+    this.recursiveAccessionsDownloadButton?.addEventListener("click", () => {
+      void this.downloadRecursiveAccessions();
     });
   }
 
@@ -93,30 +122,10 @@ export class TaxonPopoverComponent extends BaseComponent {
     const valueElement = this.querySelector<HTMLElement>(".stat-value");
     const figureElement = this.querySelector<HTMLElement>(".stat-figure");
     if (!valueElement || !figureElement) throw new Error("Stat elements not found");
-
-    valueElement.textContent = t.rank && t.rank !== Rank.None ? t.rank : "Unknown";
-    if (t.rank) {
-      const iconMap: Record<string, string> = {
-        [Rank.Domain]: "domain-rounded",
-        [Rank.Kingdom]: "castle-rounded",
-        [Rank.Phylum]: "category-rounded",
-        [Rank.Class]: "hotel-class-rounded",
-        [Rank.Order]: "orders-rounded",
-        [Rank.Family]: "family-restroom-rounded",
-        [Rank.Subfamily]: "family-home-rounded",
-        [Rank.Genus]: "genetics-rounded",
-        [Rank.Group]: "groups-rounded",
-        [Rank.Subgroup]: "group-rounded",
-        [Rank.Species]: "identity-platform-rounded",
-      };
-      const iconName = iconMap[t.rank] ?? "question-mark-rounded";
-      figureElement.innerHTML = `<span class="icon-[material-symbols--${iconName}]"></span>`;
-    }
-    const iconEl = figureElement.querySelector<HTMLElement>("span");
-    if (iconEl) {
-      iconEl.style.width = "4em";
-      iconEl.style.height = "4em";
-    }
+    const rankStr: string = typeof t.rank === "string" ? t.rank : (t.rank as unknown as string);
+    const rankDisplay = rankStr && rankStr.toLowerCase() !== "no rank" ? rankStr : "Unknown";
+    valueElement.textContent = rankDisplay;
+    figureElement.innerHTML = createIconString(getRankIcon(t.rank), "5em");
 
     const genomeCount = t.genomeCount;
     const genomeCountRecursive = t.genomeCountRecursive;
@@ -140,7 +149,7 @@ export class TaxonPopoverComponent extends BaseComponent {
     }
 
     if (this.parentButton) {
-      const treeRootId = window.vitaxCurrentRootId;
+      const treeRootId = this.currentRootId;
       const isRoot = treeRootId !== undefined && t.id === treeRootId;
       this.parentButton.disabled = !isRoot;
     }
@@ -160,6 +169,40 @@ export class TaxonPopoverComponent extends BaseComponent {
           : '<span class="icon-[material-symbols--collapse-content-rounded]" style="width:2em;height:2em;"></span>';
         this.collapseButton.dataset.tip = collapsed ? "Expand" : "Collapse";
       }
+    }
+  }
+
+  private async downloadDirectAccessions(): Promise<void> {
+    if (!this.node) throw new Error("No taxon found");
+    const accessions = await this.taxonomyService.getDirectAccessions(this.node.data);
+    if (accessions.size === 0) throw new Error("No direct accessions found");
+    this.downloadAccessions(accessions);
+  }
+
+  private async downloadRecursiveAccessions(): Promise<void> {
+    if (!this.node) throw new Error("No taxon found");
+    const accessions = await this.taxonomyService.getRecursiveAccessions(this.node.data);
+    if (accessions.size === 0) throw new Error("No recursive accessions found");
+    this.downloadAccessions(accessions);
+  }
+
+  private downloadAccessions(accessions: Set<Accession>): void {
+    if (!this.node) {
+      throw new Error("No taxon found");
+    }
+    if (!this.filetypeToggle) {
+      throw new Error("File type toggle not found");
+    }
+    const filename = `accessions_${this.node.data.id.toString()}-${this.node.data.name}`;
+
+    const accessionsArray = Array.from(accessions);
+    switch (this.filetypeToggle.checked) {
+      case false:
+        downloadObjectsAsFile(accessionsArray, filename);
+        break;
+      case true:
+        downloadObjectsAsCsv(accessionsArray, filename);
+        break;
     }
   }
 
@@ -189,6 +232,8 @@ export class TaxonPopoverComponent extends BaseComponent {
   public show(): void {
     this.classList.remove("hidden", "opacity-0", "pointer-events-none");
     this.classList.add("pointer-events-auto");
+    // Try to load and display an image for the current taxon; fall back to rank icon
+    void this.loadAndDisplayImage();
   }
 
   public hide(): void {
@@ -198,6 +243,52 @@ export class TaxonPopoverComponent extends BaseComponent {
 
   public refresh(): void {
     if (this.node) this.updateContent();
+  }
+
+  private async loadAndDisplayImage(): Promise<void> {
+    const nodeBefore = this.node;
+    if (!nodeBefore) return;
+    const t = nodeBefore.data;
+    const figureElement = this.querySelector<HTMLElement>(".stat-figure");
+    if (!figureElement) return;
+
+    let img: HTMLImageElement | null = null;
+    try {
+      img = await this.taxonomyService.getImage(t);
+    } catch {
+      img = null;
+    }
+
+    // If the node has changed while awaiting, abort
+    if (this.node !== nodeBefore) return;
+
+    if (img) {
+      figureElement.innerHTML = "";
+      const clone = img.cloneNode(true) as HTMLImageElement;
+      clone.classList.add("mask", "mask-circle", "animated", "bounce", "cursor-pointer");
+      clone.alt = clone.alt || t.name;
+      // Let the container enforce dimensions and crop the image; use cover to avoid squishing
+      clone.style.width = "100%";
+      clone.style.height = "100%";
+      clone.style.objectFit = "cover";
+      clone.loading = "lazy";
+
+      // Make the image clickable and navigate to the original API image endpoint
+      const apiUrl = `https://api.ncbi.nlm.nih.gov/datasets/v2/taxonomy/taxon/${String(
+        t.id,
+      )}/image`;
+      const link = document.createElement("a");
+      link.href = apiUrl;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.title = `Open image for ${t.name}`;
+      link.style.display = "inline-block";
+      link.style.width = "5em";
+      link.style.height = "5em";
+      link.style.overflow = "hidden";
+      link.appendChild(clone);
+      figureElement.appendChild(link);
+    }
   }
 }
 

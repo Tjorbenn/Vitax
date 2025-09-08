@@ -6,7 +6,6 @@ import "./utility/Set.ts";
 // Features
 import { initDraggableWindows } from "./features/DraggableWindows";
 import { handleKeyCombos } from "./features/KeyCombos.ts";
-import { initTutorial } from "./features/Tutorial.ts";
 
 // Components
 import "./components/Attribution/AttributionComponent.ts";
@@ -18,8 +17,9 @@ import "./components/Title/TitleComponent.ts";
 import "./components/Version/VersionComponent.ts";
 import "./components/Visualization/TaxonPopover/TaxonPopoverComponent.ts";
 import "./components/Visualization/VisualizationComponent.ts";
+import "./components/Welcome/WelcomeComponent.ts";
+import "./components/Tutorial/TutorialComponent.ts";
 
 // Features
 document.addEventListener("keydown", handleKeyCombos);
 initDraggableWindows();
-initTutorial();

@@ -13,11 +13,8 @@
       <div class="stat-figure text-primary drop-shadow-lg"></div>
     </div>
   </div>
-  <div
-    class="card card-border bg-base-100 mx-4 p-0 shadow-sm [&:has(tbody:empty)]:hidden"
-    data-tip="Genomes"
-  >
-    <div class="card-body tooltip p-0" data-tip="Genomes">
+  <div class="card card-border bg-base-100 mx-4 p-0 shadow-sm [&:has(tbody:empty)]:hidden">
+    <div class="card-body p-0">
       <table id="genomes-table" class="table-sm table">
         <thead>
           <tr>
@@ -29,9 +26,25 @@
         <tbody id="genomes-body"></tbody>
         <tfoot>
           <tr>
-            <td class="text-center"></td>
+            <td class="text-start">
+              <label
+                title="Toggle file type"
+                class="swap swap-rotate text-accent tooltip tooltip-left"
+                data-tip="Toggle file type"
+              >
+                <input id="accessions-filetype" type="checkbox" class="swap-toggle" />
+                <span
+                  class="swap-on icon-[material-symbols--csv-rounded]"
+                  style="width: 2em; height: 2em"
+                ></span>
+                <span
+                  class="swap-off icon-[material-symbols--file-json-rounded]"
+                  style="width: 2em; height: 2em"
+                ></span>
+              </label>
+            </td>
             <td class="text-center">
-              <button class="btn btn-sm btn-ghost" id="genomes-download-direct">
+              <button class="btn btn-sm btn-ghost" id="accessions-download-direct">
                 <span
                   class="icon-[material-symbols--download-rounded]"
                   style="width: 1.5em; height: 1.5em"
@@ -39,7 +52,7 @@
               </button>
             </td>
             <td class="text-center">
-              <button class="btn btn-sm btn-ghost" id="genomes-download-recursive">
+              <button class="btn btn-sm btn-ghost" id="accessions-download-recursive">
                 <span
                   class="icon-[material-symbols--download-rounded]"
                   style="width: 1.5em; height: 1.5em"

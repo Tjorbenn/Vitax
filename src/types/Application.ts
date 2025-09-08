@@ -23,9 +23,7 @@ export enum TaxonomyType {
 export enum VisualizationType {
   Tree = "tree",
   Graph = "graph",
-  // Radial = "radial",
   Pack = "pack",
-  // Treemap = "treemap"
 }
 
 export function SuggestionToTaxon(suggestion: Suggestion): Taxon {

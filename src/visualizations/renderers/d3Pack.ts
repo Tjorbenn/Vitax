@@ -86,32 +86,29 @@ export class D3Pack extends D3Visualization {
         const bbox = el.getBoundingClientRect();
         const clientX = event.clientX ?? bbox.x + bbox.width / 2;
         const clientY = event.clientY ?? bbox.y + bbox.height / 2;
-        window.dispatchEvent(
-          new CustomEvent("vitax:taxonHover", {
-            detail: {
-              id: d.data.id,
-              name: d.data.name,
-              rank: d.data.rank,
-              parent: d.parent
-                ? {
-                    id: d.parent.data.id,
-                    name: d.parent.data.name,
-                  }
-                : undefined,
-              genomeCount: d.data.genomeCount,
-              genomeCountRecursive: d.data.genomeCountRecursive,
-              childrenCount: d.children ? d.children.length : 0,
-              x: bbox.x + bbox.width / 2,
-              y: bbox.y + bbox.height / 2,
-              cursorX: clientX,
-              cursorY: clientY,
-              node: d,
-            },
-          }),
-        );
+        const payload = {
+          id: d.data.id,
+          name: d.data.name,
+          rank: d.data.rank,
+          parent: d.parent
+            ? {
+                id: d.parent.data.id,
+                name: d.parent.data.name,
+              }
+            : undefined,
+          genomeCount: d.data.genomeCount,
+          genomeCountRecursive: d.data.genomeCountRecursive,
+          childrenCount: d.children ? d.children.length : 0,
+          x: bbox.x + bbox.width / 2,
+          y: bbox.y + bbox.height / 2,
+          cursorX: clientX,
+          cursorY: clientY,
+          node: d,
+        };
+        this.handlers?.onHover?.(payload);
       })
       .on("mouseleave", () => {
-        window.dispatchEvent(new CustomEvent("vitax:taxonUnhover"));
+        this.handlers?.onUnhover?.();
       });
 
     nodeEnter

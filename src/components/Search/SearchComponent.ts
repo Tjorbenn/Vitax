@@ -49,8 +49,8 @@ export class SearchComponent extends BaseComponent {
   }
 
   private propagateKeepOpenOnBlur() {
-    (this.suggestionsComp as any).keepOpenOnBlur = this._keepOpenOnBlur;
-    (this.selectionComp as any).keepOpenOnBlur = this._keepOpenOnBlur;
+    this.suggestionsComp.keepOpenOnBlur = this._keepOpenOnBlur;
+    this.selectionComp.keepOpenOnBlur = this._keepOpenOnBlur;
   }
 
   static get observedAttributes(): string[] {

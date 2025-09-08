@@ -1,8 +1,9 @@
-import { NeverAPI } from "../api/Never/NeverClient";
-import { Taxon, TaxonomyTree } from "../types/Taxonomy";
+import { NeverApi } from "../api/Never/NeverClient";
+import { Taxon, TaxonomyTree, type Accession } from "../types/Taxonomy";
+import * as NcbiApi from "../api/NCBI";
 
 export class TaxonomyService {
-  private api: NeverAPI = new NeverAPI();
+  private NeverApi: NeverApi = new NeverApi();
 
   /**
    * Returns a single taxon as a tree. Ideal for exploration from a single taxon.
@@ -10,7 +11,7 @@ export class TaxonomyService {
    * @returns A promise that resolves to a TaxonomyTree with the query taxon as the root.
    */
   public async getTaxonTree(query: Taxon): Promise<TaxonomyTree> {
-    const taxa = await this.api.getTaxaByIds([query.id]);
+    const taxa = await this.NeverApi.getTaxaByIds([query.id]);
     const taxon = taxa.first();
     if (!taxon) {
       throw new Error(`Taxon with id ${String(query.id)} not found.`);
@@ -26,7 +27,7 @@ export class TaxonomyService {
    * @returns A promise that resolves to the taxonomic descendants tree.
    */
   public async getDescendantsTree(query: Taxon): Promise<TaxonomyTree> {
-    const subtree = await this.api.getSubtreeByTaxonId(query.id);
+    const subtree = await this.NeverApi.getSubtreeByTaxonId(query.id);
     return subtree;
   }
 
@@ -43,11 +44,11 @@ export class TaxonomyService {
       throw new Error("At least two taxa are required to find neighbors.");
     }
 
-    const mrca = await this.api.getMrcaByTaxonIds(Array.from(query, (taxon) => taxon.id));
+    const mrca = await this.NeverApi.getMrcaByTaxonIds(Array.from(query, (taxon) => taxon.id));
     const sparseMrcaTree = await this.getMrcaTree(query);
 
     const parent = await this.getParent(mrca);
-    const parentSubtree = await this.api.getSubtreeByTaxonId(parent.id);
+    const parentSubtree = await this.NeverApi.getSubtreeByTaxonId(parent.id);
 
     // Remove the MRCA from the children of the parent subtrees root and add the sparse MRCA tree as a child
     parentSubtree.root.children = parentSubtree.root.children.filter((child) => {
@@ -68,13 +69,13 @@ export class TaxonomyService {
       throw new Error("At least two taxa are required to find the MRCA.");
     }
 
-    const mrca = await this.api.getMrcaByTaxonIds(Array.from(query, (taxon) => taxon.id));
+    const mrca = await this.NeverApi.getMrcaByTaxonIds(Array.from(query, (taxon) => taxon.id));
     const mrcaTree = new TaxonomyTree(mrca);
     mrcaTree.root.children = new Set();
 
     for (const taxon of query) {
       if (taxon.id !== mrca.id) {
-        const lineage = await this.api.getLineageFromTaxonIds(mrca.id, taxon.id);
+        const lineage = await this.NeverApi.getLineageFromTaxonIds(mrca.id, taxon.id);
         // lineage.root.children is a Set; iterate if it has members
         if (lineage.root.children.size > 0) {
           lineage.root.children.forEach((child) => {
@@ -110,8 +111,8 @@ export class TaxonomyService {
    * @returns A promise that resolves to the parent taxon.
    */
   public async getParent(taxon: Taxon): Promise<Taxon> {
-    taxon.parentId ??= await this.api.getParentIdByTaxonId(taxon.id);
-    const parents = await this.api.getFullTaxaByIds([taxon.parentId]);
+    taxon.parentId ??= await this.NeverApi.getParentIdByTaxonId(taxon.id);
+    const parents = await this.NeverApi.getFullTaxaByIds([taxon.parentId]);
     const parent = parents.first();
     if (!parent) {
       throw new Error(
@@ -128,7 +129,7 @@ export class TaxonomyService {
   }
 
   public async getChildren(taxon: Taxon): Promise<Set<Taxon>> {
-    const children = await this.api.getChildrenByTaxonId(taxon.id);
+    const children = await this.NeverApi.getChildrenByTaxonId(taxon.id);
     return children;
   }
 
@@ -138,7 +139,7 @@ export class TaxonomyService {
   }
 
   public async hasMissingChildren(taxon: Taxon): Promise<boolean> {
-    const remoteChildren = await this.api.getChildrenIdsByTaxonId(taxon.id);
+    const remoteChildren = await this.NeverApi.getChildrenIdsByTaxonId(taxon.id);
     return !remoteChildren.every((id) => {
       return taxon.hasChildWithId(id);
     });
@@ -151,5 +152,19 @@ export class TaxonomyService {
         taxon.addChild(child);
       }
     });
+  }
+
+  public async getImage(taxon: Taxon): Promise<HTMLImageElement | null> {
+    return NcbiApi.fetchImageFromTaxonId(taxon.id);
+  }
+
+  public async getDirectAccessions(taxon: Taxon): Promise<Set<Accession>> {
+    const all = await this.NeverApi.getAccessionsFromTaxonId(taxon.id);
+    const direct = all.filter((acc) => acc.taxid === taxon.id);
+    return direct;
+  }
+
+  public async getRecursiveAccessions(taxon: Taxon): Promise<Set<Accession>> {
+    return await this.NeverApi.getAccessionsFromTaxonId(taxon.id);
   }
 }

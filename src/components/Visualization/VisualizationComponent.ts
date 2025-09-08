@@ -19,6 +19,7 @@ import {
 import { BaseComponent } from "../BaseComponent";
 import "./TaxonPopover/TaxonPopoverComponent";
 import { TaxonPopoverComponent } from "./TaxonPopover/TaxonPopoverComponent";
+import { VisualizationBus } from "../../services/VisualizationBus";
 
 // Allgemeines Extents-Interface für alle Visualizer
 export interface VisualizationExtents {
@@ -45,14 +46,19 @@ export class VisualizationComponent extends BaseComponent {
   private taxonPopoverEl?: TaxonPopoverComponent;
   private hidePopoverTimeout?: number;
   private isOverPopover = false;
+  private currentRootId?: number;
+  private rafGridScheduled = false;
+  private busUnsubs: (() => void)[] = [];
 
   initialize(): void {
     this.setupSVG();
-    this.state.subscribeToTree((_tree) => {
+    this.state.subscribeToTree((tree) => {
       this.renderVisualization();
-      const tree = this.state.tree;
-      window.vitaxCurrentRootId = tree?.root.id;
+      this.currentRootId = tree?.root.id;
       if (this.taxonPopoverEl) {
+        if (this.currentRootId !== undefined) {
+          this.taxonPopoverEl.setCurrentRootId(this.currentRootId);
+        }
         this.taxonPopoverEl.refresh();
       }
     });
@@ -115,11 +121,21 @@ export class VisualizationComponent extends BaseComponent {
 
     this.zoomBehavior = d3
       .zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.3, 8])
       .on("zoom", (event: d3.D3ZoomEvent<SVGSVGElement, unknown>) => {
         if (this.mainGroup) {
           this.mainGroup.attr("transform", event.transform.toString());
         }
-        this.updateGridForTransform(event.transform);
+        if (!this.rafGridScheduled) {
+          this.rafGridScheduled = true;
+          requestAnimationFrame(() => {
+            try {
+              this.updateGridForTransform(event.transform);
+            } finally {
+              this.rafGridScheduled = false;
+            }
+          });
+        }
       });
 
     // attach zoom behaviour
@@ -130,7 +146,12 @@ export class VisualizationComponent extends BaseComponent {
       );
     }
 
-    window.addEventListener("vitax:resetView", this.onExternalReset);
+    // Optional: auf Reset über Bus reagieren (ersetzt Window-Event-Brücke)
+    this.busUnsubs.push(
+      VisualizationBus.subscribeResetView(() => {
+        this.onExternalReset();
+      }),
+    );
 
     // ResizeObserver
     this.resizeObserver = new ResizeObserver(() => {
@@ -165,7 +186,7 @@ export class VisualizationComponent extends BaseComponent {
     if (!this.gridGroup || !this.svg) {
       return;
     }
-    const minor = 10; // Welt-Einheiten
+    const baseMinor = 10; // Welt-Einheiten
     const major = 100;
     // Dynamisches Padding
     const rect = this.getBoundingClientRect();
@@ -183,6 +204,21 @@ export class VisualizationComponent extends BaseComponent {
     const worldMinY = (0 - transform.y) / transform.k;
     const worldMaxX = (w - transform.x) / transform.k;
     const worldMaxY = (h - transform.y) / transform.k;
+
+    // Adaptives Raster: bei starkem Zoom-Out gröber zeichnen und bei sehr weit draußen ausblenden
+    const worldSpanX = worldMaxX - worldMinX + 2 * padding;
+    const worldSpanY = worldMaxY - worldMinY + 2 * padding;
+    const approxLinesTarget = 800;
+    let minor = baseMinor;
+    const estLines = worldSpanX / baseMinor + worldSpanY / baseMinor;
+    if (estLines > approxLinesTarget) {
+      const factor = Math.ceil(estLines / approxLinesTarget);
+      minor = baseMinor * factor;
+    }
+    if (transform.k < 0.35) {
+      this.gridGroup.selectAll("line").remove();
+      return;
+    }
 
     let minX = Math.floor((worldMinX - padding) / minor) * minor;
     let maxX = Math.ceil((worldMaxX + padding) / minor) * minor;
@@ -293,6 +329,15 @@ export class VisualizationComponent extends BaseComponent {
       const layerNode = this.contentGroup?.node();
       if (layerNode) {
         this.renderer = createVisualizationRenderer(displayType, layerNode);
+        // Direkte Kommunikation: Renderer -> Canvas
+        this.renderer?.setHandlers({
+          onHover: (payload: unknown) => {
+            this.onTaxonHover(payload);
+          },
+          onUnhover: () => {
+            this.onTaxonUnhover();
+          },
+        });
       }
       if (!this.renderer) {
         this.contentGroup
@@ -382,9 +427,14 @@ export class VisualizationComponent extends BaseComponent {
   disconnectedCallback(): void {
     this.disposeRenderer();
     this.resizeObserver?.disconnect();
-    window.removeEventListener("vitax:resetView", this.onExternalReset as any);
-    window.removeEventListener("vitax:taxonHover", this.onTaxonHover as any);
-    window.removeEventListener("vitax:taxonUnhover", this.onTaxonUnhover as any);
+    // Unsubscribe Bus
+    for (const u of this.busUnsubs.splice(0)) {
+      try {
+        u();
+      } catch {
+        // ignore
+      }
+    }
     if (this.taxonPopoverEl?.parentElement === this) {
       this.removeChild(this.taxonPopoverEl);
     }
@@ -429,19 +479,27 @@ export class VisualizationComponent extends BaseComponent {
         // Leicht verzögert, damit Übergang zurück zum Node nicht flackert
         this.scheduleHidePopover(60);
       });
+      // direkte Callbacks für Popover-Aktionen
+      this.taxonPopoverEl.setHandlers({
+        onFetchParent: (id: number) => {
+          void this.onFetchParent({ id });
+        },
+        onFetchChildren: (id: number) => {
+          void this.onFetchChildren({ id });
+        },
+        onToggleNode: (id: number) => {
+          this.onToggleNode({ id });
+        },
+      });
     }
-    window.addEventListener("vitax:taxonHover", this.onTaxonHover as any);
-    window.addEventListener("vitax:taxonUnhover", this.onTaxonUnhover as any);
-    window.addEventListener("vitax:fetchParent", this.onFetchParent as any);
-    window.addEventListener("vitax:fetchChildren", this.onFetchChildren as any);
-    window.addEventListener("vitax:toggleNode", this.onToggleNode as any);
+    // keine Bus-Abos für Popover-Aktionen mehr nötig (direkte Callbacks)
   }
 
-  private onTaxonHover = (ev: CustomEvent): void => {
+  private onTaxonHover = (payload: any): void => {
     if (!this.taxonPopoverEl) {
       return;
     }
-    const { id, x, y, cursorX, cursorY, node } = ev.detail || {};
+    const { id, x, y, cursorX, cursorY, node } = payload || {};
     if (
       id === undefined ||
       (x === undefined && cursorX === undefined) ||
@@ -452,27 +510,14 @@ export class VisualizationComponent extends BaseComponent {
 
     const hierarchyNode: (d3.HierarchyNode<Taxon> & { collapsed?: boolean }) | undefined = node;
     const tree = this.state.tree;
-    if (!hierarchyNode && tree) {
-      const t = tree.findTaxonById(id);
-      if (!t) {
-        return;
-      }
-
-      const rootTaxon = tree.root;
-      const rootNode = d3.hierarchy<Taxon>(rootTaxon, (r) => {
-        return Array.from(r.children || []);
-      });
-      const found = rootNode.descendants().find((d) => {
-        return d.data.id === id;
-      }) as any;
-      if (!found) {
-        return;
-      }
-      (window as any).vitaxCurrentRootId = tree?.root.id;
-      this.taxonPopoverEl.setNode(found);
-    } else if (hierarchyNode) {
-      (window as any).vitaxCurrentRootId = tree?.root.id;
+    if (hierarchyNode) {
       this.taxonPopoverEl.setNode(hierarchyNode);
+    } else if (tree) {
+      const rootTaxon = tree.root;
+      const rootNode = d3.hierarchy<Taxon>(rootTaxon, (r) => Array.from(r.children || []));
+      const found = rootNode.descendants().find((d) => d.data.id === id) as any;
+      if (!found) return;
+      this.taxonPopoverEl.setNode(found);
     } else {
       return;
     }
@@ -512,12 +557,12 @@ export class VisualizationComponent extends BaseComponent {
   }
 
   // Event Handler für Parent Fetch
-  private onFetchParent = async (ev: CustomEvent) => {
+  private onFetchParent = async (payload: { id: number }) => {
     const tree = this.state.tree;
     if (!tree) {
       return;
     }
-    const targetId = ev.detail?.id as number | undefined;
+    const targetId = payload?.id as number | undefined;
     if (targetId === undefined) {
       return;
     }
@@ -539,12 +584,12 @@ export class VisualizationComponent extends BaseComponent {
   };
 
   // Event Handler für Children Fetch
-  private onFetchChildren = async (ev: CustomEvent) => {
+  private onFetchChildren = async (payload: { id: number }) => {
     const tree = this.state.tree;
     if (!tree) {
       return;
     }
-    const targetId = ev.detail?.id as number | undefined;
+    const targetId = payload?.id as number | undefined;
     if (targetId === undefined) {
       return;
     }
@@ -558,12 +603,12 @@ export class VisualizationComponent extends BaseComponent {
   };
 
   // Event Handler für Collapse/Expand
-  private onToggleNode = (ev: CustomEvent) => {
+  private onToggleNode = (payload: { id: number }) => {
     const tree = this.state.tree;
     if (!tree || !this.renderer) {
       return;
     }
-    const targetId = ev.detail?.id as number | undefined;
+    const targetId = payload?.id as number | undefined;
     if (targetId === undefined) {
       return;
     }

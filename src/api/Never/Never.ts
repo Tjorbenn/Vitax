@@ -10,7 +10,6 @@
 
 //#region never-imports
 import type { GenomeLevel } from "../../types/Taxonomy";
-import { Rank } from "../../types/Taxonomy";
 //#endregion
 
 /**
@@ -51,6 +50,11 @@ export interface NeverGenomeCount {
   count: number;
 }
 
+export interface NeverAccession {
+  accession: string;
+  level: GenomeLevel;
+}
+
 /**
  * Using these types, we define a single interface for the entries returned by the Never-API.
  * This allows us to have a consistent structure for the data we receive from the API, independent of the specific endpoint being called.
@@ -62,8 +66,8 @@ export interface Entry {
   taxid?: number;
   is_leaf?: boolean;
   parent?: number;
-  rank?: Rank;
-  accession?: string;
+  rank?: string;
+  accessions?: NeverAccession[];
   level?: GenomeLevel;
   raw_genome_counts?: NeverGenomeCount[];
   rec_genome_counts?: NeverGenomeCount[];

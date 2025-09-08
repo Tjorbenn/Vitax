@@ -3,9 +3,6 @@ import * as d3 from "d3";
 import type { GenomeCount, Taxon } from "../../types/Taxonomy";
 import { D3Visualization, type D3VisualizationExtents } from "../d3Visualization";
 
-// Local node shape used by the simulation. We avoid extending d3.HierarchyNode
-// to keep the `id` typing compatible with numeric ids from the Taxon type.
-// GraphHierarchyNode is a HierarchyNode with renderer metrics attached
 type GraphHierarchyNode = d3.HierarchyNode<Taxon> & {
   _metrics?: {
     r: number;
@@ -145,26 +142,24 @@ export class D3Graph extends D3Visualization {
         const bbox = (event.currentTarget as SVGGElement).getBoundingClientRect();
         const clientX = event.clientX;
         const clientY = event.clientY;
-        window.dispatchEvent(
-          new CustomEvent("vitax:taxonHover", {
-            detail: {
-              id: d.data.id,
-              name: d.data.name,
-              rank: d.data.rank,
-              parent: d.parent ? { id: d.parent.data.id, name: d.parent.data.name } : undefined,
-              genomeCount: d.data.genomeCount,
-              genomeCountRecursive: d.data.genomeCountRecursive,
-              childrenCount: d.children?.length ?? 0,
-              x: bbox.x + bbox.width / 2,
-              y: bbox.y + bbox.height / 2,
-              cursorX: clientX,
-              cursorY: clientY,
-            },
-          }),
-        );
+        const payload = {
+          id: d.data.id,
+          name: d.data.name,
+          rank: d.data.rank,
+          parent: d.parent ? { id: d.parent.data.id, name: d.parent.data.name } : undefined,
+          genomeCount: d.data.genomeCount,
+          genomeCountRecursive: d.data.genomeCountRecursive,
+          childrenCount: d.children?.length ?? 0,
+          x: bbox.x + bbox.width / 2,
+          y: bbox.y + bbox.height / 2,
+          cursorX: clientX,
+          cursorY: clientY,
+          node: d,
+        };
+        this.handlers?.onHover?.(payload);
       })
       .on("mouseleave", () => {
-        window.dispatchEvent(new CustomEvent("vitax:taxonUnhover"));
+        this.handlers?.onUnhover?.();
       })
       .call(
         this.dragBehavior(this.simulation) as unknown as (

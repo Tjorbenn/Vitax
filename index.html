@@ -26,8 +26,12 @@
             data-tip="Toggle Light/Dark Theme"
           ></vitax-theme>
         </header>
-        <div id="menu-middle" class="h-full w-full">
-          <vitax-list class="pointer-events-auto"></vitax-list>
+        <div id="menu-middle" class="flex h-full w-full flex-row items-center justify-between">
+          <vitax-list class="pointer-events-auto size-fit self-start"></vitax-list>
+          <vitax-tutorial
+            class="card text-base-content/40 hover:text-base-content hover:card-border tooltip tooltip-left animated bounce hover:bg-accent pointer-events-auto mr-1 size-fit cursor-pointer self-end rounded-lg bg-none p-2 drop-shadow-lg"
+            data-tip="Tutorial"
+          ></vitax-tutorial>
         </div>
         <footer
           id="menu-footer"
@@ -47,6 +51,7 @@
       </div>
       <vitax-canvas class="absolute inset-0 h-full w-full"></vitax-canvas>
     </main>
+    <vitax-welcome></vitax-welcome>
     <script type="module" src="/src/init.ts"></script>
   </body>
 </html>

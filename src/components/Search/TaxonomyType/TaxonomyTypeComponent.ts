@@ -67,7 +67,12 @@ export class TaxonomyTypeComponent extends BaseComponent {
   }
 
   public toggle() {
-    this.list?.classList.contains("hidden") ? this.open() : this.close();
+    if (!this.list) return;
+    if (this.list.classList.contains("hidden")) {
+      this.open();
+    } else {
+      this.close();
+    }
   }
 
   private addStatus(anchor: HTMLAnchorElement) {

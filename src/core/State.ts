@@ -1,4 +1,4 @@
-import { NeverAPI } from "../api/Never/NeverClient";
+import { NeverApi } from "../api/Never/NeverClient";
 import { Status, TaxonomyType, VisualizationType } from "../types/Application";
 import type { Taxon, TaxonomyTree } from "../types/Taxonomy";
 import { parseTaxonomy, parseVisualization } from "../utility/Environment";
@@ -13,7 +13,7 @@ export interface StateSpore {
 // Singleton State management class
 export class State {
   private static _instance?: State;
-  private api: NeverAPI = new NeverAPI();
+  private api: NeverApi = new NeverApi();
 
   private _query = new Set<Taxon>();
   private _tree?: TaxonomyTree;

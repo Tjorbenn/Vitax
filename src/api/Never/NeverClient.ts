@@ -1,15 +1,8 @@
 import type { Suggestion } from "../../types/Application";
-import {
-  Rank,
-  TaxaToTree,
-  Taxon,
-  type Accession,
-  type GenomeCount,
-  type TaxonomyTree,
-} from "../../types/Taxonomy";
+import { TaxaToTree, Taxon, type Accession, type GenomeCount, type TaxonomyTree } from "../../types/Taxonomy";
 import * as Never from "./Never";
 
-export class NeverAPI {
+export class NeverApi {
   /**
    * Get a taxon by its name.
    * @param name The name of the taxon to search for.
@@ -64,20 +57,13 @@ export class NeverAPI {
     });
   }
 
-  public async getAccessionsFromTaxonId(taxonId: number): Promise<Accession[]> {
+  public async getAccessionsFromTaxonId(taxonId: number): Promise<Set<Accession>> {
     const request = new Never.Request(Never.Endpoint.Accessions);
     request.addParameter(Never.ParameterKey.Term, taxonId);
 
     const response = await request.Send();
-    return response.map((entry) => {
-      if (!entry.accession || !entry.level) {
-        throw new Error("Missing accession in entry: " + JSON.stringify(entry));
-      }
-      return {
-        accession: entry.accession,
-        level: entry.level,
-      };
-    });
+
+    return this.MapResponseToAccessions(response);
   }
 
   public async getChildrenIdsByTaxonId(taxonId: number): Promise<number[]> {
@@ -94,15 +80,16 @@ export class NeverAPI {
     });
   }
 
-  public async getRanksByTaxonIds(taxonIds: number[]): Promise<Map<number, Rank>> {
+  public async getRanksByTaxonIds(taxonIds: number[]): Promise<Map<number, string>> {
     const request = new Never.Request(Never.Endpoint.Ranks);
     request.addParameter(Never.ParameterKey.Term, taxonIds.join(","));
 
     const response = await request.Send();
-    const ranks = new Map<number, Rank>();
+    const ranks = new Map<number, string>();
     for (const entry of response) {
       if (entry.taxid && entry.rank) {
-        ranks.set(entry.taxid, entry.rank);
+        // Store the raw rank string returned by the API. The UI will decide how to display it.
+  ranks.set(entry.taxid, entry.rank);
       }
     }
     return ranks;
@@ -256,12 +243,9 @@ export class NeverAPI {
     const taxa = await this.getTaxaByIds(taxonIds);
     const ranks = await this.getRanksByTaxonIds(taxonIds);
 
-    await Promise.all(
-      taxa.map(async (taxon) => {
-        taxon.rank = ranks.get(taxon.id);
-        taxon.accessions = await this.getAccessionsFromTaxonId(taxon.id);
-      }),
-    );
+    taxa.forEach((taxon) => {
+      taxon.rank = ranks.get(taxon.id);
+    });
 
     return taxa;
   }
@@ -304,6 +288,28 @@ export class NeverAPI {
       }
     });
     return taxa;
+  }
+
+  private MapResponseToAccessions(response: Never.Response): Set<Accession> {
+    const accessions = new Set<Accession>();
+
+    response.forEach((entry) => {
+      if (!entry.taxid || !entry.accessions) {
+        throw new Error("Incomplete accession entry found: " + JSON.stringify(entry));
+      }
+      entry.accessions.forEach((accession) => {
+        if (entry.taxid) {
+          const acc = {
+            taxid: entry.taxid,
+            accession: accession.accession,
+            level: accession.level,
+          };
+          accessions.add(acc);
+        }
+      });
+    });
+
+    return accessions;
   }
 
   private async ResponseToFullTaxa(response: Never.Response): Promise<Set<Taxon>> {

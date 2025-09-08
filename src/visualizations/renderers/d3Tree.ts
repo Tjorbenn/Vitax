@@ -2,8 +2,6 @@ import * as d3 from "d3";
 import { Rank, type Taxon, type TaxonomyTree } from "../../types/Taxonomy";
 import { D3Visualization, type D3VisualizationExtents } from "../d3Visualization";
 
-// Local helper type for tree nodes used by this renderer. We extend the
-// d3 point node with a few custom runtime fields that the renderer adds.
 type TreeNode = d3.HierarchyPointNode<Taxon> & {
   _children?: TreeNode[];
   _placeRight?: boolean;
@@ -227,27 +225,24 @@ export class D3Tree extends D3Visualization {
         const bbox = (event.currentTarget as SVGGElement).getBoundingClientRect();
         const clientX = event.clientX;
         const clientY = event.clientY;
-        window.dispatchEvent(
-          new CustomEvent("vitax:taxonHover", {
-            detail: {
-              id: d.data.id,
-              name: d.data.name,
-              rank: d.data.rank,
-              parent: d.parent ? { id: d.parent.data.id, name: d.parent.data.name } : undefined,
-              genomeCount: d.data.genomeCount,
-              genomeCountRecursive: d.data.genomeCountRecursive,
-              childrenCount: d.children ? d.children.length : d._children ? d._children.length : 0,
-              x: bbox.x + bbox.width / 2,
-              y: bbox.y + bbox.height / 2,
-              cursorX: clientX,
-              cursorY: clientY,
-              node: d,
-            },
-          }),
-        );
+        const payload = {
+          id: d.data.id,
+          name: d.data.name,
+          rank: d.data.rank,
+          parent: d.parent ? { id: d.parent.data.id, name: d.parent.data.name } : undefined,
+          genomeCount: d.data.genomeCount,
+          genomeCountRecursive: d.data.genomeCountRecursive,
+          childrenCount: d.children ? d.children.length : d._children ? d._children.length : 0,
+          x: bbox.x + bbox.width / 2,
+          y: bbox.y + bbox.height / 2,
+          cursorX: clientX,
+          cursorY: clientY,
+          node: d,
+        };
+        this.handlers?.onHover?.(payload);
       })
       .on("mouseleave", () => {
-        window.dispatchEvent(new CustomEvent("vitax:taxonUnhover"));
+        this.handlers?.onUnhover?.();
       });
 
     const themeColors = this.getThemeColors();
