@@ -8,7 +8,7 @@ export type D3VisualizationExtents = {
   maxX: number;
   minY: number;
   maxY: number;
-}
+};
 
 export abstract class D3Visualization {
   protected layer: d3.Selection<SVGGElement, unknown, null, undefined>;

@@ -118,6 +118,11 @@ export class TaxonPopoverComponent extends BaseComponent {
     this.nameElement.textContent = t.name;
     this.idElement.textContent = String(t.id);
 
+    const popoverHead = this.querySelector<HTMLDivElement>("#taxon-popover-head");
+    if (!popoverHead) {
+      throw new Error("Popover head not found");
+    }
+
     const valueElement = this.querySelector<HTMLElement>(".stat-value");
     const figureElement = this.querySelector<HTMLElement>(".stat-figure");
     if (!valueElement || !figureElement) throw new Error("Stat elements not found");

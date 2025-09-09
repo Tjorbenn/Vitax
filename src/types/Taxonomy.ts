@@ -2,7 +2,7 @@ export type Accession = {
   taxid: number;
   accession: string;
   level: GenomeLevel;
-}
+};
 
 export enum Rank {
   None = "no rank",
@@ -39,7 +39,7 @@ export type GenomeCount = {
   [GenomeLevel.Chromosome]?: number;
   [GenomeLevel.Scaffold]?: number;
   [GenomeLevel.Contig]?: number;
-}
+};
 
 export enum GenomeLevel {
   Complete = "complete",

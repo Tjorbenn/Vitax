@@ -48,12 +48,12 @@ export enum Endpoint {
 export type NeverGenomeCount = {
   level: GenomeLevel;
   count: number;
-}
+};
 
 export type NeverAccession = {
   accession: string;
   level: GenomeLevel;
-}
+};
 
 /**
  * Using these types, we define a single interface for the entries returned by the Never-API.
@@ -71,7 +71,7 @@ export type Entry = {
   level?: GenomeLevel;
   raw_genome_counts?: NeverGenomeCount[];
   rec_genome_counts?: NeverGenomeCount[];
-}
+};
 
 /**
  * Since the Never-API usually returns a set of results, we define a custom type called `Response` as an array of our `Entry` objects.

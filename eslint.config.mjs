@@ -1,8 +1,14 @@
 // @ts-check
 import js from "@eslint/js";
 import eslintConfigPrettier from "eslint-config-prettier";
+import prettierPlugin from "eslint-plugin-prettier";
 import globals from "globals";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import tseslint from "typescript-eslint";
+
+// ESM-kompatibles __dirname (statt inoffiziellem import.meta.dirname)
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /**
  * Typisierung für das Flat-Config Array.
@@ -13,16 +19,30 @@ export default [
   ...tseslint.configs.strictTypeChecked,
   ...tseslint.configs.stylisticTypeChecked,
   {
+    // Prettier als Fehlerquelle (muss vor eslint-config-prettier stehen)
+    plugins: { prettier: prettierPlugin },
+    rules: {
+      "prettier/prettier": [
+        "error",
+        {
+          endOfLine: "auto",
+        },
+      ],
+    },
+  },
+  {
     // Gilt explizit nur für TypeScript-Dateien
     files: ["**/*.ts"],
     languageOptions: {
+      parser: tseslint.parser,
       globals: {
         ...globals.browser,
         ...globals.es2025,
       },
       parserOptions: {
+        // Typed-Linting aktivieren (nutzt nächstgelegene tsconfig)
         project: true,
-        tsconfigRootDir: import.meta.dirname,
+        tsconfigRootDir: __dirname,
       },
     },
     rules: {

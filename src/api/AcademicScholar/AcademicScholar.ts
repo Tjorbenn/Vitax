@@ -2,7 +2,7 @@ import type { Journal } from "../../types/Application";
 
 const baseUrl = "https://api.semanticscholar.org/graph/v1/";
 
-export enum PublicationFields {
+export enum PaperFields {
   Id = "paperId",
   URL = "url",
   Title = "title",
@@ -26,19 +26,19 @@ export type PaperResponse = {
 };
 
 export type PaperEntry = {
-  [PublicationFields.Id]?: number;
-  [PublicationFields.URL]?: string;
-  [PublicationFields.Title]?: string;
-  [PublicationFields.Abstract]?: string;
-  [PublicationFields.References]?: number;
-  [PublicationFields.Citations]?: number;
-  [PublicationFields.PDF]?: PDF;
-  [PublicationFields.Fields]?: string[];
-  [PublicationFields.Date]?: string;
-  [PublicationFields.Journal]?: Journal;
-  [PublicationFields.BibTex]?: BibTex;
-  [PublicationFields.Authors]?: Author[];
-  [PublicationFields.TLDR]?: TLDR;
+  [PaperFields.Id]?: number;
+  [PaperFields.URL]?: string;
+  [PaperFields.Title]?: string;
+  [PaperFields.Abstract]?: string;
+  [PaperFields.References]?: number;
+  [PaperFields.Citations]?: number;
+  [PaperFields.PDF]?: PDF;
+  [PaperFields.Fields]?: string[];
+  [PaperFields.Date]?: string;
+  [PaperFields.Journal]?: Journal;
+  [PaperFields.BibTex]?: BibTex;
+  [PaperFields.Authors]?: Author[];
+  [PaperFields.TLDR]?: TLDR;
 };
 
 export type PDF = {
@@ -65,11 +65,11 @@ export type BibTex = {
 export async function paperRequest(
   name: string,
   limit = 10,
-  fields: PublicationFields[] = [
-    PublicationFields.URL,
-    PublicationFields.Title,
-    PublicationFields.Authors,
-    PublicationFields.Date,
+  fields: PaperFields[] = [
+    PaperFields.URL,
+    PaperFields.Title,
+    PaperFields.Authors,
+    PaperFields.Date,
   ],
 ): Promise<PaperResponse> {
   const url = new URL("paper/search", baseUrl);

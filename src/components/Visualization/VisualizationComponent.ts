@@ -27,7 +27,7 @@ export type VisualizationExtents = {
   maxX: number;
   minY: number;
   maxY: number;
-}
+};
 
 export class VisualizationComponent extends BaseComponent {
   private svg?: d3.Selection<SVGSVGElement, undefined, null, undefined>;

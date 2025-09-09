@@ -14,8 +14,8 @@ type ImportMetaEnv = {
   readonly VITAX_VERSION_MINOR: number;
   readonly VITAX_VERSION_PATCH: number;
   readonly VITAX_BASE_TILE_SIZE: number;
-}
+};
 
 type ImportMeta = {
   readonly env: ImportMetaEnv;
-}
+};
