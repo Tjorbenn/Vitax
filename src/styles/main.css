@@ -3,7 +3,11 @@
 @import "@fontsource-variable/geist-mono";
 
 @import "tailwindcss";
-@plugin "daisyui";
+
+@plugin "daisyui" {
+  exclude: rootscrollgutter;
+}
+
 @import "./daisy.css";
 
 @plugin "@iconify/tailwind4";

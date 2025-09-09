@@ -1,6 +1,6 @@
 import { BaseComponent } from "../BaseComponent";
-import HTMLtemplate from "./WelcomeTemplate.html?raw";
 import { TutorialComponent } from "../Tutorial/TutorialComponent";
+import HTMLtemplate from "./WelcomeTemplate.html?raw";
 
 export class WelcomeComponent extends BaseComponent {
   constructor() {
@@ -11,7 +11,8 @@ export class WelcomeComponent extends BaseComponent {
   initialize(): void {
     const modal = this.querySelector("#welcome-modal") as HTMLDialogElement | null;
     const tutorialButton = this.querySelector("vitax-tutorial") as TutorialComponent | null;
-    const completedTutorial = localStorage.getItem("vitax.tutorialCompleted");
+    const closeButton = this.querySelector("#welcome-close") as HTMLButtonElement | null;
+    const onboarded = localStorage.getItem("vitax.onboarded");
 
     if (!modal) {
       throw new Error("Could not find welcome modal");
@@ -19,15 +20,26 @@ export class WelcomeComponent extends BaseComponent {
     if (!tutorialButton) {
       throw new Error("Could not find tutorial button");
     }
+    if (!closeButton) {
+      throw new Error("Could not find closing button");
+    }
 
     tutorialButton.text = "Tour";
     tutorialButton.addEventListener("click", () => {
+      this.setOnboarded();
       modal.close();
     });
+    closeButton.addEventListener("click", () => {
+      this.setOnboarded();
+    });
 
-    if (!completedTutorial) {
+    if (onboarded !== "true") {
       modal.showModal();
     }
+  }
+
+  private setOnboarded() {
+    localStorage.setItem("vitax.onboarded", "true");
   }
 }
 

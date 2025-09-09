@@ -1,21 +1,16 @@
 import { State } from "./State";
 
+import { TaxonomyService } from "../services/TaxonomyService";
 import { Status, TaxonomyType } from "../types/Application";
 import { TaxonomyTree } from "../types/Taxonomy";
-
-import { TaxonomyService } from "../services/TaxonomyService";
 
 // Singleton Orchestrator class
 export class Orchestrator {
   private static _instance?: Orchestrator;
 
-  private state: State;
+  private state: State = State.instance;
 
   private taxonomyService: TaxonomyService = new TaxonomyService();
-
-  private constructor() {
-    this.state = State.instance;
-  }
 
   public static get instance(): Orchestrator {
     Orchestrator._instance ??= new Orchestrator();

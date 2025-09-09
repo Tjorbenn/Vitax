@@ -21,6 +21,8 @@ export function startTutorial() {
   searchComponentEl.setAttribute("keep-open-on-blur", "");
 
   const driverObj = driver({
+    disableActiveInteraction: true,
+    smoothScroll: true,
     showProgress: true,
     steps: [
       {
@@ -78,7 +80,9 @@ export function startTutorial() {
                 new InputEvent("input", { bubbles: true, cancelable: true }),
               );
             }
-            driverObj.moveNext();
+            window.setTimeout(() => {
+              driverObj.moveNext();
+            }, 500);
           },
         },
       },
@@ -95,7 +99,9 @@ export function startTutorial() {
             searchInput.dispatchEvent(
               new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
             );
-            driverObj.moveNext();
+            window.setTimeout(() => {
+              driverObj.moveNext();
+            }, 500);
           },
         },
       },
@@ -146,13 +152,11 @@ export function startTutorial() {
           description:
             "If you hover over a taxon in the visualization, you can get more information about it.",
           onNextClick: () => {
-            // Kleines Polling, falls Visualisierung noch nicht fertig gerendert ist
             const start = performance.now();
             const timeoutMs = 2000;
             const tryDispatch = () => {
               const homoNode = document.querySelector<SVGGElement>('g[data-id="9605"]');
               const canvasEl = document.querySelector("vitax-canvas") as HTMLElement | null;
-              // Wenn der Knoten noch nicht existiert, später erneut versuchen (solange innerhalb Timeout)
               if (!homoNode && performance.now() - start < timeoutMs) {
                 requestAnimationFrame(tryDispatch);
                 return;
@@ -176,7 +180,7 @@ export function startTutorial() {
               window.dispatchEvent(
                 new CustomEvent("vitax:taxonHover", {
                   detail: {
-                    id: 9605, // Nummer statt String, damit findTaxonById funktioniert
+                    id: 9605,
                     name: "Homo",
                     x: clientX,
                     y: clientY,
@@ -322,14 +326,23 @@ export function startTutorial() {
           description:
             "Vitax uses your systems preferred theme by default. This button allows you to change between the light and dark theme.",
           onNextClick: () => {
-            localStorage.setItem("vitax.tutorialCompleted", "true");
+            driverObj.moveNext();
+          },
+        },
+      },
+      {
+        element: "vitax-tutorial",
+        popover: {
+          title: "Tutorial",
+          description:
+            "If you want to retake this tutorial, you can do so by clicking this button.",
+          onNextClick: () => {
             driverObj.moveNext();
           },
         },
       },
     ],
     onDestroyed: () => {
-      // Flag zurücksetzen sobald Tutorial endet
       searchComponentEl.removeAttribute("keep-open-on-blur");
     },
   });

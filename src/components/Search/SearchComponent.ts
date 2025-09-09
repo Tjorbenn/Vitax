@@ -2,6 +2,7 @@ import { BaseComponent } from "../BaseComponent";
 import HTMLtemplate from "./SearchTemplate.html?raw";
 
 import { Orchestrator } from "../../core/Orchestrator.ts";
+import { Router } from "../../core/Routing.ts";
 import { State } from "../../core/State.ts";
 import { SuggestionsService } from "../../services/SuggestionsService.ts";
 import { Status, type Suggestion } from "../../types/Application";
@@ -20,6 +21,7 @@ export class SearchComponent extends BaseComponent {
   private selectionComp: SelectionComponent = new SelectionComponent();
   private service: SuggestionsService = new SuggestionsService();
   private state: State = State.instance;
+  private router: Router = Router.instance;
 
   private debounceTimer?: number;
   private debounceDelay: number = import.meta.env.VITAX_DEBOUNCE_TIME as number;
@@ -29,42 +31,6 @@ export class SearchComponent extends BaseComponent {
   private term = "";
   private outsideListener?: (e: Event) => void;
   private _keepOpenOnBlur = false;
-
-  // Wenn true, werden Vorschläge/Selections nicht bei Fokusverlust geschlossen
-  public get keepOpenOnBlur(): boolean {
-    return this._keepOpenOnBlur;
-  }
-  public set keepOpenOnBlur(value: boolean) {
-    if (this._keepOpenOnBlur === value) return;
-    this._keepOpenOnBlur = value;
-    // Boolean-Attribut synchron halten
-    if (value) {
-      if (!this.hasAttribute("keep-open-on-blur")) {
-        this.setAttribute("keep-open-on-blur", "");
-      }
-    } else if (this.hasAttribute("keep-open-on-blur")) {
-      this.removeAttribute("keep-open-on-blur");
-    }
-    this.propagateKeepOpenOnBlur();
-  }
-
-  private propagateKeepOpenOnBlur() {
-    this.suggestionsComp.keepOpenOnBlur = this._keepOpenOnBlur;
-    this.selectionComp.keepOpenOnBlur = this._keepOpenOnBlur;
-  }
-
-  static get observedAttributes(): string[] {
-    return ["keep-open-on-blur"]; // beobachte Boolean-Attribut
-  }
-  attributeChangedCallback(name: string, _oldValue: string | null, newValue: string | null) {
-    if (name === "keep-open-on-blur") {
-      const active = newValue !== null; // Präsenz => true
-      if (active !== this._keepOpenOnBlur) {
-        this._keepOpenOnBlur = active;
-        this.propagateKeepOpenOnBlur();
-      }
-    }
-  }
 
   constructor() {
     super(HTMLtemplate);
@@ -99,12 +65,6 @@ export class SearchComponent extends BaseComponent {
 
     this.state.subscribeToStatus(this.onStatusChange.bind(this));
 
-    // Initialen Attributstatus auswerten (falls im HTML gesetzt)
-    if (this.hasAttribute("keep-open-on-blur")) {
-      this._keepOpenOnBlur = true;
-      this.propagateKeepOpenOnBlur();
-    }
-
     // Outside click / focus handling
     this.outsideListener = (e: Event) => {
       const target = e.target as Node | null;
@@ -132,7 +92,6 @@ export class SearchComponent extends BaseComponent {
       clearTimeout(this.debounceTimer);
     }
 
-    // Leerer Term: sofort zurücksetzen ohne Debounce
     if (!this.term) {
       this.suggestionsComp.onInput("");
       return;
@@ -156,6 +115,7 @@ export class SearchComponent extends BaseComponent {
       void this.orchestrator.resolveTree();
       window.dispatchEvent(new CustomEvent("vitax:resetView"));
       this.closeSuggestions();
+      this.router.updateUrl();
     }
   }
 
@@ -200,6 +160,7 @@ export class SearchComponent extends BaseComponent {
       this.button.innerHTML = "Visualize";
     }
   }
+
   disconnectedCallback(): void {
     if (this.debounceTimer) {
       clearTimeout(this.debounceTimer);
