@@ -1,9 +1,8 @@
-import { NeverApi } from "../api/Never/NeverClient";
+import * as NeverApi from "../api/Never/NeverClient";
 import { Taxon, TaxonomyTree, type Accession } from "../types/Taxonomy";
-import * as NcbiApi from "../api/NCBI";
 
 export class TaxonomyService {
-  private NeverApi: NeverApi = new NeverApi();
+  private NeverApi = NeverApi;
 
   /**
    * Returns a single taxon as a tree. Ideal for exploration from a single taxon.
@@ -152,10 +151,6 @@ export class TaxonomyService {
         taxon.addChild(child);
       }
     });
-  }
-
-  public async getImage(taxon: Taxon): Promise<HTMLImageElement | null> {
-    return NcbiApi.fetchImageFromTaxonId(taxon.id);
   }
 
   public async getDirectAccessions(taxon: Taxon): Promise<Set<Accession>> {

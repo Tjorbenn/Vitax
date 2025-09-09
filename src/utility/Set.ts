@@ -1,5 +1,6 @@
 // Extending the Set prototype to include filter, some and all methods
 declare global {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
   interface Set<T> {
     /**
      * Filters the set based on a callback function.

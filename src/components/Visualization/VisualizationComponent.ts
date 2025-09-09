@@ -22,7 +22,7 @@ import { TaxonPopoverComponent } from "./TaxonPopover/TaxonPopoverComponent";
 import { VisualizationBus } from "../../services/VisualizationBus";
 
 // Allgemeines Extents-Interface für alle Visualizer
-export interface VisualizationExtents {
+export type VisualizationExtents = {
   minX: number;
   maxX: number;
   minY: number;

@@ -6,11 +6,14 @@
     <span id="taxon-name" class="text-primary tooltip m-0 text-lg" data-tip="Name"></span>
     <span id="taxon-id" class="badge badge-primary badge-xs tooltip" data-tip="ID"></span>
   </hgroup>
-  <div id="rank" class="stats">
-    <div class="stat">
-      <div class="stat-title">Rank</div>
-      <div class="stat-value text-neutral capitalize"></div>
-      <div class="stat-figure text-primary drop-shadow-lg"></div>
+  <div class="flex flex-row items-center justify-center gap-2">
+    <vitax-references></vitax-references>
+    <div id="rank" class="stats">
+      <div class="stat px-4">
+        <div class="stat-title">Rank</div>
+        <div class="stat-value text-neutral capitalize"></div>
+        <div class="stat-figure text-primary drop-shadow-lg"></div>
+      </div>
     </div>
   </div>
   <div class="card card-border bg-base-100 mx-4 p-0 shadow-sm [&:has(tbody:empty)]:hidden">
@@ -33,22 +36,13 @@
                 data-tip="Toggle file type"
               >
                 <input id="accessions-filetype" type="checkbox" class="swap-toggle" />
-                <span
-                  class="swap-on icon-[material-symbols--csv-rounded]"
-                  style="width: 2em; height: 2em"
-                ></span>
-                <span
-                  class="swap-off icon-[material-symbols--file-json-rounded]"
-                  style="width: 2em; height: 2em"
-                ></span>
+                <span class="swap-off badge badge-sm badge-accent">TSV</span>
+                <span class="swap-on badge badge-sm badge-accent">CSV</span>
               </label>
             </td>
             <td class="text-center">
               <button class="btn btn-sm btn-ghost" id="accessions-download-direct">
-                <span
-                  class="icon-[material-symbols--download-rounded]"
-                  style="width: 1.5em; height: 1.5em"
-                ></span>
+                <span class="" style="width: 1.5em; height: 1.5em"></span>
               </button>
             </td>
             <td class="text-center">

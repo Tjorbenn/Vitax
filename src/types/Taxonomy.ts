@@ -1,4 +1,4 @@
-export interface Accession {
+export type Accession = {
   taxid: number;
   accession: string;
   level: GenomeLevel;
@@ -34,7 +34,7 @@ export enum Rank {
   Section = "section",
 }
 
-export interface GenomeCount {
+export type GenomeCount = {
   [GenomeLevel.Complete]?: number;
   [GenomeLevel.Chromosome]?: number;
   [GenomeLevel.Scaffold]?: number;

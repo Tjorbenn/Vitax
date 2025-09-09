@@ -2,7 +2,7 @@
 
 import type { TaxonomyType, VisualizationType } from "./types/Application";
 
-interface ImportMetaEnv {
+type ImportMetaEnv = {
   readonly VITAX_TAXONOMYTYPE_DEFAULT: TaxonomyType;
   readonly VITAX_DISPLAYTYPE_DEFAULT: VisualizationType;
   readonly VITAX_DEBOUNCE_TIME: number;
@@ -16,6 +16,6 @@ interface ImportMetaEnv {
   readonly VITAX_BASE_TILE_SIZE: number;
 }
 
-interface ImportMeta {
+type ImportMeta = {
   readonly env: ImportMetaEnv;
 }

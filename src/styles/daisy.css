@@ -15,7 +15,7 @@
   /* Sekundäres Grün */
   --color-secondary-content: oklch(100% 0 0);
   /* White */
-  --color-accent: oklch(84.13% 0.224 111.45);
+  --color-accent: oklch(0.8294 0.1785 114.26);
   /* Akzentfarbe Lime */
   --color-accent-content: oklch(25.31% 0.052 111.45);
   /* Darker Lime for contrast */
@@ -70,7 +70,7 @@
   /* Sekundäres Grün (identisch zum light-theme) */
   --color-secondary-content: oklch(100% 0 0);
   /* White (identisch zum light-theme) */
-  --color-accent: oklch(84.13% 0.224 111.45);
+  --color-accent: oklch(0.8294 0.1785 114.26);
   /* Akzentfarbe Lime (identisch zum light-theme) */
   --color-accent-content: oklch(25.31% 0.052 111.45);
   /* Darker Lime for contrast (identisch zum light-theme) */

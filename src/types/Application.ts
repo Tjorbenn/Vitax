@@ -1,10 +1,11 @@
+import type { LinkSource } from "../api/NCBI/Ncbi";
 import { Taxon } from "./Taxonomy";
 
-export interface Suggestion {
+export type Suggestion = {
   id: number;
   name: string;
   commonName?: string;
-}
+};
 
 export enum Status {
   Idle,
@@ -25,6 +26,29 @@ export enum VisualizationType {
   Graph = "graph",
   Pack = "pack",
 }
+
+export type Link = Partial<Record<LinkSource, string>>;
+
+export type Publication = {
+  title: string;
+  url: URL;
+  authors: string[];
+  date?: Date;
+  references: number;
+  citations: number;
+  pdfUrl?: URL;
+  fields?: string[];
+  journal?: Journal;
+  abstract?: string;
+  summary?: string;
+  bibtex?: string;
+};
+
+export type Journal = {
+  name: string;
+  volume: string;
+  pages: string;
+};
 
 export function SuggestionToTaxon(suggestion: Suggestion): Taxon {
   const taxon = new Taxon(suggestion.id, suggestion.name);

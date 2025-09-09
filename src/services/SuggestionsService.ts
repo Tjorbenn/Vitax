@@ -1,8 +1,8 @@
-import { NeverApi } from "../api/Never/NeverClient";
+import * as NeverApi from "../api/Never/NeverClient";
 import type { Suggestion } from "../types/Application";
 
 export class SuggestionsService {
-  private api: NeverApi = new NeverApi();
+  private api = NeverApi;
   page = 1;
   pageSize: number = Number(import.meta.env.VITAX_SUGGESTIONS_PAGESIZE) || 10;
   term = "";

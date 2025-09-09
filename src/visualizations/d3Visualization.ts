@@ -3,7 +3,7 @@ import { State } from "../core/State";
 import { TaxonomyService } from "../services/TaxonomyService";
 import { Taxon, TaxonomyTree } from "../types/Taxonomy";
 
-export interface D3VisualizationExtents {
+export type D3VisualizationExtents = {
   minX: number;
   maxX: number;
   minY: number;

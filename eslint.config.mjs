@@ -26,7 +26,7 @@ export default [
       },
     },
     rules: {
-      "@typescript-eslint/consistent-type-definitions": ["error"],
+      "@typescript-eslint/consistent-type-definitions": ["error", "type"],
       "@typescript-eslint/no-unnecessary-type-assertion": "off",
       "@typescript-eslint/no-unused-vars": [
         "error",

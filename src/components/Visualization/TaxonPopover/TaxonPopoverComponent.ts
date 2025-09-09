@@ -1,19 +1,18 @@
 import * as d3 from "d3";
-import { GenomeLevel, type Taxon } from "../../../types/Taxonomy";
-import { BaseComponent } from "../../BaseComponent";
-import HTMLtemplate from "./TaxonPopoverTemplate.html?raw";
-import { downloadObjectsAsFile, downloadObjectsAsCsv } from "../../../features/Download";
+import { getImageFromTaxonId } from "../../../api/NCBI/NcbiClient";
+import { downloadObjectsAsCsv, downloadObjectsAsTsv } from "../../../features/Download";
+import { TaxonomyService } from "../../../services/TaxonomyService";
 import type { Accession } from "../../../types/Taxonomy";
+import { GenomeLevel, type Taxon } from "../../../types/Taxonomy";
 import { getRankIcon } from "../../../types/UI";
 import { createIconString } from "../../../utility/Icons";
-import { TaxonomyService } from "../../../services/TaxonomyService";
+import { BaseComponent } from "../../BaseComponent";
+import HTMLtemplate from "./TaxonPopoverTemplate.html?raw";
 
-// entfernt: globale Window-Variable vitaxCurrentRootId – wird nun intern gesetzt
-
-interface CollapsibleHierarchyNode<T> extends d3.HierarchyNode<T> {
+type CollapsibleHierarchyNode<T> = {
   collapsed?: boolean;
-  _children?: d3.HierarchyNode<T>[]; // optional (für dynamisch ausgelagerte Kinder)
-}
+  _children?: d3.HierarchyNode<T>[];
+} & d3.HierarchyNode<T>;
 
 export class TaxonPopoverComponent extends BaseComponent {
   private taxonomyService = new TaxonomyService();
@@ -198,7 +197,7 @@ export class TaxonPopoverComponent extends BaseComponent {
     const accessionsArray = Array.from(accessions);
     switch (this.filetypeToggle.checked) {
       case false:
-        downloadObjectsAsFile(accessionsArray, filename);
+        downloadObjectsAsTsv(accessionsArray, filename);
         break;
       case true:
         downloadObjectsAsCsv(accessionsArray, filename);
@@ -254,7 +253,7 @@ export class TaxonPopoverComponent extends BaseComponent {
 
     let img: HTMLImageElement | null = null;
     try {
-      img = await this.taxonomyService.getImage(t);
+      img = await getImageFromTaxonId(t.id);
     } catch {
       img = null;
     }

@@ -1,19 +1,19 @@
-import { NeverApi } from "../api/Never/NeverClient";
+import * as NeverApi from "../api/Never/NeverClient";
 import { Status, TaxonomyType, VisualizationType } from "../types/Application";
 import type { Taxon, TaxonomyTree } from "../types/Taxonomy";
 import { parseTaxonomy, parseVisualization } from "../utility/Environment";
 
 // A serializable snapshot of the state that can be hydrated
-export interface StateSpore {
+export type StateSpore = {
   taxonIds: Set<number>;
   taxonomyType: TaxonomyType;
   displayType: VisualizationType;
-}
+};
 
 // Singleton State management class
 export class State {
   private static _instance?: State;
-  private api: NeverApi = new NeverApi();
+  private api = NeverApi;
 
   private _query = new Set<Taxon>();
   private _tree?: TaxonomyTree;

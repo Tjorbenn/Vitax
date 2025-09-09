@@ -12,19 +12,28 @@ export enum ImageSize {
   Medium = "MEDIUM",
 }
 
-const imageCache = new Map<number, HTMLImageElement | null>();
-
-export async function fetchImageFromTaxonId(taxonId: number): Promise<HTMLImageElement | null> {
-  if (imageCache.has(taxonId)) {
-    return imageCache.get(taxonId) ?? null;
-  }
-
-  const img = await getImageFromTaxonId(taxonId);
-  imageCache.set(taxonId, img);
-  return img;
+export enum LinkSource {
+  Wikipedia = "wikipedia",
+  GBIF = "global_biodiversity_information_facility",
+  ViralZone = "viralzone",
 }
 
-export async function getImageFromTaxonId(
+export type LinkResponse = {
+  tax_id: number;
+  encyclopedia_of_life?: string;
+  [LinkSource.GBIF]?: string;
+  inaturalist?: string;
+  [LinkSource.ViralZone]?: string;
+  [LinkSource.Wikipedia]?: string;
+  generic_links: [
+    {
+      link_name: string;
+      link_url: string;
+    },
+  ];
+};
+
+export async function imageRequest(
   taxonId: number,
   format: ImageFormat = ImageFormat.Jpeg,
   size?: ImageSize,
@@ -56,4 +65,21 @@ export async function getImageFromTaxonId(
   } catch {
     return null;
   }
+}
+
+export async function linksRequest(taxonId: number): Promise<LinkResponse> {
+  const url = new URL(`taxon/${taxonId.toString()}/links`, taxonomyBaseUrl);
+  const options: RequestInit = {
+    method: "GET",
+  };
+
+  const response = await fetch(url, options);
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch links for taxon ID ${taxonId.toString()}: ${response.statusText}`,
+    );
+  }
+
+  const json = (await response.json()) as LinkResponse;
+  return json;
 }

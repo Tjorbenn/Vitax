@@ -45,12 +45,12 @@ export enum Endpoint {
 /**
  * We also define an interface for the genome counts in the way the Never-API returns them.
  */
-export interface NeverGenomeCount {
+export type NeverGenomeCount = {
   level: GenomeLevel;
   count: number;
 }
 
-export interface NeverAccession {
+export type NeverAccession = {
   accession: string;
   level: GenomeLevel;
 }
@@ -60,7 +60,7 @@ export interface NeverAccession {
  * This allows us to have a consistent structure for the data we receive from the API, independent of the specific endpoint being called.
  * In the end, this also simplifies the conversion of this `raw` data into our domain models by enabling us to use a single function/method for all data received by the API.
  */
-export interface Entry {
+export type Entry = {
   name?: string;
   common_name?: string;
   taxid?: number;
