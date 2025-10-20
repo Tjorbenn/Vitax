@@ -1,7 +1,9 @@
 import * as d3 from "d3";
-import { State } from "../core/State";
-import { TaxonomyService } from "../services/TaxonomyService";
-import { Taxon, TaxonomyTree } from "../types/Taxonomy";
+import * as State from "../core/State";
+import * as TaxonomyService from "../services/TaxonomyService";
+import { getThemeColors } from "../services/ThemeService";
+import { VisualizationType } from "../types/Application";
+import { Taxon, TaxonomyTree, type LeanTaxon } from "../types/Taxonomy";
 
 export type D3VisualizationExtents = {
   minX: number;
@@ -10,49 +12,91 @@ export type D3VisualizationExtents = {
   maxY: number;
 };
 
+export type VisualizationHandlers = {
+  onHover?: (payload: unknown) => void;
+  onUnhover?: () => void;
+};
+
 export abstract class D3Visualization {
+  public abstract readonly type: VisualizationType;
   protected layer: d3.Selection<SVGGElement, unknown, null, undefined>;
   protected width = 0;
   protected height = 0;
-  protected taxonomyService = new TaxonomyService();
-  protected state = State.instance;
-  protected handlers?: {
-    onHover?: (payload: unknown) => void;
-    onUnhover?: () => void;
-  };
-  protected root?: d3.HierarchyNode<Taxon> & {
+
+  private genomeSumCache = new Map<number, number>();
+  private lastQuerySnapshot?: Set<number>;
+
+  protected handlers?: VisualizationHandlers;
+  protected root?: d3.HierarchyNode<LeanTaxon> & {
     x0?: number;
     y0?: number;
     collapsed?: boolean;
   };
+
+  protected treeSubscription?: () => void;
+  protected themeSubscription?: () => void;
+  protected filterSubscription?: () => void;
 
   constructor(layer: SVGGElement) {
     this.layer = d3.select(layer);
     const bbox = (layer.ownerSVGElement ?? layer).getBoundingClientRect();
     this.width = bbox.width || 800;
     this.height = bbox.height || 600;
+
+    this.themeSubscription = State.subscribeToTheme(() => {
+      this.safeUpdate();
+    });
+
+    this.filterSubscription = State.subscribeToShowOnlyRecursiveAccessions(() => {
+      this.safeUpdate();
+    });
   }
 
-  public setHandlers(h: { onHover?: (payload: unknown) => void; onUnhover?: () => void }): void {
+  public setHandlers(h: VisualizationHandlers): void {
     this.handlers = h;
   }
 
   protected activateStateSubscription(): void {
-    this.state.subscribeToTree(this.updateHierarchy.bind(this));
-    this.updateHierarchy(this.state.tree);
+    this.treeSubscription = State.subscribeToTree(this.updateHierarchy.bind(this));
+    this.updateHierarchy(State.getTree());
   }
 
-  /**
-   * Hierarchiedaten neu aufbauen, wenn der State-Baum sich ändert.
-   */
   protected updateHierarchy(tree: TaxonomyTree | undefined): void {
     if (!tree) {
       this.root = undefined;
       this.clear();
+      this.genomeSumCache.clear();
       return;
     }
-    this.root = d3.hierarchy<Taxon>(tree.root);
-    void this.update();
+    const leanRoot: LeanTaxon = tree.root.lean;
+    this.root = d3.hierarchy<LeanTaxon>(leanRoot);
+    this.genomeSumCache.clear();
+    this.safeUpdate();
+  }
+
+  private updateInProgress = false;
+  protected safeUpdate(): void {
+    if (this.updateInProgress) {
+      return;
+    }
+
+    this.updateInProgress = true;
+
+    try {
+      void this.update().finally(() => {
+        this.updateInProgress = false;
+      });
+    } catch (error) {
+      this.updateInProgress = false;
+      throw error;
+    }
+  }
+
+  private transitionCounter = 0;
+  protected createTransition(duration = 300): d3.Transition<SVGGElement, unknown, null, undefined> {
+    this.transitionCounter++;
+    const transitionName = `d3viz-transition-${this.transitionCounter.toString()}`;
+    return this.layer.transition(transitionName).duration(duration);
   }
 
   protected initializeRootForRender(): void {
@@ -62,83 +106,150 @@ export abstract class D3Visualization {
     this.root.x0 ??= this.height / 2;
     this.root.y0 ??= 0;
     this.root.descendants().forEach((d) => {
-      d.collapsed = Boolean((d as d3.HierarchyNode<Taxon> & { collapsed?: boolean }).collapsed);
+      d.collapsed = Boolean((d as d3.HierarchyNode<LeanTaxon> & { collapsed?: boolean }).collapsed);
     });
   }
 
-  /** Sichtbarkeit: alle Vorfahren dürfen nicht collapsed sein. */
-  protected isNodeVisible(node: d3.HierarchyNode<Taxon>): boolean {
+  /** Visibility: all ancestors must not be collapsed. */
+  protected isNodeVisible(node: d3.HierarchyNode<LeanTaxon>): boolean {
     const ancestors = node.ancestors().filter((a) => a !== node);
     return ancestors.every((a) => {
       return !(a as unknown as { collapsed?: boolean }).collapsed;
     });
   }
 
-  protected getQuery(): Set<Taxon> {
-    return this.state.query;
+  /**
+   * Checks if a node should be visible based on the recursive accessions filter.
+   * When active, only nodes with recursive genomes are shown.
+   * Note: Uses genomeCountRecursive instead of accessions since this data is available on initial load.
+   */
+  protected passesRecursiveAccessionsFilter(node: d3.HierarchyNode<LeanTaxon>): boolean {
+    const showOnlyRecursive = State.getShowOnlyRecursiveAccessions();
+    if (!showOnlyRecursive) {
+      return true;
+    }
+
+    if (node.data.id === 0) {
+      return true;
+    }
+
+    const fullTaxon = this.resolveFullTaxon(node.data.id);
+    if (!fullTaxon) {
+      return false;
+    }
+
+    return fullTaxon.hasRecursiveGenomes;
   }
 
-  protected getNodeFill(d: d3.HierarchyNode<Taxon>): string {
+  /**
+   * Creates a filtered copy of the hierarchy based on the genome filter.
+   * Removes nodes without genomes recursively while maintaining structure.
+   */
+  protected filterHierarchy(
+    node: d3.HierarchyNode<LeanTaxon>,
+  ): d3.HierarchyNode<LeanTaxon> | undefined {
+    const showOnlyRecursive = State.getShowOnlyRecursiveAccessions();
+    if (!showOnlyRecursive) {
+      return node;
+    }
+
+    if (node.data.id === 0) {
+      const filteredChildren = node.children
+        ?.map((child) => this.filterHierarchy(child))
+        .filter((child): child is d3.HierarchyNode<LeanTaxon> => child !== undefined);
+
+      const filteredData: LeanTaxon = {
+        ...node.data,
+        children: filteredChildren?.map((c) => c.data) ?? [],
+      };
+      return d3.hierarchy(filteredData);
+    }
+
+    if (!this.passesRecursiveAccessionsFilter(node)) {
+      return undefined;
+    }
+
+    if (node.children && node.children.length > 0) {
+      const filteredChildren = node.children
+        .map((child) => this.filterHierarchy(child))
+        .filter((child): child is d3.HierarchyNode<LeanTaxon> => child !== undefined);
+
+      const filteredData: LeanTaxon = {
+        ...node.data,
+        children: filteredChildren.map((c) => c.data),
+      };
+      return d3.hierarchy(filteredData);
+    }
+
+    const leafData: LeanTaxon = { ...node.data, children: [] };
+    return d3.hierarchy(leafData);
+  }
+
+  protected getQuery(): Taxon[] {
+    return State.getQuery();
+  }
+
+  protected hasQueryChanged(): boolean {
+    const currentQuery = State.getQuery();
+    const currentIds = new Set(currentQuery.map((t) => t.id));
+
+    if (!this.lastQuerySnapshot) {
+      this.lastQuerySnapshot = currentIds;
+      return true;
+    }
+
+    if (currentIds.size !== this.lastQuerySnapshot.size) {
+      this.lastQuerySnapshot = currentIds;
+      return true;
+    }
+
+    for (const id of currentIds) {
+      if (!this.lastQuerySnapshot.has(id)) {
+        this.lastQuerySnapshot = currentIds;
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  protected getNodeFill(d: d3.HierarchyNode<LeanTaxon>): string {
     const q = this.getQuery();
-    const themeVars = this.getThemeColors();
+    const themeVars = getThemeColors();
     if (d.data.id === 0) {
       return themeVars.primary;
     }
     if (q.some((t) => t.id === d.data.id)) {
       return themeVars.primary;
     }
-    return d.children && d.children.length > 0 ? themeVars.neutral : themeVars.base300; // Eltern vs. Blätter
+    return d.children && d.children.length > 0 ? themeVars.base200 : themeVars.neutral;
   }
 
-  private _cachedTheme?: { ts: number; values: ReturnType<D3Visualization["getThemeColors"]> };
-  protected getThemeColors(): {
-    primary: string;
-    neutral: string;
-    base200: string;
-    base300: string;
-    base100: string;
-    text: string;
-    link: string;
-  } {
-    const now = Date.now();
-    if (this._cachedTheme && now - this._cachedTheme.ts < 2000) {
-      return this._cachedTheme.values;
-    } // 2s Cache
-    const docEl = document.documentElement;
-    const styles = getComputedStyle(docEl);
-    const read = (name: string, fallback: string) => {
-      return styles.getPropertyValue(name).trim() || fallback;
-    };
-    const values = {
-      primary: read("--color-primary", "#0d9488"),
-      neutral: read("--color-neutral", "#555555"),
-      base200: read("--color-base-200", "#cccccc"),
-      base300: read("--color-base-300", "#999999"),
-      base100: read("--color-base-100", "#ffffff"),
-      text: read("--color-base-content", "#111111"),
-      link: read("--color-accent", "#2563eb"),
-    };
-    this._cachedTheme = {
-      ts: now,
-      values,
-    };
-    return values;
+  protected getThemeColors() {
+    return getThemeColors();
+  }
+
+  protected resolveFullTaxon(id: number): Taxon | undefined {
+    return State.getTree()?.findTaxonById(id);
   }
 
   protected async upRoot(): Promise<void> {
-    const tree = this.state.tree;
+    const tree = State.getTree();
     if (!tree) {
       return;
     }
-    const newTree = await this.taxonomyService.expandTreeUp(tree);
+    const newTree = await TaxonomyService.expandTreeUp(tree);
     if (newTree.root.id !== tree.root.id) {
-      this.state.tree = newTree;
+      State.setTree(newTree);
     }
   }
 
-  protected async getChildren(datum: d3.HierarchyNode<Taxon>): Promise<void> {
-    await this.taxonomyService.resolveChildren(datum.data);
-    this.state.treeHasChanged();
+  protected async getChildren(datum: d3.HierarchyNode<LeanTaxon>): Promise<void> {
+    const full = State.getTree()?.findTaxonById(datum.data.id);
+    if (full) {
+      await TaxonomyService.resolveChildren(full);
+    }
+    State.treeHasChanged();
   }
 
   public getExtents(): D3VisualizationExtents | undefined {
@@ -172,6 +283,23 @@ export abstract class D3Visualization {
     this.layer.selectAll("*").remove();
   }
 
+  /** Returns the aggregated genome sum (recursively preferred) for a taxon ID. With cache. */
+  protected getGenomeTotalForId(id: number): number {
+    const cached = this.genomeSumCache.get(id);
+    if (cached !== undefined) return cached;
+    const full = State.getTree()?.findTaxonById(id);
+    const gc = full?.genomeCountRecursive ?? full?.genomeCount;
+    let sum = 0;
+    if (gc) {
+      for (const v of Object.values(gc)) {
+        if (typeof v === "number" && Number.isFinite(v)) sum += v;
+      }
+    }
+    const value = sum || 1;
+    this.genomeSumCache.set(id, value);
+    return value;
+  }
+
   public abstract render(): Promise<D3VisualizationExtents | undefined>;
 
   /**
@@ -179,12 +307,24 @@ export abstract class D3Visualization {
    * or undefined for full rerender in graph/pack renderers.
    */
   public abstract update(
-    event?: MouseEvent,
-    source?: d3.HierarchyNode<Taxon>,
+    _event?: MouseEvent,
+    source?: d3.HierarchyNode<LeanTaxon>,
     duration?: number,
   ): Promise<void>;
 
   public dispose(): void {
+    if (this.treeSubscription) {
+      this.treeSubscription();
+      this.treeSubscription = undefined;
+    }
+    if (this.themeSubscription) {
+      this.themeSubscription();
+      this.themeSubscription = undefined;
+    }
+    if (this.filterSubscription) {
+      this.filterSubscription();
+      this.filterSubscription = undefined;
+    }
     this.clear();
   }
 }

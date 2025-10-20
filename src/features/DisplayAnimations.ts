@@ -52,7 +52,7 @@ export function hide(
       if (!timeoutMs) {
         timeoutMs = timeout;
       }
-      const fallbackTimer = setTimeout(finish, timeoutMs + 50); // +50ms guard
+      const fallbackTimer = setTimeout(finish, timeoutMs + 50);
     });
   });
 }
@@ -94,7 +94,6 @@ export async function toggleState(
   await hide(element, exitClasses, timeout);
 }
 
-// --- Interne Hilfsfunktionen (nicht exportiert) ---
 function parseCssTimeToMs(token: string): number {
   const t = token.trim();
   if (!t) {
@@ -131,5 +130,4 @@ function computeExitTimeoutMs(el: HTMLElement): number {
   return Math.max(tMs, aMs);
 }
 
-// Optionales Aggregat-Objekt für rückwärtskompatible Nutzung (falls irgendwo noch genutzt wird)
 export const DisplayAnimations = { enter, hide, toggle, remove, toggleState };

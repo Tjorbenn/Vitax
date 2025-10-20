@@ -1,140 +1,126 @@
 import { TaxonomyType, VisualizationType } from "../types/Application";
-import { Orchestrator } from "./Orchestrator";
-import { State, type StateSpore } from "./State";
+import * as Orchestrator from "./Orchestrator";
+import type { StateSpore } from "./State";
+import * as State from "./State";
 
-export class Router {
-  private static _instance?: Router;
-  private state: State = State.instance;
-  private orchestrator: Orchestrator = Orchestrator.instance;
-  private root: string;
-  private routes: Record<string, (route?: string) => void>;
+const routes: Record<string, (route?: string) => void> = {};
+let root: string;
 
-  constructor() {
-    this.root = this.determineRoot();
-    this.routes = {};
-    this.registerRoute("visualize", this.visualizeRoute.bind(this));
-    this.initHandling();
+function determineRoot(): string {
+  const host = window.location.host;
+  return host === "neighbors.evolbio.mpg.de" ? "/vitax/" : "/";
+}
+
+function initHandling() {
+  window.addEventListener("popstate", handlePop);
+  handleRoute();
+}
+
+export function initRouting(): void {
+  root = determineRoot();
+  registerRoute("visualize", visualizeRoute);
+  initHandling();
+}
+
+export function registerRoute(path: string, callback: (route?: string) => void): void {
+  routes[path] = callback;
+}
+
+export function navigate(path: string): void {
+  window.history.pushState({}, "", path);
+  handleRoute();
+}
+
+function handlePop(popEvent: PopStateEvent) {
+  console.debug("Routing Event", popEvent);
+  handleRoute();
+}
+
+function handleRoute() {
+  const rawHash = window.location.hash;
+  const hash = rawHash.substring(2);
+  const route = hash.split("?")[0];
+
+  if (rawHash === "") {
+    demoRoute();
+    return;
   }
 
-  public static initRouting() {
-    this._instance ??= new Router();
+  if (!route || (rawHash !== "" && hash === "")) {
+    rootRoute();
+    return;
   }
 
-  public static get instance(): Router {
-    this._instance ??= new Router();
-    return this._instance;
+  const routeCallback = routes[route];
+  if (routeCallback) {
+    routeCallback(hash);
+  } else {
+    console.warn(`No route found for path: ${route}`);
+  }
+}
+
+function rootRoute() {
+  State.clear();
+  console.debug("Root route");
+}
+
+function visualizeRoute(route?: string) {
+  console.debug("Visualize route", route);
+  if (!route) {
+    throw new Error("Route is undefined");
   }
 
-  private determineRoot(): string {
-    const host = window.location.host;
-    return host === "neighbors.evolbio.mpg.de" ? "/vitax/" : "/";
+  const params = new URLSearchParams(route.split("?")[1]);
+  const taxonIds = params
+    .get("taxa")
+    ?.split(",")
+    .map((id) => Number(id));
+  const taxonomy = params.get("type");
+  const visualization = params.get("visualization");
+
+  if (!taxonIds || taxonIds.length === 0) {
+    console.warn("No taxon IDs provided in the route");
+    return;
   }
+  const spore = createStateSpore(taxonIds, taxonomy ?? "descendants", visualization ?? "tree");
+  void hydrate(spore);
+}
 
-  private initHandling() {
-    window.addEventListener("popstate", this.handlePop.bind(this));
-    this.handleRoute();
-  }
+function demoRoute() {
+  const demoSpore = createStateSpore([9605], "descendants", "tree");
+  void hydrate(demoSpore);
+}
 
-  public registerRoute(path: string, callback: (route?: string) => void) {
-    this.routes[path] = callback;
-  }
+function createStateSpore(taxonIds: number[], type: string, visualization: string): StateSpore {
+  return {
+    taxonIds: taxonIds,
+    taxonomyType: Object.values(TaxonomyType).includes(type as TaxonomyType)
+      ? (type as TaxonomyType)
+      : TaxonomyType.Descendants,
+    displayType: Object.values(VisualizationType).includes(visualization as VisualizationType)
+      ? (visualization as VisualizationType)
+      : VisualizationType.Tree,
+  } as StateSpore;
+}
 
-  public navigate(path: string) {
-    window.history.pushState({}, "", path);
-    this.handleRoute();
-  }
+async function hydrate(spore: StateSpore): Promise<void> {
+  await State.hydrate(spore);
+  await Orchestrator.resolveTree();
+}
 
-  private handlePop(popEvent: PopStateEvent) {
-    console.debug("Routing Event", popEvent);
-    this.handleRoute();
-  }
+export function updateUrl(): void {
+  const spore = State.sporulate();
+  urlState(spore);
+}
 
-  private handleRoute() {
-    const hash = window.location.hash.substring(2);
-    const route = hash.split("?")[0];
+function urlState(spore: StateSpore) {
+  const url = sporeToUrl(spore);
+  window.history.replaceState({}, "", url);
+}
 
-    if (hash === "") {
-      this.demoRoute();
-      return;
-    }
-
-    if (!route) {
-      this.rootRoute();
-      return;
-    }
-
-    const routeCallback = this.routes[route];
-    if (routeCallback) {
-      routeCallback(hash);
-    } else {
-      console.warn(`No route found for path: ${route}`);
-    }
-  }
-
-  private rootRoute() {
-    console.debug("Root route");
-  }
-
-  private visualizeRoute(route?: string) {
-    if (!route) {
-      throw new Error("Route is undefined");
-    }
-
-    const params = new URLSearchParams(route.split("?")[1]);
-    const taxonIds = params
-      .get("taxa")
-      ?.split(",")
-      .map((id) => Number(id));
-    const taxonomy = params.get("type");
-    const visualization = params.get("visualization");
-
-    if (!taxonIds || taxonIds.length === 0) {
-      console.warn("No taxon IDs provided in the route");
-      return;
-    }
-    const spore = this.createStateSpore(
-      taxonIds,
-      taxonomy ?? "descendants",
-      visualization ?? "tree",
-    );
-    void this.hydrate(spore);
-  }
-
-  private demoRoute() {
-    const demoSpore = this.createStateSpore([9605], "descendants", "tree");
-    void this.hydrate(demoSpore);
-  }
-
-  private createStateSpore(taxonIds: number[], type: string, visualization: string): StateSpore {
-    return {
-      taxonIds: new Set(taxonIds),
-      taxonomyType: type in TaxonomyType ? (type as TaxonomyType) : TaxonomyType.Descendants,
-      displayType:
-        visualization in VisualizationType
-          ? (visualization as VisualizationType)
-          : VisualizationType.Tree,
-    } as StateSpore;
-  }
-
-  private async hydrate(spore: StateSpore): Promise<void> {
-    await this.state.hydrate(spore);
-    await this.orchestrator.resolveTree();
-  }
-
-  public updateUrl() {
-    const spore = this.state.sporulate();
-    this.urlState(spore);
-  }
-
-  private urlState(spore: StateSpore) {
-    const url = this.sporeToUrl(spore);
-    window.history.replaceState({}, "", url);
-  }
-
-  public sporeToUrl(spore: StateSpore): string {
-    const taxa = Array.from(spore.taxonIds).join(",");
-    const type = spore.taxonomyType;
-    const visualization = spore.displayType;
-    return `${this.root}#/visualize?taxa=${taxa}&type=${type}&visualization=${visualization}`;
-  }
+export function sporeToUrl(spore: StateSpore): string {
+  const taxa = spore.taxonIds.join(",");
+  const type = spore.taxonomyType;
+  const visualization = spore.displayType;
+  return `${root}#/visualize?taxa=${taxa}&type=${type}&visualization=${visualization}`;
 }

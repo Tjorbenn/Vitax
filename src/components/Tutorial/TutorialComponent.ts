@@ -1,5 +1,5 @@
-import { BaseComponent } from "../BaseComponent";
 import { startTutorial } from "../../features/Tutorial";
+import { BaseComponent } from "../BaseComponent";
 
 export class TutorialComponent extends BaseComponent {
   private _text = "";
@@ -9,7 +9,7 @@ export class TutorialComponent extends BaseComponent {
   }
 
   initialize(): void {
-    this.addEventListener("click", () => {
+    this.addEvent(this, "click", () => {
       startTutorial();
     });
     this.render();

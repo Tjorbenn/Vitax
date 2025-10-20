@@ -9,27 +9,17 @@ export class WelcomeComponent extends BaseComponent {
   }
 
   initialize(): void {
-    const modal = this.querySelector("#welcome-modal") as HTMLDialogElement | null;
-    const tutorialButton = this.querySelector("vitax-tutorial") as TutorialComponent | null;
-    const closeButton = this.querySelector("#welcome-close") as HTMLButtonElement | null;
+    const modal = requireElement<HTMLDialogElement>(this, "#welcome-modal");
+    const tutorialButton = requireElement<TutorialComponent>(this, "vitax-tutorial");
+    const closeButton = requireElement<HTMLButtonElement>(this, "#welcome-close");
     const onboarded = localStorage.getItem("vitax.onboarded");
 
-    if (!modal) {
-      throw new Error("Could not find welcome modal");
-    }
-    if (!tutorialButton) {
-      throw new Error("Could not find tutorial button");
-    }
-    if (!closeButton) {
-      throw new Error("Could not find closing button");
-    }
-
     tutorialButton.text = "Tour";
-    tutorialButton.addEventListener("click", () => {
+    this.addEvent(tutorialButton, "click", () => {
       this.setOnboarded();
       modal.close();
     });
-    closeButton.addEventListener("click", () => {
+    this.addEvent(closeButton, "click", () => {
       this.setOnboarded();
     });
 

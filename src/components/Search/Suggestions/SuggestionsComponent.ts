@@ -1,10 +1,5 @@
-import { State } from "../../../core/State";
-import {
-  enter,
-  hide,
-  remove as removeAnimated,
-  toggleState,
-} from "../../../features/DisplayAnimations";
+import * as State from "../../../core/State";
+import { enter, hide, toggleState } from "../../../features/DisplayAnimations";
 import { type Suggestion, sortSuggestions } from "../../../types/Application";
 import { BaseComponent } from "../../BaseComponent";
 import { SuggestionSession } from "./SuggestionSession";
@@ -14,10 +9,9 @@ export class SuggestionsComponent extends BaseComponent {
   private session?: SuggestionSession;
   private latestTerm = "";
 
-  private table?: HTMLTableElement;
-  private loader?: HTMLElement;
-  private state: State = State.instance;
-  private _keepOpenOnBlur = false; // Flag wird aktuell nur propagiert, zukünftige Nutzung möglich
+  private table!: HTMLTableElement;
+  private loader!: HTMLElement;
+  private _keepOpenOnBlur = false;
 
   public get keepOpenOnBlur(): boolean {
     return this._keepOpenOnBlur;
@@ -35,6 +29,7 @@ export class SuggestionsComponent extends BaseComponent {
       "opacity-0",
       "animated",
       "card",
+      "card-border",
       "bg-base-100/40",
       "backdrop-blur-sm",
       "shadow-lg",
@@ -48,14 +43,16 @@ export class SuggestionsComponent extends BaseComponent {
   }
 
   initialize(): void {
-    this.table = this.querySelector("#suggestions-table") ?? undefined;
-    this.loader = this.querySelector("#suggestions-loader") ?? undefined;
-    this.addEventListener("scroll", () => {
+    this.table = requireElement<HTMLTableElement>(this, "#suggestions-table");
+    this.loader = requireElement<HTMLElement>(this, "#suggestions-loader");
+    this.addEvent(this, "scroll", () => {
       this.onScroll();
     });
-    this.state.subscribeToQuery(() => {
-      this.updateDisabledRows();
-    });
+    this.addSubscription(
+      State.subscribeToQuery(() => {
+        this.updateDisabledRows();
+      }),
+    );
   }
 
   public onInput(term: string): void {
@@ -129,9 +126,6 @@ export class SuggestionsComponent extends BaseComponent {
   }
 
   private resetSuggestions() {
-    if (!this.table) {
-      throw new Error("Suggestions table is not defined");
-    }
     const tbody = this.table.querySelector("#suggestions-body");
     if (tbody) {
       tbody.innerHTML = "";
@@ -140,126 +134,70 @@ export class SuggestionsComponent extends BaseComponent {
   }
 
   private updateTable() {
-    if (!this.table) {
-      throw new Error("Suggestions table is not defined");
-    }
-
-    const suggestionsSet = this.session ? this.session.suggestions : new Set<Suggestion>();
+    const suggestionsSet = this.session ? this.session.suggestions : [];
     const sortedSuggestions = sortSuggestions(suggestionsSet, this.latestTerm);
     const tbody = this.table.querySelector("#suggestions-body");
     if (!tbody) {
       throw new Error("Suggestions body is not defined");
     }
 
-    // Aktuell ausgewählte IDs für Disabled-Status
     const selectedIds = new Set(
-      Array.from(this.state.query).map((t) => {
+      State.getQuery().map((t) => {
         return t.id;
       }),
     );
 
-    // Map bestehender Rows nach ID
-    const existingRows = new Map<string, HTMLTableRowElement>();
-    Array.from(tbody.querySelectorAll<HTMLTableRowElement>("tr")).forEach((r) => {
-      const id = r.dataset.id;
-      if (id) {
-        existingRows.set(id, r);
-      }
-    });
-
-    // Set neuer IDs
-    const newIds = new Set(
-      sortedSuggestions.map((s) => {
-        return s.id.toString();
-      }),
-    );
-
-    // Entfernen veralteter Zeilen
-    existingRows.forEach((row, id) => {
-      if (!newIds.has(id)) {
-        void removeAnimated(row);
-        existingRows.delete(id);
-      }
-    });
-
-    let prevRow: HTMLTableRowElement | null = null;
+    const fragment = document.createDocumentFragment();
     for (const suggestion of sortedSuggestions) {
       const idStr = suggestion.id.toString();
-      let row = existingRows.get(idStr);
+      const row = document.createElement("tr");
+      row.dataset.id = idStr;
+      row.dataset.name = suggestion.name;
+      row.classList.add(
+        "pointer-events-auto",
+        "cursor-pointer",
+        "animated",
+        "hover:scale-102",
+        "hover:text-primary",
+      );
+      row.addEventListener("click", this.onClickSuggestion.bind(this));
 
-      if (!row) {
-        row = document.createElement("tr");
-        row.dataset.id = idStr;
-        row.dataset.name = suggestion.name;
-        row.classList.add(
-          "pointer-events-auto",
-          "cursor-pointer",
-          "animated",
-          "hover:scale-102",
-          "hover:text-primary",
-        );
-        row.addEventListener("click", this.onClickSuggestion.bind(this));
+      const nameCell = document.createElement("td");
+      nameCell.textContent = suggestion.name;
+      nameCell.classList.add("pl-6");
+      row.appendChild(nameCell);
 
-        const nameCell = document.createElement("td");
-        nameCell.textContent = suggestion.name;
-        nameCell.classList.add("pl-6");
-        row.appendChild(nameCell);
-
-        const commonNameCell = document.createElement("td");
-        if (suggestion.commonName) {
-          const nameBadge = document.createElement("span");
-          nameBadge.classList.add("badge", "badge-soft", "badge-primary", "capitalize");
-          nameBadge.textContent = suggestion.commonName || "";
-          commonNameCell.appendChild(nameBadge);
-        }
-        row.appendChild(commonNameCell);
-
-        const idCell = document.createElement("td");
-        idCell.textContent = idStr;
-        idCell.classList.add("pr-6", "text-right");
-        row.appendChild(idCell);
-
-        existingRows.set(idStr, row);
-      } else {
-        if (row.dataset.name !== suggestion.name) {
-          row.dataset.name = suggestion.name;
-          if (row.cells[0]) {
-            row.cells[0].textContent = suggestion.name;
-          }
-        }
+      const commonNameCell = document.createElement("td");
+      if (suggestion.commonName) {
+        const nameBadge = document.createElement("span");
+        nameBadge.classList.add("badge", "badge-soft", "badge-primary", "capitalize");
+        nameBadge.textContent = suggestion.commonName || "";
+        commonNameCell.appendChild(nameBadge);
       }
+      row.appendChild(commonNameCell);
+
+      const idCell = document.createElement("td");
+      idCell.textContent = idStr;
+      idCell.classList.add("pr-6", "text-right");
+      row.appendChild(idCell);
 
       const isSelected = selectedIds.has(suggestion.id);
       this.applyDisabledStyle(row, isSelected);
 
-      const desiredNextSibling = prevRow ? prevRow.nextSibling : tbody.firstChild;
-      // If there's a desired next sibling, insert before it. Otherwise append to the tbody.
-      if (desiredNextSibling) {
-        if (row !== desiredNextSibling) {
-          tbody.insertBefore(row, desiredNextSibling as ChildNode | null);
-        }
-      } else {
-        // No sibling -> append to end (covers empty tbody case)
-        if (row.parentElement !== tbody) {
-          tbody.appendChild(row);
-        }
-      }
-
-      prevRow = row;
+      fragment.appendChild(row);
     }
-    void toggleState(this, suggestionsSet.size > 0);
+    tbody.replaceChildren(fragment);
+
+    void toggleState(this, suggestionsSet.length > 0);
   }
 
   private updateDisabledRows(): void {
-    if (!this.table) {
-      return;
-    }
     const tbody = this.table.querySelector("#suggestions-body");
     if (!tbody) {
       return;
     }
     const selectedIds = new Set(
-      Array.from(this.state.query).map((t) => {
+      State.getQuery().map((t) => {
         return t.id;
       }),
     );
@@ -302,7 +240,6 @@ export class SuggestionsComponent extends BaseComponent {
     const name = row.dataset.name;
     const id = row.dataset.id;
 
-    // Deaktivierte Zeilen ignorieren
     if (row.dataset.disabled === "true") {
       return;
     }
@@ -319,15 +256,10 @@ export class SuggestionsComponent extends BaseComponent {
   }
 
   private showLoader(): void {
-    if (!this.loader) {
-      throw new Error("Loader element is not defined");
-    }
     enter(this.loader);
   }
+
   private hideLoader(): void {
-    if (!this.loader) {
-      throw new Error("Loader element is not defined");
-    }
     void hide(this.loader);
   }
 }

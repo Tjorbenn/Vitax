@@ -234,7 +234,7 @@ export function startTutorial() {
         popover: {
           title: "Genomes",
           description:
-            "This table shows the accessions associated with the taxon. Direct accessions are those that are directly linked to the taxon, while recursive accessions include all descendants. You also have the option to download the accessions in <tt>.csv</tt> format.",
+            "This table shows the accessions associated with the taxon. Direct accessions are those that are directly linked to the taxon, while recursive accessions include all descendants. You can also download the accessions in <tt>.tsv</tt> or <tt>.csv</tt> format.",
           onNextClick: () => {
             driverObj.moveNext();
           },

@@ -8,9 +8,7 @@
  * Since the Never-API is still in development, we implement a Set of low-level abstractions that allow for easy modification and extensions of our API-Client.
  */
 
-//#region never-imports
 import type { GenomeLevel } from "../../types/Taxonomy";
-//#endregion
 
 /**
  * ## Endpoints
@@ -36,10 +34,9 @@ export enum Endpoint {
 }
 
 /**
- * # Entry
+ * ## Entry
  *
  * To be able to restrict the returned data from the Never-API to our specific set of expected values we import our custom enums `GenomeLevel` and `Rank`.
- * <<r:never-imports>>
  */
 
 /**
@@ -53,6 +50,12 @@ export type NeverGenomeCount = {
 export type NeverAccession = {
   accession: string;
   level: GenomeLevel;
+};
+
+export type NeverImage = {
+  id: number;
+  url: string;
+  attribution: string;
 };
 
 /**
@@ -71,6 +74,7 @@ export type Entry = {
   level?: GenomeLevel;
   raw_genome_counts?: NeverGenomeCount[];
   rec_genome_counts?: NeverGenomeCount[];
+  images?: NeverImage[];
 };
 
 /**
@@ -95,7 +99,6 @@ export enum ParameterKey {
   PageSize = "n",
 }
 
-//#region request
 export class Request {
   baseURL = "https://neighbors.evolbio.mpg.de/";
   endpoint?: Endpoint;
@@ -125,7 +128,6 @@ export class Request {
     this.endpoint = endpoint;
     return this;
   }
-  //#endregion
 
   /**
    * We implement the `Request` class using the Builder pattern.
@@ -133,18 +135,13 @@ export class Request {
    * Since the location of the Never-API does not change, we can hardcode the base URL, reducing the need for another parameter.
    * The `Request` class contains methods for setting the endpoint and adding query parameters (Builder pattern).
    *
-   * <<r:request>>
    */
 
   /**
    * The `Send` method constructs the full request URL using the base URL, endpoint, and query parameters and fetches the response from the Never-API.
    * We check if the response is ok (status code 2XX) before returning the JSON data.
-   * @returns A Promise that resolves to the response from the Never-API.
-   *
-   * <<r:request-send>>
    */
 
-  //#region request-send
   async Send(): Promise<Response> {
     if (!this.endpoint) {
       throw new Error("Endpoint is not set!");
@@ -166,7 +163,6 @@ export class Request {
 
     return json;
   }
-  //endregion
 }
 
 /**

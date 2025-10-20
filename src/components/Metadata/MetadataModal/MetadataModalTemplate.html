@@ -1,0 +1,41 @@
+<dialog class="modal modal-middle">
+  <div class="modal-box bg-base-100/80 w-11/12 max-w-5xl p-4 backdrop-blur-xs md:p-6">
+    <div class="flex flex-col items-stretch gap-2">
+      <hgroup
+        id="taxon-popover-header"
+        class="card-title flex w-full flex-row items-center justify-between gap-2"
+      >
+        <span
+          id="taxon-name"
+          class="text-primary tooltip m-0 text-base drop-shadow md:text-lg"
+          data-tip="Name"
+        ></span>
+        <span
+          id="taxon-id"
+          class="badge badge-primary badge-xs tooltip drop-shadow"
+          data-tip="ID"
+        ></span>
+      </hgroup>
+      <div
+        id="taxon-popover-head"
+        class="mb-4 flex flex-col gap-2 md:mb-6 md:flex-row md:flex-wrap md:items-center md:justify-center"
+      >
+        <vitax-data-ranks></vitax-data-ranks>
+        <div class="divider divider-horizontal hidden md:flex"></div>
+        <vitax-data-links
+          class="card card-border bg-base-100 rounded-xl shadow-lg"
+        ></vitax-data-links>
+      </div>
+      <div id="divider-genomes" class="divider my-2">Genomes</div>
+      <vitax-data-genomes
+        class="card card-border bg-base-100 rounded-xl shadow-lg"
+      ></vitax-data-genomes>
+
+      <div id="divider-publications" class="divider my-2">Publications</div>
+      <vitax-data-publications></vitax-data-publications>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop">
+    <button></button>
+  </form>
+</dialog>

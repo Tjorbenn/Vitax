@@ -26,9 +26,13 @@ Vitax is an intuitive web application designed for scientists, researchers, and 
   - **Tree:** A classic hierarchical view of the taxonomic tree. (_Implemented_)
   - **Graph:** A network graph that shows the relationships between taxa. (_To be implemented_)
   - **Pack:** A visualization that packs taxa into a circle. (_To be implemented_)
+  - When a taxon is focused via the list, the visualization briefly highlights the node with a subtle pulse effect to help locate it.
 - **Powerful Search:** Quickly find any taxon of interest with the powerful search functionality.
 - **Suggestions:** Get suggestions as you type to help you find the right taxon.
-- **Data Sources:** Vitax uses data from the [Never API](https://neighbors.evolbio.mpg.de) to provide comprehensive and accurate taxonomic information. The Never API is a custom API developed by the [Research Group for Bioinformatics](https://neighbors.evolbio.mpg.de) of the [Max-Planck-Institute for Evolutionary Biology](https://www.evolbio.mpg.de) that provides access to the taxonomic data from the [NCBI Taxonomy](https://www.ncbi.nlm.nih.gov/taxonomy).
+- **Data Sources:**
+  - **[Never API](https://neighbors.evolbio.mpg.de):** Vitax uses the Never API to provide the taxonomic relationship as well as taxonomic metadata. The Never API is a custom API developed by the [Research Group for Bioinformatics](https://neighbors.evolbio.mpg.de) of the [Max-Planck-Institute for Evolutionary Biology](https://www.evolbio.mpg.de) that provides access to the taxonomic data from the [NCBI Taxonomy](https://www.ncbi.nlm.nih.gov/taxonomy).
+  - **[NCBI Taxonomy](https://www.ncbi.nlm.nih.gov/datasets/docs/v2/api/rest-api/):** Vitax uses the NCBI Taxonomy API to add additional metadata. This includes images as well as links to external resources.
+  - **[SemanticScholar](https://www.semanticscholar.org/product/api):** Vitax uses the SemanticScholar API to add publication data to taxa.
 
 ## Live Demo
 
@@ -80,6 +84,7 @@ Vitax is built in [TypeScript](https://www.typescriptlang.org/), uses [Vite](htt
 
 - [TypeScript](https://www.typescriptlang.org/)
 - [Vite](https://vite.dev/)
+- [DaisyUI](https://daisyui.com)
 - [TailwindCSS](https://tailwindcss.com/)
 - [D3.js](https://d3js.org/)
 

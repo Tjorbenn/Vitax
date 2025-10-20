@@ -1,17 +1,13 @@
 import type { LinkSource } from "../api/NCBI/Ncbi";
 import { Taxon } from "./Taxonomy";
 
-export type Suggestion = {
-  id: number;
-  name: string;
-  commonName?: string;
-};
+export type Suggestion = Pick<Taxon, "id" | "name" | "commonName">;
 
 export enum Status {
-  Idle,
-  Loading,
-  Success,
-  Error,
+  Idle = "idle",
+  Loading = "loading",
+  Success = "success",
+  Error = "error",
 }
 
 export enum TaxonomyType {
@@ -27,7 +23,15 @@ export enum VisualizationType {
   Pack = "pack",
 }
 
-export type Link = Partial<Record<LinkSource, string>>;
+export enum Theme {
+  Light = "mpg-light",
+  Dark = "mpg-dark",
+}
+
+export type Link = {
+  source: LinkSource;
+  url: URL;
+};
 
 export type Publication = {
   title: string;
@@ -55,8 +59,8 @@ export function SuggestionToTaxon(suggestion: Suggestion): Taxon {
   return taxon;
 }
 
-export function SuggestionsToTaxa(suggestions: Set<Suggestion>): Set<Taxon> {
-  return new Set<Taxon>(suggestions.map(SuggestionToTaxon));
+export function SuggestionsToTaxa(suggestions: Suggestion[]): Taxon[] {
+  return suggestions.map(SuggestionToTaxon);
 }
 
 export function TaxonToSuggestion(taxon: Taxon): Suggestion {
@@ -66,8 +70,8 @@ export function TaxonToSuggestion(taxon: Taxon): Suggestion {
   };
 }
 
-export function TaxaToSuggestions(taxa: Set<Taxon>): Set<Suggestion> {
-  return new Set<Suggestion>(taxa.map(TaxonToSuggestion));
+export function TaxaToSuggestions(taxa: Taxon[]): Suggestion[] {
+  return taxa.map(TaxonToSuggestion);
 }
 
 function getRank(name: string, term: string): number {
@@ -101,8 +105,8 @@ function compareByRank(a: Suggestion, b: Suggestion, term: string): number {
   }
 }
 
-export function sortSuggestions(suggestions: Set<Suggestion>, term: string): Suggestion[] {
-  return Array.from(suggestions).sort((a, b) => {
+export function sortSuggestions(suggestions: Suggestion[], term: string): Suggestion[] {
+  return suggestions.sort((a, b) => {
     return compareByRank(a, b, term);
   });
 }

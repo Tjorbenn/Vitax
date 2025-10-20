@@ -2,45 +2,61 @@
   @apply border-base-300;
 }
 
+/* Disable drawer overlay blocking behavior - allow clicks through */
+.drawer-side {
+  pointer-events: none !important;
+}
+
+/* Re-enable pointer events only for drawer content */
+.drawer-side>* {
+  pointer-events: auto !important;
+}
+
+/* Ensure drawer overlay doesn't block */
+.drawer-overlay {
+  pointer-events: none !important;
+  display: none !important;
+}
+
 @plugin "daisyui/theme" {
   name: "mpg-light";
   default: true;
   prefersdark: false;
   color-scheme: "light";
   --color-primary: oklch(0.4787 0.0832 188.1);
-  /* MPG-Grün */
+  /* MPG Green */
   --color-primary-content: oklch(100% 0 0);
   /* White */
   --color-secondary: oklch(0.407 0.069475 194.769);
-  /* Sekundäres Grün */
+  /* Secondary Green */
   --color-secondary-content: oklch(100% 0 0);
   /* White */
   --color-accent: oklch(0.8294 0.1785 114.26);
-  /* Akzentfarbe Lime */
+  /* Accent Lime */
   --color-accent-content: oklch(25.31% 0.052 111.45);
   /* Darker Lime for contrast */
   --color-neutral: oklch(37.18% 0.001 268.44);
-  /* MPG-Grau */
+  /* MPG Gray */
   --color-neutral-content: oklch(100% 0 0);
   /* White */
   --color-base-100: oklch(100% 0 0);
   /* White */
   --color-base-200: oklch(98.05% 0.003 283.44);
-  /* Hellgrau */
+  /* Light Gray */
   --color-base-300: oklch(95.7% 0.003 283.44);
-  /* Hintergrund-Grau */
+  /* Background Gray */
   --color-base-content: oklch(0% 0 0);
   /* Black */
   --color-info: oklch(71.46% 0.141 229.05);
-  /* Akzentfarbe Blau */
+  /* Accent Blue */
   --color-info-content: oklch(100% 0 0);
   /* White */
   --color-success: oklch(0.4787 0.0832 188.1);
-  /* MPG-Grün */
+  /* MPG Green */
   --color-success-content: oklch(100% 0 0);
   /* White */
   --color-warning: oklch(71.85% 0.155 79.73);
-  /* Akzentfarbe Orange */
+  /* Accent Orange */
   --color-warning-content: oklch(100% 0 0);
   /* White */
   --color-error: oklch(62.79% 0.224 19.69);
@@ -63,43 +79,43 @@
   prefersdark: true;
   color-scheme: "dark";
   --color-primary: oklch(0.4787 0.0832 188.1);
-  /* MPG-Grün (identisch zum light-theme) */
+  /* MPG Green (identical to light-theme) */
   --color-primary-content: oklch(100% 0 0);
-  /* White (identisch zum light-theme) */
+  /* White (identical to light-theme) */
   --color-secondary: oklch(0.407 0.069475 194.769);
-  /* Sekundäres Grün (identisch zum light-theme) */
+  /* Secondary Green (identical to light-theme) */
   --color-secondary-content: oklch(100% 0 0);
-  /* White (identisch zum light-theme) */
+  /* White (identical to light-theme) */
   --color-accent: oklch(0.8294 0.1785 114.26);
-  /* Akzentfarbe Lime (identisch zum light-theme) */
+  /* Accent Lime (identical to light-theme) */
   --color-accent-content: oklch(25.31% 0.052 111.45);
-  /* Darker Lime for contrast (identisch zum light-theme) */
+  /* Darker Lime for contrast (identical to light-theme) */
   --color-neutral: oklch(100% 0 0);
-  /* White (invertiert vom light-theme neutral-content) */
+  /* White (inverted from light-theme neutral-content) */
   --color-neutral-content: oklch(37.18% 0.001 268.44);
-  /* MPG-Grau (invertiert vom light-theme neutral) */
+  /* MPG Gray (inverted from light-theme neutral) */
   --color-base-100: oklch(25% 0.001 268.44);
-  /* Sehr dunkles Grau als Haupt-Hintergrund */
+  /* Very dark gray as main background */
   --color-base-200: oklch(30% 0.001 268.44);
-  /* Dunkles Grau */
+  /* Dark gray */
   --color-base-300: oklch(37.18% 0.001 268.44);
-  /* Etwas helleres Grau */
+  /* Slightly lighter gray */
   --color-base-content: oklch(98% 0 0);
-  /* Off-White als Haupt-Textfarbe */
+  /* Off-white as main text color */
   --color-info: oklch(71.46% 0.141 229.05);
-  /* Akzentfarbe Blau (unverändert) */
+  /* Accent Blue (unchanged) */
   --color-info-content: oklch(100% 0 0);
   /* White */
   --color-success: oklch(0.4787 0.0832 188.1);
-  /* MPG-Grün (zurückgesetzt) */
+  /* MPG Green (reset) */
   --color-success-content: oklch(100% 0 0);
   /* White */
   --color-warning: oklch(71.85% 0.155 79.73);
-  /* Akzentfarbe Orange (unverändert) */
+  /* Accent Orange (unchanged) */
   --color-warning-content: oklch(100% 0 0);
   /* White */
   --color-error: oklch(62.79% 0.224 19.69);
-  /* Standard Red (unverändert) */
+  /* Standard Red (unchanged) */
   --color-error-content: oklch(100% 0 0);
   /* White */
   --radius-selector: 0.5rem;

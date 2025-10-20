@@ -2,7 +2,7 @@ import * as NeverApi from "../api/Never/NeverClient";
 import type { Suggestion } from "../types/Application";
 
 export class SuggestionsService {
-  private api = NeverApi;
+  private readonly api = NeverApi;
   page = 1;
   pageSize: number = Number(import.meta.env.VITAX_SUGGESTIONS_PAGESIZE) || 10;
   term = "";
@@ -25,24 +25,24 @@ export class SuggestionsService {
 
   async getExactSuggestion(term: string): Promise<Suggestion> {
     const suggestion = await this.api.getSuggestionsByName(term, 1, 1, true);
-    const first = suggestion.first();
-    if (suggestion.size < 1 || !first) {
+    const first = suggestion[0];
+    if (suggestion.length < 1 || !first) {
       throw new Error("No exact suggestion found for term: " + term);
     }
     return first;
   }
 
-  async nextSuggestions(): Promise<Set<Suggestion>> {
+  async nextSuggestions(): Promise<Suggestion[]> {
     try {
       const suggestions = await this.api.getSuggestionsByName(this.term, this.page, this.pageSize);
-      if (suggestions.size === 0) {
-        return new Set<Suggestion>();
+      if (suggestions.length === 0) {
+        return [];
       } else {
         this.page++;
         return suggestions;
       }
     } catch {
-      return new Set<Suggestion>();
+      return [];
     }
   }
 }

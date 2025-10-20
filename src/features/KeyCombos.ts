@@ -9,7 +9,7 @@ function handleCtrlK(e: KeyboardEvent): void {
 
     const input = document.querySelector<HTMLInputElement>("#search-input");
     if (!input) {
-      return; // nothing to focus
+      return;
     }
 
     input.focus();

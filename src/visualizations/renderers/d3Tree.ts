@@ -1,8 +1,10 @@
 import * as d3 from "d3";
-import { Rank, type Taxon, type TaxonomyTree } from "../../types/Taxonomy";
+import { VisualizationType } from "../../types/Application";
+import { type LeanTaxon, type TaxonomyTree } from "../../types/Taxonomy";
+import { LongPressDetector } from "../../utility/TouchGestures";
 import { D3Visualization, type D3VisualizationExtents } from "../d3Visualization";
 
-type TreeNode = d3.HierarchyPointNode<Taxon> & {
+type TreeNode = d3.HierarchyPointNode<LeanTaxon> & {
   _children?: TreeNode[];
   _placeRight?: boolean;
   _fullLabel?: string;
@@ -17,43 +19,59 @@ type TreeNode = d3.HierarchyPointNode<Taxon> & {
 };
 
 export class D3Tree extends D3Visualization {
-  private layout: d3.TreeLayout<Taxon>;
-  private diagonal: (link: d3.HierarchyPointLink<Taxon>) => string;
+  public readonly type = VisualizationType.Tree;
+  private layout: d3.TreeLayout<LeanTaxon>;
+  private diagonal: (link: d3.HierarchyPointLink<LeanTaxon>) => string;
   private gLink: d3.Selection<SVGGElement, unknown, null, undefined>;
   private gNode: d3.Selection<SVGGElement, unknown, null, undefined>;
 
   private persistedMaxLeft: number[] = [];
   private persistedMaxRight: number[] = [];
 
+  // Long press support for mobile
+  private longPress = new LongPressDetector(500);
+
   constructor(layer: SVGGElement) {
     super(layer);
-    this.layout = d3.tree<Taxon>();
+    this.layout = d3.tree<LeanTaxon>();
     this.diagonal = d3
-      .linkHorizontal<d3.HierarchyPointLink<Taxon>, d3.HierarchyPointNode<Taxon>>()
+      .linkHorizontal<d3.HierarchyPointLink<LeanTaxon>, d3.HierarchyPointNode<LeanTaxon>>()
       .x((d) => d.y)
-      .y((d) => d.x) as unknown as (link: d3.HierarchyPointLink<Taxon>) => string;
+      .y((d) => d.x) as unknown as (link: d3.HierarchyPointLink<LeanTaxon>) => string;
 
     this.gLink = this.layer
       .append("g")
       .attr("fill", "none")
       .attr("stroke", "var(--color-base-content)")
-      .attr("stroke-opacity", 0.25)
+      .attr("stroke-opacity", 0.2)
       .attr("stroke-width", 1);
 
     this.gNode = this.layer.append("g").attr("cursor", "pointer").attr("pointer-events", "all");
+
+    // Define arrowhead marker for self-referencing loops
+    const defs = this.layer.append("defs");
+    defs
+      .append("marker")
+      .attr("id", "arrowhead")
+      .attr("viewBox", "0 -5 10 10")
+      .attr("refX", 8)
+      .attr("refY", 0)
+      .attr("markerWidth", 6)
+      .attr("markerHeight", 6)
+      .attr("orient", "auto")
+      .append("path")
+      .attr("d", "M0,-5L10,0L0,5")
+      .attr("fill", "var(--color-base-content)")
+      .attr("opacity", 0.4);
 
     const nodeWidth = 160;
     const nodeHeight = 20;
     this.layout
       .nodeSize([nodeHeight, nodeWidth])
-      .separation((a: d3.HierarchyNode<Taxon>, b: d3.HierarchyNode<Taxon>) => {
+      .separation((a: d3.HierarchyNode<LeanTaxon>, b: d3.HierarchyNode<LeanTaxon>) => {
         const siblingBoost = a.parent === b.parent ? 1 : 1.15;
-        const aSize = (a.children?.length ??
-          (a as unknown as TreeNode)._children?.length ??
-          0) as number;
-        const bSize = (b.children?.length ??
-          (b as unknown as TreeNode)._children?.length ??
-          0) as number;
+        const aSize = (a.children?.length ?? 0) as number;
+        const bSize = (b.children?.length ?? 0) as number;
         const sizeBoost = aSize + bSize > 14 ? 0.35 : aSize + bSize > 6 ? 0.15 : 0;
         return siblingBoost + sizeBoost;
       });
@@ -73,21 +91,17 @@ export class D3Tree extends D3Visualization {
 
     const currentRoot = tree.root;
     if (currentRoot.id === 1 && currentRoot.name === "root") {
-      this.root = d3.hierarchy<Taxon>(currentRoot);
+      this.root = d3.hierarchy<LeanTaxon>(currentRoot.lean);
     } else {
-      const virtualRootData: Taxon = {
+      const virtualRootData: LeanTaxon = {
         id: 0,
         name: "Uproot",
-        rank: Rank.None,
-        children: new Set([currentRoot]),
-        parent: undefined,
-        genomeCount: {},
-        genomeCountRecursive: currentRoot.genomeCountRecursive,
-      } as unknown as Taxon;
-      this.root = d3.hierarchy<Taxon>(virtualRootData);
+        children: [currentRoot.lean],
+      };
+      this.root = d3.hierarchy<LeanTaxon>(virtualRootData);
     }
 
-    void this.update();
+    this.safeUpdate();
   }
 
   public async render(): Promise<D3VisualizationExtents | undefined> {
@@ -95,43 +109,49 @@ export class D3Tree extends D3Visualization {
       return undefined;
     }
     this.initializeRootForRender();
-    await this.update(undefined, this.root, 0);
+    await this.update(undefined, this.root);
     return this.getExtents();
   }
 
   public update(
     event?: MouseEvent,
-    source?: d3.HierarchyNode<Taxon> & { x0?: number; y0?: number },
+    source?: d3.HierarchyNode<LeanTaxon> & { x0?: number; y0?: number },
     duration = 250,
   ): Promise<void> {
     if (!this.root) {
       return Promise.resolve();
     }
 
-    // no runtime mutation needed for keying; use d.data.id as stable key
-
     if (!source || source.x0 === undefined) {
       source = this.root;
       source.x0 = this.height / 2;
       source.y0 = 0;
     }
-    // narrow source to a guaranteed point with x0/y0 for subsequent calculations
-    const src = source as d3.HierarchyNode<Taxon> & { x0: number; y0: number };
+    const src = source as d3.HierarchyNode<LeanTaxon> & { x0: number; y0: number };
 
     const currentDuration = event?.altKey ? 2500 : duration;
-    const visibleNodesAll = this.root
+    const useTransition = currentDuration > 0;
+    const transitionName = `d3tree-update-${Date.now().toString()}`;
+
+    const filteredRoot = this.filterHierarchy(this.root);
+    if (!filteredRoot) {
+      this.gNode.selectAll("*").remove();
+      this.gLink.selectAll("*").remove();
+      return Promise.resolve();
+    }
+
+    const verticalGap = 28;
+    this.layout.nodeSize([verticalGap, 1]);
+    this.layout(filteredRoot as unknown as d3.HierarchyPointNode<LeanTaxon>);
+
+    const visibleNodesAll = filteredRoot
       .descendants()
-      .filter((d) => this.isNodeVisible(d as d3.HierarchyNode<Taxon>)) as TreeNode[];
+      .filter((d) => this.isNodeVisible(d as d3.HierarchyNode<LeanTaxon>)) as TreeNode[];
     const maxDepth = (d3.max(visibleNodesAll, (d) => d.depth) ?? 1) as number;
 
-    const verticalGap = 28; // Fixed vertical gap
-    this.layout.nodeSize([verticalGap, 1]);
-    // layout mutates the nodes and turns them into point nodes
-    this.layout(this.root as unknown as d3.HierarchyPointNode<Taxon>);
-
     const estCharW = 6.2;
-    const maxLabelWidthLeftPx = 200; // Obergrenze für linke Labels (intern)
-    const maxLabelWidthRightPx = 260; // Obergrenze für rechte Labels (Leaves)
+    const maxLabelWidthLeftPx = 200;
+    const maxLabelWidthRightPx = 260;
     const truncateLocal = (name: string, maxPx: number): string => {
       const maxChars = Math.max(3, Math.floor(maxPx / estCharW));
       return name.length > maxChars ? name.slice(0, maxChars - 1) + "…" : name;
@@ -139,7 +159,8 @@ export class D3Tree extends D3Visualization {
     for (const n of visibleNodesAll) {
       if (n.data.id === 0) continue;
       const tn = n as TreeNode;
-      const isLeaf = !tn.children?.length && !tn._children?.length;
+      const hasChildren = tn.children && tn.children.length > 0;
+      const isLeaf = !hasChildren;
       const placeRight = isLeaf || tn.collapsed;
       const full = tn._fullLabel ?? tn.data.name;
       const truncated = truncateLocal(
@@ -149,7 +170,7 @@ export class D3Tree extends D3Visualization {
       tn._placeRight = placeRight;
       tn._fullLabel = full;
       tn._label = truncated;
-      tn._labelWidthPx = truncated.length * estCharW + 9; // + Abstand zum Knoten
+      tn._labelWidthPx = truncated.length * estCharW + 9;
       if (!placeRight) tn._leftExtension = tn._labelWidthPx;
       else tn._rightExtension = tn._labelWidthPx;
     }
@@ -176,7 +197,7 @@ export class D3Tree extends D3Visualization {
       this.persistedMaxRight[d] = Math.max(prevRight, maxRight[d] ?? 0);
     }
 
-    const baseGap = 50; // immer mindestens soviel Raum zwischen den Node-Punkten zweier Tiefen
+    const baseGap = 50;
     const depthOffset: number[] = new Array<number>(maxDepth + 1).fill(0);
     for (let d = 0; d < maxDepth; d++) {
       const leftExtentNext = this.persistedMaxLeft[d + 1] ?? maxLeft[d + 1] ?? 0;
@@ -184,16 +205,9 @@ export class D3Tree extends D3Visualization {
       depthOffset[d + 1] = (depthOffset[d] ?? 0) + baseGap + rightExtentCurrent + leftExtentNext;
     }
 
-    const totalWidth =
-      (depthOffset[maxDepth] ?? 0) + (this.persistedMaxRight[maxDepth] ?? maxRight[maxDepth] ?? 0);
-    const maxUsableWidth = this.width - 40;
-    // Skaliere falls nötig, um nicht über Breite hinauszugehen
-    const widthScale =
-      totalWidth > maxUsableWidth && totalWidth > 0 ? maxUsableWidth / totalWidth : 1;
-
     for (const n of visibleNodesAll) {
       const idx = n.depth;
-      (n as d3.HierarchyPointNode<Taxon>).y = (depthOffset[idx] ?? 0) * widthScale;
+      (n as d3.HierarchyPointNode<LeanTaxon>).y = depthOffset[idx] ?? 0;
     }
 
     if (visibleNodesAll.length > 1800) {
@@ -203,11 +217,9 @@ export class D3Tree extends D3Visualization {
     }
 
     const nodes = visibleNodesAll.reverse();
-    const links = this.root.links().filter((d) => {
+    const links = filteredRoot.links().filter((d) => {
       return this.isNodeVisible(d.target);
     });
-
-    // create transitions inline to avoid d3 typing mismatches
 
     const nodeSel = this.gNode.selectAll<SVGGElement, TreeNode>("g").data(nodes, (d) => d.data.id);
 
@@ -219,49 +231,92 @@ export class D3Tree extends D3Visualization {
       .attr("transform", (_d) => `translate(${String(src.y0)},${String(src.x0)})`)
       .attr("fill-opacity", 0)
       .attr("stroke-opacity", 0)
-      .on("click", (event: MouseEvent, d: TreeNode) => void this.handleOnClick(event, d))
-      .on("mouseenter", (event: MouseEvent, d: TreeNode) => {
+      .on("click", (event: MouseEvent, d: TreeNode) => {
+        event.stopPropagation();
+        if (d.data.id === 0) {
+          void this.upRoot();
+          return;
+        }
+        const hasChildren = (d.children?.length ?? d.data.children.length) > 0;
+        if (hasChildren) {
+          d.collapsed = !d.collapsed;
+          void this.update(event, d, 180);
+        }
+      })
+      .on("contextmenu", (event: MouseEvent, d: TreeNode) => {
+        event.preventDefault();
+        event.stopPropagation();
         if (d.data.id === 0) return;
-        const bbox = (event.currentTarget as SVGGElement).getBoundingClientRect();
-        const clientX = event.clientX;
-        const clientY = event.clientY;
-        const payload = {
+        const el = event.currentTarget as SVGGElement;
+        const circle = el.querySelector("circle");
+        const bbox = (circle ?? el).getBoundingClientRect();
+        const childrenCount = d.children?.length ?? 0;
+        this.handlers?.onHover?.({
           id: d.data.id,
           name: d.data.name,
-          rank: d.data.rank,
           parent: d.parent ? { id: d.parent.data.id, name: d.parent.data.name } : undefined,
-          genomeCount: d.data.genomeCount,
-          genomeCountRecursive: d.data.genomeCountRecursive,
-          childrenCount: d.children ? d.children.length : d._children ? d._children.length : 0,
+          childrenCount,
           x: bbox.x + bbox.width / 2,
           y: bbox.y + bbox.height / 2,
-          cursorX: clientX,
-          cursorY: clientY,
           node: d,
-        };
-        this.handlers?.onHover?.(payload);
-      })
-      .on("mouseleave", () => {
-        this.handlers?.onUnhover?.();
+        });
       });
+
+    this.longPress.attachTo(
+      nodeEnter.filter((d: TreeNode) => d.data.id !== 0),
+      (event: TouchEvent, d: TreeNode) => {
+        const el = event.currentTarget as SVGGElement;
+        const circle = el.querySelector("circle");
+        const bbox = (circle ?? el).getBoundingClientRect();
+        const childrenCount = d.children?.length ?? 0;
+        this.handlers?.onHover?.({
+          id: d.data.id,
+          name: d.data.name,
+          parent: d.parent ? { id: d.parent.data.id, name: d.parent.data.name } : undefined,
+          childrenCount,
+          x: bbox.x + bbox.width / 2,
+          y: bbox.y + bbox.height / 2,
+          node: d,
+        });
+      },
+    );
 
     const themeColors = this.getThemeColors();
 
     nodeEnter
       .append("circle")
       .attr("r", (d: TreeNode) => (d.data.id === 0 ? 6 : 4))
-      .attr("fill", (d: TreeNode) => (d.data.id === 0 ? themeColors.link : this.getNodeFill(d)))
+      .attr("fill", (d: TreeNode) => (d.data.id === 0 ? themeColors.accent : this.getNodeFill(d)))
       .attr("stroke-width", 1)
-      .attr("stroke", "var(--color-base-content)");
+      .attr("stroke", "var(--color-base-content)")
+      .attr("stroke-opacity", 0.3);
 
-    // Chevron arrow for virtual root
     nodeEnter
       .filter((d: TreeNode) => d.data.id === 0)
       .append("path")
       .attr("d", "M 2,-3 L -2,0 L 2,3")
       .attr("fill", "none")
-      .attr("stroke", themeColors.text) // black
+      .attr("stroke", "var(--color-base-content)")
       .attr("stroke-width", 1.5);
+
+    nodeEnter
+      .filter((d: TreeNode) => d.data.hasSelfReference === true)
+      .append("path")
+      .attr("d", () => {
+        const radius = 15;
+        const startAngle = -Math.PI / 4;
+        const endAngle = Math.PI / 4;
+        const x1 = -(radius * Math.cos(startAngle));
+        const y1 = radius * Math.sin(startAngle);
+        const x2 = -(radius * Math.cos(endAngle));
+        const y2 = radius * Math.sin(endAngle);
+        return `M ${String(x1)},${String(y1)} A ${String(radius)},${String(radius)} 0 1,0 ${String(x2)},${String(y2)}`;
+      })
+      .attr("fill", "none")
+      .attr("stroke", "var(--color-base-content)")
+      .attr("stroke-opacity", 0.4)
+      .attr("stroke-width", 1.5)
+      .attr("marker-end", "url(#arrowhead)");
 
     const regularNodeEnter = nodeEnter.filter((d: TreeNode) => d.data.id !== 0);
 
@@ -283,14 +338,15 @@ export class D3Tree extends D3Visualization {
       .style("font-size", "11px")
       .attr("fill", "var(--color-base-content)")
       .each(function (this: d3.BaseType, d: TreeNode) {
-        const isLeaf = !d.children?.length && !d._children?.length;
-        const placeRight = isLeaf || d.collapsed; // Leaf immer rechts; collapsed wie Leaf
+        const hasChildren = d.children && d.children.length > 0;
+        const isLeaf = !hasChildren;
+        const placeRight = isLeaf || d.collapsed;
         const fullName = d.data.name;
         const truncated = truncateEnter(
           fullName,
           placeRight ? maxLabelWidthRight : maxLabelWidthLeft,
         );
-        d._label = truncated; // speichern für merge
+        d._label = truncated;
         d._fullLabel = fullName;
         d._placeRight = placeRight;
         d3.select(this)
@@ -309,14 +365,15 @@ export class D3Tree extends D3Visualization {
 
     nodeMerge.select("text").each(function (this: d3.BaseType, d: TreeNode) {
       if (d.data.id === 0) return;
-      const isLeaf = !d.children?.length && !d._children?.length;
+      const hasChildren = d.children && d.children.length > 0;
+      const isLeaf = !hasChildren;
       const placeRight = isLeaf || d.collapsed;
-      if (placeRight !== d._placeRight) {
-        d._placeRight = placeRight;
-        d3.select(this)
-          .attr("x", placeRight ? 9 : -9)
-          .attr("text-anchor", placeRight ? "start" : "end");
-      }
+
+      d._placeRight = placeRight;
+      d3.select(this)
+        .attr("x", placeRight ? 9 : -9)
+        .attr("text-anchor", placeRight ? "start" : "end");
+
       const maxPx = placeRight ? maxLabelWidthRight : maxLabelWidthLeft;
       const truncated = truncateEnter(d._fullLabel ?? d.data.name, maxPx);
       if (truncated !== d._label) {
@@ -328,83 +385,104 @@ export class D3Tree extends D3Visualization {
       }
     });
 
-    // transition the merged nodes
-    nodeMerge
-      .transition()
-      .duration(currentDuration)
-      .attr("transform", (d: TreeNode) => `translate(${String(d.y)},${String(d.x)})`)
-      .attr("fill-opacity", 1)
-      .attr("stroke-opacity", 1);
+    nodeMerge.select<SVGTextElement>("text").attr("stroke-width", 3);
 
-    (nodeSel.exit() as unknown as d3.Selection<SVGGElement, TreeNode, null, undefined>)
-      .transition()
-      .duration(currentDuration)
-      .remove()
-      .attr("transform", () => `translate(${String(src.y)},${String(src.x)})`)
-      .attr("fill-opacity", 0)
-      .attr("stroke-opacity", 0);
+    nodeMerge
+      .select<SVGCircleElement>("circle")
+      .attr("fill", (d: TreeNode) => (d.data.id === 0 ? themeColors.accent : this.getNodeFill(d)));
+
+    if (useTransition) {
+      nodeMerge
+        .transition(transitionName)
+        .duration(currentDuration)
+        .attr("transform", (d: TreeNode) => `translate(${String(d.y)},${String(d.x)})`)
+        .attr("fill-opacity", 1)
+        .attr("stroke-opacity", 1);
+
+      (nodeSel.exit() as unknown as d3.Selection<SVGGElement, TreeNode, null, undefined>)
+        .transition(transitionName)
+        .duration(currentDuration)
+        .remove()
+        .attr("transform", () => `translate(${String(src.y)},${String(src.x)})`)
+        .attr("fill-opacity", 0)
+        .attr("stroke-opacity", 0);
+    } else {
+      nodeMerge
+        .attr("transform", (d: TreeNode) => `translate(${String(d.y)},${String(d.x)})`)
+        .attr("fill-opacity", 1)
+        .attr("stroke-opacity", 1);
+
+      (nodeSel.exit() as unknown as d3.Selection<SVGGElement, TreeNode, null, undefined>).remove();
+    }
 
     const linkSel = this.gLink
-      .selectAll<SVGPathElement, d3.HierarchyPointLink<Taxon>>("path")
-      .data(links as d3.HierarchyLink<Taxon>[], (d) => d.target.data.id);
+      .selectAll<SVGPathElement, d3.HierarchyPointLink<LeanTaxon>>("path")
+      .data(links as d3.HierarchyLink<LeanTaxon>[], (d) => d.target.data.id);
 
     const linkEnter = linkSel
       .enter()
       .append("path")
       .attr("d", () => {
-        const o = { x: src.x0, y: src.y0 } as d3.HierarchyPointNode<Taxon>;
+        const o = { x: src.x0, y: src.y0 } as d3.HierarchyPointNode<LeanTaxon>;
         return this.diagonal({ source: o, target: o });
       });
 
-    (
+    const linkMerged = (
       linkSel as unknown as d3.Selection<
         SVGPathElement,
-        d3.HierarchyPointLink<Taxon>,
+        d3.HierarchyPointLink<LeanTaxon>,
         null,
         undefined
       >
-    )
-      .merge(
-        linkEnter as unknown as d3.Selection<
-          SVGPathElement,
-          d3.HierarchyPointLink<Taxon>,
-          null,
-          undefined
-        >,
-      )
-      .transition()
-      .duration(currentDuration)
-      .attr("d", (l: d3.HierarchyPointLink<Taxon>) => this.diagonal(l));
-
-    (
-      linkSel.exit() as unknown as d3.Selection<
+    ).merge(
+      linkEnter as unknown as d3.Selection<
         SVGPathElement,
-        d3.HierarchyPointLink<Taxon>,
+        d3.HierarchyPointLink<LeanTaxon>,
         null,
         undefined
-      >
-    )
-      .transition()
-      .duration(currentDuration)
-      .remove()
-      .attr("d", () => {
-        const o = { x: src.x ?? 0, y: src.y ?? 0 } as d3.HierarchyPointNode<Taxon>;
-        return this.diagonal({ source: o, target: o });
-      });
+      >,
+    );
+
+    if (useTransition) {
+      linkMerged
+        .transition(transitionName)
+        .duration(currentDuration)
+        .attr("d", (l: d3.HierarchyPointLink<LeanTaxon>) => this.diagonal(l));
+    } else {
+      linkMerged.attr("d", (l: d3.HierarchyPointLink<LeanTaxon>) => this.diagonal(l));
+    }
+
+    const linkExit = linkSel.exit() as unknown as d3.Selection<
+      SVGPathElement,
+      d3.HierarchyPointLink<LeanTaxon>,
+      null,
+      undefined
+    >;
+    if (useTransition) {
+      linkExit
+        .transition(transitionName)
+        .duration(currentDuration)
+        .remove()
+        .attr("d", () => {
+          const o = { x: src.x ?? 0, y: src.y ?? 0 } as d3.HierarchyPointNode<LeanTaxon>;
+          return this.diagonal({ source: o, target: o });
+        });
+    } else {
+      linkExit.remove();
+    }
 
     (this.root as unknown as TreeNode).eachBefore((d: TreeNode) => {
       d.x0 = d.x;
       d.y0 = d.y;
     });
 
-    // Pulsing animation for virtual root
     const virtualRoot = nodeMerge.filter((d: TreeNode) => d.data.id === 0);
     if (!virtualRoot.empty()) {
       const elementsToAnimate = virtualRoot.selectAll("circle, path");
-
       function pulse() {
+        const pulseTransition1 = `d3tree-pulse1-${Date.now().toString()}`;
         elementsToAnimate
-          .transition()
+          .transition(pulseTransition1)
           .duration(1000)
           .attr("transform", "scale(1.15)")
           .transition()
@@ -420,26 +498,7 @@ export class D3Tree extends D3Visualization {
     return Promise.resolve();
   }
 
-  // Collapse or expand node
-  protected async handleOnClick(event: MouseEvent, datum: TreeNode): Promise<void> {
-    if (datum.data.id === 0) {
-      return this.upRoot();
-    }
-    datum.collapsed = !datum.collapsed;
-    await this.update(event, datum);
-  }
-
-  public toggleNodeById(id: number): TreeNode | null {
-    if (!this.root) {
-      return null;
-    }
-    const all = (this.root as unknown as d3.HierarchyNode<Taxon>).descendants() as TreeNode[];
-    const node = all.find((d) => d.data.id === id) ?? null;
-    if (!node) {
-      return null;
-    }
-    node.collapsed = !node.collapsed;
-    void this.update(undefined, node, 180);
-    return node;
+  protected async handleOnClick(_event: MouseEvent, _datum: TreeNode): Promise<void> {
+    return Promise.resolve();
   }
 }

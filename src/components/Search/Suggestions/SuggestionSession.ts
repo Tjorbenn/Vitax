@@ -8,7 +8,7 @@ export class SuggestionSession {
   public endReached = false;
   private requestId = 0;
   readonly term: string;
-  private readonly pageSize: number = import.meta.env.VITAX_SUGGESTIONS_PAGESIZE as number;
+  private readonly pageSize: number = Number(import.meta.env.VITAX_SUGGESTIONS_PAGESIZE) || 10;
 
   constructor(term: string) {
     this.term = term;
@@ -18,11 +18,11 @@ export class SuggestionSession {
   get size() {
     return this.suggestionsMap.size;
   }
-  get suggestions(): Set<Suggestion> {
-    return new Set(this.suggestionsMap.values());
+  get suggestions(): Suggestion[] {
+    return Array.from(this.suggestionsMap.values());
   }
 
-  async start(): Promise<Set<Suggestion>> {
+  async start(): Promise<Suggestion[]> {
     const current = ++this.requestId;
     this.loading = true;
     try {
@@ -31,7 +31,7 @@ export class SuggestionSession {
         return this.suggestions;
       }
       this.addUnique(results);
-      if (results.size < this.pageSize) {
+      if (results.length < this.pageSize) {
         this.endReached = true;
       }
       return this.suggestions;
@@ -47,7 +47,7 @@ export class SuggestionSession {
     }
   }
 
-  async loadMore(): Promise<Set<Suggestion>> {
+  async loadMore(): Promise<Suggestion[]> {
     if (this.loading || this.endReached) {
       return this.suggestions;
     }
@@ -61,7 +61,7 @@ export class SuggestionSession {
       const before = this.suggestionsMap.size;
       this.addUnique(page);
       const added = this.suggestionsMap.size - before;
-      if (page.size < this.pageSize || added === 0) {
+      if (page.length < this.pageSize || added === 0) {
         this.endReached = true;
       }
       return this.suggestions;
@@ -77,7 +77,7 @@ export class SuggestionSession {
     }
   }
 
-  private addUnique(items: Set<Suggestion>) {
+  private addUnique(items: Suggestion[]) {
     for (const s of items) {
       if (!this.suggestionsMap.has(s.id)) {
         this.suggestionsMap.set(s.id, s);

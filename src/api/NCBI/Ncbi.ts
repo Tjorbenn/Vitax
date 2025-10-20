@@ -1,22 +1,21 @@
+/**
+ * # NCBI API
+ *
+ * The NCBI hosts a couple of Web APIs itself, including an API for taxonomy data.
+ * Vitax uses the NCBI Taxonomy API to fetch links to external resources for a given taxon.
+ * This `#gls(esm)`{=typst} provides a base abstraction for making requests to the NCBI Taxonomy API.
+ */
+
+/**
+ * The NCBI Taxonomy API is available at the endpoint we defined in the `taxonomyBaseUrl` constant.
+ */
+
 const taxonomyBaseUrl = "https://api.ncbi.nlm.nih.gov/datasets/v2/taxonomy/";
 
-export enum ImageFormat {
-  Jpeg = "jpeg",
-  Png = "png",
-  Tiff = "tiff",
-}
-
-export enum ImageSize {
-  Unspecified = "UNSPECIFIED",
-  Small = "SMALL",
-  Medium = "MEDIUM",
-}
-
-export enum LinkSource {
-  Wikipedia = "wikipedia",
-  GBIF = "global_biodiversity_information_facility",
-  ViralZone = "viralzone",
-}
+/**
+ * To handle the responses from the NCBI Taxonomy API in a type-safe manner, we define a `LinkResponse` type.
+ * The `LinkResponse` type represents the structure of the response from the NCBI Taxonomy API for a given taxon ID.
+ */
 
 export type LinkResponse = {
   tax_id: number;
@@ -33,39 +32,21 @@ export type LinkResponse = {
   ];
 };
 
-export async function imageRequest(
-  taxonId: number,
-  format: ImageFormat = ImageFormat.Jpeg,
-  size?: ImageSize,
-): Promise<HTMLImageElement | null> {
-  const url = new URL(`taxon/${taxonId.toString()}/image`, taxonomyBaseUrl);
-  if (size) {
-    url.searchParams.set("image_size", size);
-  }
-  const options: RequestInit = {
-    method: "GET",
-    headers: {
-      Accept: `image/${format}`,
-    },
-  };
+/**
+ * Only a couple of the available link sources of the NCBI Taxonomy API are relevant for providing additional information about a taxon and are available for most taxa.
+ * We define these in the `LinkSource` enum, which is used to filter the response.
+ */
 
-  try {
-    const response = await fetch(url, options);
-    if (!response.ok) return null;
-
-    const contentType = response.headers.get("content-type") ?? "";
-    if (!contentType.startsWith("image/")) {
-      return null;
-    }
-
-    const blob = await response.blob();
-    const imgElement = document.createElement("img");
-    imgElement.src = URL.createObjectURL(blob);
-    return imgElement;
-  } catch {
-    return null;
-  }
+export enum LinkSource {
+  Wikipedia = "wikipedia",
+  GBIF = "global_biodiversity_information_facility",
+  ViralZone = "viralzone",
 }
+
+/**
+ * For the actual request to the NCBI Taxonomy API, we define the `linksRequest` function.
+ * It takes the taxon ID as an argument and returns a promise that resolves to a `LinkResponse` object.
+ */
 
 export async function linksRequest(taxonId: number): Promise<LinkResponse> {
   const url = new URL(`taxon/${taxonId.toString()}/links`, taxonomyBaseUrl);

@@ -1,0 +1,85 @@
+<div class="border-base-300/50 overflow-x-auto rounded-xl border">
+  <table id="genomes-table" class="table-sm table align-middle">
+    <thead class="bg-primary text-primary-content sticky top-0 z-10">
+      <tr class="border-primary/40 border-b">
+        <th
+          scope="col"
+          class="text-primary-content py-2 text-left text-xs font-semibold tracking-wide uppercase sm:text-sm"
+        >
+          Level
+        </th>
+        <th
+          scope="col"
+          class="text-primary-content py-2 text-center text-xs font-semibold tracking-wide uppercase sm:text-sm"
+        >
+          Direct
+        </th>
+        <th
+          scope="col"
+          class="text-primary-content py-2 text-center text-xs font-semibold tracking-wide uppercase sm:text-sm"
+        >
+          Recursive
+        </th>
+      </tr>
+    </thead>
+    <tbody id="genomes-body">
+      <tr>
+        <th class="capitalize"><div class="skeleton h-4 w-20"></div></th>
+        <td class="text-center"><div class="skeleton mx-auto h-4 w-10"></div></td>
+        <td class="text-center"><div class="skeleton mx-auto h-4 w-10"></div></td>
+      </tr>
+      <tr>
+        <th class="capitalize"><div class="skeleton h-4 w-24"></div></th>
+        <td class="text-center"><div class="skeleton mx-auto h-4 w-10"></div></td>
+        <td class="text-center"><div class="skeleton mx-auto h-4 w-10"></div></td>
+      </tr>
+    </tbody>
+    <tfoot>
+      <tr>
+        <td class="text-start">
+          <label
+            title="Switch file type"
+            class="swap swap-rotate text-accent tooltip tooltip-right drop-shadow"
+            data-tip="Switch file type (TSV/CSV)"
+          >
+            <input id="accessions-filetype" type="checkbox" class="swap-toggle" />
+            <span class="swap-off badge badge-sm badge-accent">TSV</span>
+            <span class="swap-on badge badge-sm badge-accent">CSV</span>
+          </label>
+        </td>
+        <td class="text-center">
+          <div class="inline-flex items-center justify-center gap-2">
+            <span id="accessions-total-direct" class="badge badge-outline" title="Summe Direkt"
+              >-</span
+            >
+            <button
+              class="btn btn-sm btn-outline btn-primary animated bounce"
+              id="accessions-download-direct"
+            >
+              <span
+                class="icon-[material-symbols--download-rounded]"
+                style="width: 1.25em; height: 1.25em"
+              ></span>
+            </button>
+          </div>
+        </td>
+        <td class="text-center">
+          <div class="inline-flex items-center justify-center gap-2">
+            <span id="accessions-total-recursive" class="badge badge-outline" title="Summe Rekursiv"
+              >-</span
+            >
+            <button
+              class="btn btn-sm btn-outline btn-secondary animated bounce"
+              id="accessions-download-recursive"
+            >
+              <span
+                class="icon-[material-symbols--download-rounded]"
+                style="width: 1.25em; height: 1.25em"
+              ></span>
+            </button>
+          </div>
+        </td>
+      </tr>
+    </tfoot>
+  </table>
+</div>

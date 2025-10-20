@@ -1,31 +1,26 @@
-import { State } from "../../../core/State";
+import * as State from "../../../core/State";
 import { TaxonomyType } from "../../../types/Application";
 import { BaseComponent } from "../../BaseComponent";
 import HTMLtemplate from "./TaxonomyTypeTemplate.html?raw";
 
 export class TaxonomyTypeComponent extends BaseComponent {
-  private button?: HTMLButtonElement;
-  private label?: HTMLSpanElement;
-  private list?: HTMLUListElement;
-  private state: State = State.instance;
+  private button!: HTMLButtonElement;
+  private label!: HTMLSpanElement;
+  private list!: HTMLUListElement;
 
   constructor() {
     super(HTMLtemplate);
     this.loadTemplate();
 
-    this.state.subscribeToTaxonomyType(this.onChange.bind(this));
+    this.addSubscription(State.subscribeToTaxonomyType(this.onChange.bind(this)));
   }
 
   initialize(): void {
-    this.list = this.querySelector("#taxonomy-type-popover") ?? undefined;
-    this.button = this.querySelector("#taxonomy-type-button") ?? undefined;
-    this.label = this.querySelector("#taxonomy-type-label") ?? undefined;
+    this.list = requireElement<HTMLUListElement>(this, "#taxonomy-type-popover");
+    this.button = requireElement<HTMLButtonElement>(this, "#taxonomy-type-button");
+    this.label = requireElement<HTMLSpanElement>(this, "#taxonomy-type-label");
 
-    if (!this.list || !this.button || !this.label) {
-      throw new Error("List, button or label element not found");
-    }
-
-    const currentType = this.state.taxonomyType;
+    const currentType = State.getTaxonomyType();
 
     Object.values(TaxonomyType).forEach((type) => {
       const item = document.createElement("li");
@@ -48,26 +43,25 @@ export class TaxonomyTypeComponent extends BaseComponent {
       anchor.addEventListener("click", this.onClick.bind(this));
 
       item.appendChild(anchor);
-      this.list?.appendChild(item);
+      this.list.appendChild(item);
     });
   }
 
   public open() {
-    this.list?.classList.remove("hidden");
-    this.list?.setAttribute("data-open", "true");
-    this.list?.setAttribute("aria-hidden", "false");
-    this.button?.setAttribute("aria-expanded", "true");
+    this.list.classList.remove("hidden");
+    this.list.setAttribute("data-open", "true");
+    this.list.setAttribute("aria-hidden", "false");
+    this.button.setAttribute("aria-expanded", "true");
   }
 
   public close() {
-    this.list?.classList.add("hidden");
-    this.list?.removeAttribute("data-open");
-    this.list?.setAttribute("aria-hidden", "true");
-    this.button?.setAttribute("aria-expanded", "false");
+    this.list.classList.add("hidden");
+    this.list.removeAttribute("data-open");
+    this.list.setAttribute("aria-hidden", "true");
+    this.button.setAttribute("aria-expanded", "false");
   }
 
   public toggle() {
-    if (!this.list) return;
     if (this.list.classList.contains("hidden")) {
       this.open();
     } else {
@@ -75,17 +69,16 @@ export class TaxonomyTypeComponent extends BaseComponent {
     }
   }
 
-  private addStatus(anchor: HTMLAnchorElement) {
-    if (anchor.querySelector(".status")) {
-      return;
-    }
-    const status = document.createElement("div");
-    status.ariaLabel = "status";
-    status.classList.add("status", "status-primary");
+  private addStatus(anchor: HTMLElement): void {
+    // Remove existing status if present to avoid duplicates
+    this.removeStatus(anchor as HTMLAnchorElement);
+
+    const status = document.createElement("span");
+    status.classList.add("status", "status-success", "pointer-events-none");
     anchor.appendChild(status);
   }
 
-  private removeStatus(anchor: HTMLAnchorElement) {
+  private removeStatus(anchor: HTMLAnchorElement): void {
     const status = anchor.querySelector(".status");
     if (status) {
       status.remove();
@@ -97,12 +90,11 @@ export class TaxonomyTypeComponent extends BaseComponent {
       throw new Error("Taxonomy type not found");
     }
 
-    if (!this.list || !this.label) {
-      throw new Error("List or label element not found");
+    if (type === TaxonomyType.MRCA) {
+      this.label.textContent = type.toUpperCase();
+    } else {
+      this.label.textContent = type;
     }
-
-    this.label.textContent = type;
-
     const items = this.list.querySelectorAll("li a") as NodeListOf<HTMLAnchorElement>;
     items.forEach((item) => {
       if ((item.dataset.type as TaxonomyType) === type) {
@@ -117,10 +109,7 @@ export class TaxonomyTypeComponent extends BaseComponent {
 
   private onClick(event: MouseEvent) {
     const item = event.target as HTMLLIElement;
-    if (!this.list) {
-      throw new Error("List not found");
-    }
-    this.state.taxonomyType = item.dataset.type as TaxonomyType;
+    State.setTaxonomyType(item.dataset.type as TaxonomyType);
     this.list.hidePopover();
   }
 }

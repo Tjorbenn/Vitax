@@ -1,6 +1,39 @@
-import { Rank } from "./Taxonomy";
+import { LinkSource } from "../api/NCBI/Ncbi";
+import { Rank, type TaxonImage } from "./Taxonomy";
 
-export const RankIcons: Record<Rank, string> = {
+export type IconClass = string;
+
+export class Icon extends HTMLSpanElement {
+  private class: IconClass;
+  private size = "2em";
+
+  constructor(iconClass: IconClass, size?: string) {
+    super();
+    this.class = iconClass;
+    if (size) {
+      this.size = size;
+    }
+    this.initialize();
+  }
+
+  private initialize(): void {
+    this.className = this.class;
+    this.style.width = this.size;
+    this.style.height = this.size;
+  }
+
+  public set iconClass(iconClass: IconClass) {
+    this.class = iconClass;
+    this.initialize();
+  }
+
+  public set iconSize(size: string) {
+    this.size = size;
+    this.initialize();
+  }
+}
+
+export const RankIcons: Record<Rank, IconClass> = {
   [Rank.None]: "icon-[material-symbols--question-mark-rounded]",
   [Rank.Unknown]: "icon-[material-symbols--question-mark-rounded]",
   [Rank.Domain]: "icon-[material-symbols--domain-rounded]",
@@ -30,21 +63,41 @@ export const RankIcons: Record<Rank, string> = {
   [Rank.Section]: "icon-[material-symbols--area-chart-rounded]",
 };
 
-export function getRankIcon(rank?: string | Rank): string {
-  const defaultIcon = RankIcons[Rank.None];
-  if (!rank) return defaultIcon;
+export const LinkSourceIcons: Record<LinkSource, IconClass> = {
+  [LinkSource.Wikipedia]: "icon-[simple-icons--wikipedia]",
+  [LinkSource.GBIF]: "icon-[material-symbols--nest-eco-leaf-rounded]",
+  [LinkSource.ViralZone]: "icon-[material-symbols--coronavirus]",
+};
 
-  if ((rank as Rank) in RankIcons) {
-    return RankIcons[rank as Rank];
+export function getRankIcon(rank?: string | Rank, size = "2em"): Icon {
+  const createIcon = (iconClass: IconClass): Icon => {
+    const icon = document.createElement("span", { is: "vitax-icon" }) as Icon;
+    icon.iconClass = iconClass;
+    icon.iconSize = size;
+    return icon;
+  };
+
+  if (!rank) {
+    return createIcon(RankIcons[Rank.Unknown]);
   }
 
-  const normalized = (rank as string).toLowerCase().trim();
-
-  for (const r of Object.values(Rank)) {
-    if (r.toLowerCase() === normalized) {
-      return RankIcons[r as Rank];
-    }
-  }
-
-  return defaultIcon;
+  const input = (typeof rank === "string" ? rank : String(rank)).toLowerCase();
+  // Lookup-Map: value->Rank und key->Rank jeweils lowercase
+  const valueToRank: Record<string, Rank> = {};
+  const keyToRank: Record<string, Rank> = {};
+  (Object.keys(Rank) as (keyof typeof Rank)[]).forEach((k) => {
+    const value = Rank[k];
+    keyToRank[k.toLowerCase()] = value as unknown as Rank;
+    valueToRank[(value as unknown as string).toLowerCase()] = value as unknown as Rank;
+  });
+  const hit = valueToRank[input] ?? keyToRank[input] ?? Rank.Unknown;
+  return createIcon(RankIcons[hit]);
 }
+
+export function ImageToElement(image: TaxonImage): HTMLImageElement {
+  const imageEl = document.createElement("img");
+  imageEl.src = image.url.toString();
+  return imageEl;
+}
+
+customElements.define("vitax-icon", Icon, { extends: "span" });

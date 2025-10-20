@@ -1,4 +1,4 @@
-import { State } from "../../../core/State.ts";
+import * as State from "../../../core/State.ts";
 import { remove as removeAnimated, toggleState } from "../../../features/DisplayAnimations.ts";
 import { type Suggestion, SuggestionToTaxon, TaxaToSuggestions } from "../../../types/Application";
 import { Taxon } from "../../../types/Taxonomy";
@@ -6,9 +6,8 @@ import { BaseComponent } from "../../BaseComponent";
 import HTMLtemplate from "./SelectionTemplate.html?raw";
 
 export class SelectionComponent extends BaseComponent {
-  private state: State = State.instance;
-  private container?: HTMLDivElement;
-  private _keepOpenOnBlur = false; // Placeholder für Konsistenz mit SearchComponent
+  private container!: HTMLDivElement;
+  private _keepOpenOnBlur = false;
 
   public get keepOpenOnBlur(): boolean {
     return this._keepOpenOnBlur;
@@ -39,45 +38,37 @@ export class SelectionComponent extends BaseComponent {
   }
 
   initialize(): void {
-    this.container = this.querySelector("#selection-container") ?? undefined;
-    this.state.subscribeToQuery((query) => void this.onChange(query));
-
-    if (!this.container) {
-      throw new Error("Selection container is not defined");
-    }
+    this.container = requireElement<HTMLDivElement>(this, "#selection-container");
+    this.addSubscription(State.subscribeToQuery((query) => void this.onChange(query)));
   }
 
-  public async onChange(query: Set<Taxon>) {
+  public async onChange(query: Taxon[]) {
     await this.setVisibility();
     this.updateBadges(query);
   }
 
   public addSelection(suggestion: Suggestion): void {
     if (
-      !this.state.query.find((s) => {
+      !State.getQuery().find((s) => {
         return s.id === suggestion.id;
       })
     ) {
-      this.state.addToQuery(SuggestionToTaxon(suggestion));
+      State.addToQuery(SuggestionToTaxon(suggestion));
     }
   }
 
   private removeSelection(taxon: Taxon): void {
-    this.state.removeFromQuery(taxon);
+    State.removeFromQuery(taxon);
     this.removeBadge(taxon.id);
   }
 
   private async setVisibility(): Promise<void> {
-    await toggleState(this, this.state.query.size > 0);
+    await toggleState(this, State.getQuery().length > 0);
   }
 
   // Adds new Badges for Taxons that are not yet present and removes all badges of taxons that are not in the query anymore
-  private updateBadges(query: Set<Taxon>) {
+  private updateBadges(query: Taxon[]) {
     const querySuggestions = TaxaToSuggestions(query);
-
-    if (!this.container) {
-      throw new Error("Selection container is not defined");
-    }
 
     const currentBadges = this.container.querySelectorAll(".badge") as NodeListOf<HTMLSpanElement>;
 
@@ -103,10 +94,6 @@ export class SelectionComponent extends BaseComponent {
   }
 
   private createBadge(suggestion: Suggestion): void {
-    if (!this.container) {
-      throw new Error("Selection container is not defined");
-    }
-
     const badge = document.createElement("span");
     const nameSpan = document.createElement("span");
     const idSpan = document.createElement("span");
@@ -138,10 +125,6 @@ export class SelectionComponent extends BaseComponent {
   }
 
   private removeBadge(id: number): void {
-    if (!this.container) {
-      throw new Error("Selection container is not defined");
-    }
-
     const badge = this.container.querySelector(`.badge[data-id="${String(id)}"]`);
     if (badge) {
       void removeAnimated(badge as HTMLElement);
@@ -157,7 +140,7 @@ export class SelectionComponent extends BaseComponent {
       throw new Error("Selection is missing name or id");
     }
 
-    const taxon = this.state.query.find((s) => {
+    const taxon = State.getQuery().find((s) => {
       return s.name === name && s.id === parseInt(id);
     });
     if (taxon) {

@@ -48,31 +48,44 @@ export enum GenomeLevel {
   Contig = "contig",
 }
 
+export type LeanTaxon = {
+  id: number;
+  name: string;
+  children: LeanTaxon[];
+  hasSelfReference?: boolean;
+};
+
+export type TaxonImage = {
+  url: URL;
+  attribution: string;
+};
+
 export class Taxon {
   public id: number;
   public name: string;
   public commonName?: string;
   public isLeaf?: boolean;
-  private _accessions: Set<Accession>;
+  private _accessions: Accession[];
   public rank?: string | Rank;
   public parentId?: number;
   public parent?: Taxon;
-  public children: Set<Taxon>;
+  public children: Taxon[];
   public genomeCount?: GenomeCount;
   public genomeCountRecursive?: GenomeCount;
+  public images?: TaxonImage[];
 
   constructor(id: number, name: string) {
     this.id = id;
     this.name = name;
-    this.children = new Set();
-    this._accessions = new Set();
+    this.children = [];
+    this._accessions = [];
   }
 
   public setParent(parent: Taxon): this {
     this.parent = parent;
     this.parentId = parent.id;
-    if (!this.parent.children.has(this)) {
-      this.parent.children.add(this);
+    if (!this.parent.children.some((c) => c.id === this.id)) {
+      this.parent.children.push(this);
     }
     return this;
   }
@@ -86,17 +99,17 @@ export class Taxon {
   }
 
   public hasChildWithId(childId: number): boolean {
-    if (this.children.size === 0) {
+    if (this.children.length === 0) {
       return false;
     }
-    return Array.from(this.children).some((c) => c.id === childId);
+    return this.children.some((c) => c.id === childId);
   }
 
   public hasChild(child: Taxon): boolean {
     return this.hasChildWithId(child.id);
   }
 
-  public setChildren(children: Set<Taxon>): this {
+  public setChildren(children: Taxon[]): this {
     this.children = children;
     children.forEach((child) => {
       return child.setParent(this);
@@ -105,44 +118,70 @@ export class Taxon {
   }
 
   public addChild(child: Taxon): this {
-    this.children.add(child);
+    if (!this.children.some((c) => c.id === child.id)) {
+      this.children.push(child);
+    }
     if (!child.hasParent(this)) {
       child.setParent(this);
     }
     return this;
   }
 
-  public addChildren(children: Set<Taxon>): this {
+  public addChildren(children: Taxon[]): this {
     children.forEach((child) => {
       return this.addChild(child);
     });
     return this;
   }
 
-  public get directAccessions(): Set<Accession> {
-    const accessions = new Set<Accession>();
-
-    this._accessions.forEach((acc) => {
-      if (acc.taxid === this.id) {
-        accessions.add(acc);
-      }
-    });
-    return accessions;
+  public get directAccessions(): Accession[] {
+    return this._accessions.filter((acc) => acc.taxid === this.id);
   }
 
-  public get recursiveAccessions(): Set<Accession> {
+  public get recursiveAccessions(): Accession[] {
     return this._accessions;
   }
 
-  public set accessions(accessions: Set<Accession>) {
+  public set accessions(accessions: Accession[]) {
     this._accessions = accessions;
   }
 
-  public addAccessions(accessions: Set<Accession>): this {
+  public addAccessions(accessions: Accession[]): this {
     accessions.forEach((acc) => {
-      this._accessions.add(acc);
+      if (!this._accessions.some((a) => a.accession === acc.accession)) {
+        this._accessions.push(acc);
+      }
     });
     return this;
+  }
+
+  public get randomImage(): TaxonImage | undefined {
+    if (!this.images || this.images.length === 0) {
+      return;
+    }
+    return this.images[Math.floor(Math.random() * this.images.length)];
+  }
+
+  public get lean(): LeanTaxon {
+    const hasSelfRef = this.hasSelfReference;
+    return {
+      id: this.id,
+      name: this.name,
+      // Filter out self-references (e.g., root taxon that has itself as a child)
+      children: this.children.filter((c) => c.id !== this.id).map((c) => c.lean) as LeanTaxon[],
+      hasSelfReference: hasSelfRef || undefined,
+    };
+  }
+
+  public get hasSelfReference(): boolean {
+    return this.children.some((c) => c.id === this.id) || this.parentId === this.id;
+  }
+
+  public get hasRecursiveGenomes(): boolean {
+    if (!this.genomeCountRecursive) {
+      return false;
+    }
+    return Object.values(this.genomeCountRecursive).some((count) => count > 0);
   }
 }
 
@@ -163,6 +202,10 @@ export class TaxonomyTree {
     return this.taxonMap.getAll();
   }
 
+  public toArray(): Taxon[] {
+    return this.taxonMap.getAllAsArray();
+  }
+
   public findTaxonById(id: number): Taxon | undefined {
     return this.taxonMap.getById(id);
   }
@@ -176,9 +219,9 @@ export class TaxonomyTree {
   }
 
   private buildTaxonMap(root: Taxon): IndexedTaxa {
-    const taxa = new Set<Taxon>();
+    const taxa: Taxon[] = [];
     const traverse = (taxon: Taxon) => {
-      taxa.add(taxon);
+      taxa.push(taxon);
       taxon.children.forEach((child) => {
         traverse(child);
       });
@@ -192,7 +235,7 @@ export class IndexedTaxa {
   private idMap: Map<number, Taxon>;
   private nameMap: Map<string, Taxon>;
 
-  constructor(taxa: Set<Taxon>) {
+  constructor(taxa: Taxon[]) {
     this.idMap = new Map();
     this.nameMap = new Map();
     for (const taxon of taxa) {
@@ -217,6 +260,10 @@ export class IndexedTaxa {
     return new Set(this.idMap.values());
   }
 
+  public getAllAsArray(): Taxon[] {
+    return Array.from(this.idMap.values());
+  }
+
   public getById(id: number): Taxon | undefined {
     return this.idMap.get(id);
   }
@@ -234,8 +281,8 @@ export class IndexedTaxa {
  * @returns A TaxonomyTree with the root taxon and its children populated.
  * @throws Will throw an error if the taxa array is empty or if no root taxon is found.
  */
-export function TaxaToTree(taxa: Set<Taxon>): TaxonomyTree {
-  if (taxa.size === 0) {
+export function TaxaToTree(taxa: Taxon[]): TaxonomyTree {
+  if (taxa.length === 0) {
     throw new Error("Cannot create tree from empty taxa array.");
   }
 
@@ -248,16 +295,14 @@ export function TaxaToTree(taxa: Set<Taxon>): TaxonomyTree {
     );
   });
   if (!root) {
-    throw new Error("No root taxon found in: " + JSON.stringify(Array.from(taxa)));
+    throw new Error("No root taxon found in: " + JSON.stringify(taxa));
   }
 
   for (const taxon of taxa) {
     taxon.addChildren(
-      new Set(
-        taxa.filter((child) => {
-          return child.parentId === taxon.id;
-        }),
-      ),
+      taxa.filter((child) => {
+        return child.parentId === taxon.id;
+      }),
     );
   }
 

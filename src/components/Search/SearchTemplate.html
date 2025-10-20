@@ -7,16 +7,28 @@
       id="search-input-label"
       class="input join-item bg-base-100/40 grow border-none !shadow-none backdrop-blur-sm focus-within:outline-none"
     >
-      <span class="icon-[material-symbols--search-rounded] text-[1.5em]"></span>
+      <span
+        class="icon-[material-symbols--search-rounded]"
+        style="width: 1.5em; height: 1.5em"
+      ></span>
       <input type="search" id="search-input" placeholder="Search taxa..." />
-      <div>
+      <div class="hidden md:flex">
         <kbd class="kbd kbd-sm bg-accent text-accent-content">CTRL</kbd>
         +
         <kbd class="kbd kbd-sm bg-accent text-accent-content">K</kbd>
       </div>
     </label>
-    <button id="visualize-button" type="submit" class="btn btn-primary join-item border-none">
-      Visualize
+    <button
+      id="visualize-button"
+      type="submit"
+      class="btn btn-primary join-item tooltip tooltip-left md:tooltip-right border-none"
+    >
+      <span id="visualize-text" class="hidden md:inline">Visualize</span>
+      <span
+        id="visualize-icon"
+        class="icon-[material-symbols--account-tree-rounded] md:hidden"
+        style="width: 1.5em; height: 1.5em"
+      ></span>
     </button>
   </fieldset>
   <section

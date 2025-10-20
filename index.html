@@ -11,45 +11,54 @@
     <main class="relative h-full w-full">
       <div
         id="menu-overlay"
-        class="pointer-events-none relative z-10 flex h-full w-full flex-col justify-between gap-6 p-6"
+        class="pointer-events-none relative z-10 flex h-full w-full flex-col justify-between gap-3 p-3 md:gap-6 md:p-6"
       >
         <header
           id="menu-header"
-          class="relative grid h-fit w-full grid-cols-[1fr_minmax(0,2fr)_1fr] items-center gap-4"
+          class="relative flex h-fit w-full flex-col items-center gap-2 md:grid md:grid-cols-[1fr_minmax(0,2fr)_1fr] md:gap-4"
         >
           <vitax-title
-            class="card card-xs card-border bg-base-100/40 bounce animated pointer-events-auto justify-self-start shadow-lg backdrop-blur-sm"
+            class="card card-xs card-border bg-base-100/40 bounce animated pointer-events-auto hidden cursor-pointer justify-self-start shadow-lg backdrop-blur-sm md:block"
           ></vitax-title>
           <vitax-search class="pointer-events-auto w-full justify-self-center"></vitax-search>
           <vitax-theme
-            class="card card-xs card-border bg-base-100/40 bounce animated tooltip tooltip-left pointer-events-auto justify-self-end shadow-lg backdrop-blur-sm"
+            class="btn btn-square bounce animated tooltip tooltip-left pointer-events-auto hidden shadow-lg md:block md:justify-self-end"
             data-tip="Toggle Light/Dark Theme"
           ></vitax-theme>
         </header>
-        <div id="menu-middle" class="flex h-full w-full flex-row items-center justify-between">
-          <vitax-list class="pointer-events-auto size-fit self-start"></vitax-list>
+        <div id="menu-middle" class="flex h-full w-full flex-row items-start justify-between">
+          <div class="flex h-full flex-col items-start justify-between">
+            <vitax-list class="pointer-events-auto hidden size-fit md:block"></vitax-list>
+            <vitax-accession-filter
+              class="btn btn-square bounce animated tooltip tooltip-right pointer-events-auto hidden shadow-lg md:block"
+              data-tip="Show only taxa with genomes"
+            ></vitax-accession-filter>
+          </div>
           <vitax-tutorial
-            class="card text-base-content/40 hover:text-base-content hover:card-border tooltip tooltip-left animated bounce hover:bg-accent pointer-events-auto mr-1 size-fit cursor-pointer self-end rounded-lg bg-none p-2 drop-shadow-lg"
+            class="hover:text-primary-content tooltip tooltip-left animated bounce hover:btn-primary btn btn-square btn-ghost pointer-events-auto hidden cursor-pointer self-start bg-none drop-shadow-lg md:block"
             data-tip="Tutorial"
           ></vitax-tutorial>
         </div>
         <footer
           id="menu-footer"
-          class="relative grid w-full grid-cols-[1fr_auto_1fr] items-center gap-4"
+          class="relative flex w-full items-center justify-center md:grid md:grid-cols-[1fr_auto_1fr] md:gap-4"
         >
           <vitax-attribution
-            class="card card-xs card-border bg-base-100/40 bounce animated pointer-events-auto justify-self-start shadow-lg backdrop-blur-sm"
+            class="card card-xs card-border bg-base-100/40 bounce animated pointer-events-auto hidden justify-self-start shadow-lg backdrop-blur-sm md:block"
           ></vitax-attribution>
           <display-type
             class="card card-xs card-border bg-base-100/40 bounce animated tooltip pointer-events-auto justify-self-center p-0 shadow-lg backdrop-blur-sm"
             data-tip="Display Type"
           ></display-type>
           <vitax-version
-            class="card card-xs card-border bg-base-100/40 bounce animated pointer-events-auto justify-self-end shadow-lg backdrop-blur-sm"
+            class="card card-xs card-border bg-base-100/40 bounce animated pointer-events-auto hidden justify-self-end shadow-lg backdrop-blur-sm md:block"
           ></vitax-version>
         </footer>
       </div>
-      <vitax-canvas class="absolute inset-0 h-full w-full"></vitax-canvas>
+      <vitax-canvas class="absolute inset-0 h-full w-full">
+        <vitax-taxon-action class="hidden"></vitax-taxon-action>
+        <taxon-modal class="hidden"></taxon-modal>
+      </vitax-canvas>
     </main>
     <vitax-welcome></vitax-welcome>
     <script type="module" src="/src/init.ts"></script>

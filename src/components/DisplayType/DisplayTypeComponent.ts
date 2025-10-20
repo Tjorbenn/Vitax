@@ -1,11 +1,10 @@
-import { State } from "../../core/State";
+import * as State from "../../core/State";
 import { VisualizationType } from "../../types/Application";
 import { BaseComponent } from "../BaseComponent";
 import HTMLtemplate from "./DisplayTypeTemplate.html?raw";
 
 export class DisplayTypeComponent extends BaseComponent {
-  private state: State = State.instance;
-  private tabs?: HTMLDivElement;
+  private tabs!: HTMLDivElement;
 
   constructor() {
     super(HTMLtemplate);
@@ -13,15 +12,11 @@ export class DisplayTypeComponent extends BaseComponent {
   }
 
   initialize(): void {
-    this.tabs = this.querySelector(".tabs") ?? undefined;
+    this.tabs = requireElement<HTMLDivElement>(this, ".tabs");
 
-    if (!this.tabs) {
-      throw new Error("Tabs container not found");
-    }
+    this.addEvent(this.tabs, "change", this.onChange.bind(this));
 
-    this.tabs.addEventListener("change", this.onChange.bind(this));
-
-    const currentDisplayType = this.state.displayType;
+    const currentDisplayType = State.getDisplayType();
     Object.values(VisualizationType).forEach((type) => {
       const radio = document.createElement("input");
       radio.type = "radio";
@@ -34,7 +29,7 @@ export class DisplayTypeComponent extends BaseComponent {
         radio.checked = true;
       }
 
-      this.tabs?.appendChild(radio);
+      this.tabs.appendChild(radio);
     });
   }
 
@@ -42,8 +37,8 @@ export class DisplayTypeComponent extends BaseComponent {
     const target = event.target as HTMLInputElement;
     if (target.name === "display-type") {
       const type = target.value as VisualizationType;
-      if (this.state.displayType !== type) {
-        this.state.displayType = type;
+      if (State.getDisplayType() !== type) {
+        State.setDisplayType(type);
       }
     }
   }

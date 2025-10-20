@@ -1,11 +1,11 @@
 import { BaseComponent } from "../BaseComponent";
 import HTMLtemplate from "./SearchTemplate.html?raw";
 
-import { Orchestrator } from "../../core/Orchestrator.ts";
-import { Router } from "../../core/Routing.ts";
-import { State } from "../../core/State.ts";
+import * as Orchestrator from "../../core/Orchestrator.ts";
+import * as Router from "../../core/Routing.ts";
+import * as State from "../../core/State.ts";
 import { SuggestionsService } from "../../services/SuggestionsService.ts";
-import { Status, type Suggestion } from "../../types/Application";
+import { Status, TaxonomyType, type Suggestion } from "../../types/Application";
 
 import "./Selection/SelectionComponent.ts";
 import { SelectionComponent } from "./Selection/SelectionComponent.ts";
@@ -14,19 +14,17 @@ import { SuggestionsComponent } from "./Suggestions/SuggestionsComponent.ts";
 import "./TaxonomyType/TaxonomyTypeComponent.ts";
 
 export class SearchComponent extends BaseComponent {
-  private input?: HTMLInputElement;
-  private button?: HTMLButtonElement;
-  private section?: HTMLElement;
-  private suggestionsComp: SuggestionsComponent = new SuggestionsComponent();
-  private selectionComp: SelectionComponent = new SelectionComponent();
-  private service: SuggestionsService = new SuggestionsService();
-  private state: State = State.instance;
-  private router: Router = Router.instance;
+  private input!: HTMLInputElement;
+  private button!: HTMLButtonElement;
+  private _buttonText!: HTMLSpanElement;
+  private _buttonIcon!: HTMLSpanElement;
+  private section!: HTMLElement;
+  private readonly suggestionsComp = new SuggestionsComponent();
+  private readonly selectionComp = new SelectionComponent();
+  private readonly service = new SuggestionsService();
 
   private debounceTimer?: number;
-  private debounceDelay: number = import.meta.env.VITAX_DEBOUNCE_TIME as number;
-
-  private orchestrator: Orchestrator = Orchestrator.instance;
+  private readonly debounceDelay = Number(import.meta.env.VITAX_DEBOUNCE_TIME) || 200;
 
   private term = "";
   private outsideListener?: (e: Event) => void;
@@ -38,24 +36,23 @@ export class SearchComponent extends BaseComponent {
   }
 
   initialize(): void {
-    this.input = this.querySelector("#search-input") ?? undefined;
-    this.button = this.querySelector("button[type=submit]") ?? undefined;
-    this.section = this.querySelector("section") ?? undefined;
+    this.input = requireElement<HTMLInputElement>(this, "#search-input");
+    this.button = requireElement<HTMLButtonElement>(this, "button[type=submit]");
+    this._buttonText = requireElement<HTMLSpanElement>(this, "#visualize-text");
+    this._buttonIcon = requireElement<HTMLSpanElement>(this, "#visualize-icon");
+    this.section = requireElement<HTMLElement>(this, "section");
 
-    if (!this.input || !this.section || !this.button) {
-      throw new Error("Missing input, section or button");
-    }
-
-    this.button.addEventListener("click", () => {
+    this.addEvent(this.button, "click", () => {
       this.onVisualize();
     });
-    this.input.addEventListener("input", () => {
+    this.addEvent(this.input, "input", () => {
       this.onInput();
     });
-    this.input.addEventListener("keydown", (e: KeyboardEvent) => {
-      void this.onKeyDown(e);
+    this.addEvent(this.input, "keydown", (e: Event) => {
+      void this.onKeyDown(e as KeyboardEvent);
     });
-    this.suggestionsComp.addEventListener(
+    this.addEvent(
+      this.suggestionsComp,
       "vitax:selectSuggestion",
       this.onSelectSuggestion.bind(this),
     );
@@ -63,13 +60,14 @@ export class SearchComponent extends BaseComponent {
     this.section.appendChild(this.selectionComp);
     this.section.appendChild(this.suggestionsComp);
 
-    this.state.subscribeToStatus(this.onStatusChange.bind(this));
+    this.addSubscription(State.subscribeToTaxonomyType(this.updateVisualizeButton.bind(this)));
+    this.addSubscription(State.subscribeToQuery(this.updateVisualizeButton.bind(this)));
+    this.addSubscription(State.subscribeToStatus(this.onStatusChange.bind(this)));
 
-    // Outside click / focus handling
     this.outsideListener = (e: Event) => {
       const target = e.target as Node | null;
       if (this._keepOpenOnBlur) {
-        return; // Auto-Close deaktiviert
+        return;
       }
       if (target && !this.contains(target)) {
         this.closeSuggestions();
@@ -77,12 +75,13 @@ export class SearchComponent extends BaseComponent {
     };
     window.addEventListener("mousedown", this.outsideListener, true);
     window.addEventListener("focusin", this.outsideListener, true);
+
+    this.updateVisualizeButton();
   }
 
   private onInput(): void {
-    const newTerm = this.input?.value.trim() ?? "";
+    const newTerm = this.input.value.trim();
 
-    // Wenn sich der Term nicht geändert hat -> ignorieren
     if (newTerm === this.term) {
       return;
     }
@@ -111,11 +110,10 @@ export class SearchComponent extends BaseComponent {
   }
 
   private onVisualize(): void {
-    if (this.state.query.size > 0) {
-      void this.orchestrator.resolveTree();
-      window.dispatchEvent(new CustomEvent("vitax:resetView"));
+    if (State.getQuery().length > 0) {
+      void Orchestrator.resolveTree();
       this.closeSuggestions();
-      this.router.updateUrl();
+      Router.updateUrl();
     }
   }
 
@@ -126,10 +124,6 @@ export class SearchComponent extends BaseComponent {
   private async onKeyDown(e: KeyboardEvent): Promise<void> {
     if (e.key === "Enter") {
       e.preventDefault();
-
-      if (!this.input) {
-        throw new Error("Input element is not defined");
-      }
 
       const term = this.input.value.trim();
       if (!term) {
@@ -151,13 +145,52 @@ export class SearchComponent extends BaseComponent {
   }
 
   public onStatusChange(status: Status): void {
-    if (!this.button) {
-      throw new Error("Button not defined");
-    }
     if (status === Status.Loading) {
       this.button.innerHTML = '<span class="loading loading-spinner"></span>';
     } else {
-      this.button.innerHTML = "Visualize";
+      this.button.innerHTML = `
+        <span id="visualize-text" class="hidden md:inline">Visualize</span>
+        <span
+          id="visualize-icon"
+          class="icon-[material-symbols--account-tree-rounded] md:hidden"
+          style="width: 1.5em; height: 1.5em"
+        ></span>
+      `;
+      this._buttonText = requireElement<HTMLSpanElement>(this, "#visualize-text");
+      this._buttonIcon = requireElement<HTMLSpanElement>(this, "#visualize-icon");
+    }
+  }
+
+  public updateVisualizeButton(): void {
+    const taxonomyType = State.getTaxonomyType();
+    const query = State.getQuery();
+
+    const singleSelectTypes = [
+      TaxonomyType.Descendants,
+      TaxonomyType.Taxon,
+      TaxonomyType.Neighbors,
+    ];
+    const multiSelectTypes: TaxonomyType[] = [];
+
+    if (
+      query.length < 1 ||
+      (singleSelectTypes.includes(taxonomyType) && query.length > 1) ||
+      (multiSelectTypes.includes(taxonomyType) && query.length < 2)
+    ) {
+      this.button.disabled = true;
+      if (query.length < 1) {
+        this.button.dataset.tip = "Select at least one taxon!";
+      } else if (singleSelectTypes.includes(taxonomyType)) {
+        this.button.dataset.tip = "Select exactly one taxon!";
+      } else if (multiSelectTypes.includes(taxonomyType)) {
+        this.button.dataset.tip = "Select at least two taxa!";
+      }
+      this.button.classList.add("tooltip-open");
+      return;
+    } else {
+      this.button.disabled = false;
+      this.button.classList.remove("tooltip-open");
+      this.button.removeAttribute("data-tip");
     }
   }
 

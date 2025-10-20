@@ -1,18 +1,20 @@
-// types
 import * as d3 from "d3";
-import type { GenomeCount, Taxon } from "../../types/Taxonomy";
+import { VisualizationType } from "../../types/Application";
+import type { LeanTaxon } from "../../types/Taxonomy";
+import { LongPressDetector } from "../../utility/TouchGestures";
 import { D3Visualization, type D3VisualizationExtents } from "../d3Visualization";
 
-type GraphHierarchyNode = d3.HierarchyNode<Taxon> & {
+type GraphHierarchyNode = d3.HierarchyNode<LeanTaxon> & {
   _metrics?: {
     r: number;
     degree: number;
     gTotal: number;
     childrenCount: number;
+    cachedCharge?: number;
+    cachedCollideRadius?: number;
   };
 };
 
-// drag datum is the node augmented with fx/fy used by the force simulation
 type GraphDragDatum = GraphHierarchyNode & {
   fx?: number | null;
   fy?: number | null;
@@ -21,7 +23,8 @@ type GraphDragDatum = GraphHierarchyNode & {
 };
 
 export class D3Graph extends D3Visualization {
-  private simulation: d3.Simulation<d3.HierarchyNode<Taxon>, undefined>;
+  public readonly type = VisualizationType.Graph;
+  private simulation: d3.Simulation<d3.HierarchyNode<LeanTaxon>, undefined>;
   private gLink: d3.Selection<SVGGElement, unknown, null, undefined>;
   private gNode: d3.Selection<SVGGElement, unknown, null, undefined>;
   private dragBehavior: (
@@ -30,8 +33,16 @@ export class D3Graph extends D3Visualization {
   private lastNodeCount = 0;
   private maxChildrenCount = 0;
   private nodeCountForForces = 0;
-  private tickCounter = 0;
+  private rafRenderHandle?: number;
+  private rafRenderScheduled = false;
+  private onVisibilityChangeBound?: () => void;
   private labelDepthLimit = Infinity;
+  private movingFrames = 0;
+  private readonly movingThreshold = 6;
+  private lastEnergy = 0;
+  private disposed = false;
+
+  private longPress = new LongPressDetector(500);
 
   constructor(layer: SVGGElement) {
     super(layer);
@@ -40,29 +51,32 @@ export class D3Graph extends D3Visualization {
       .append("g")
       .attr("class", "vitax-links")
       .attr("stroke", "var(--color-base-content)")
-      .attr("stroke-opacity", 0.25);
+      .attr("stroke-opacity", 0.2)
+      .attr("pointer-events", "none");
 
     this.gNode = this.layer.append("g").attr("cursor", "pointer").attr("pointer-events", "all");
 
     this.simulation = d3
-      .forceSimulation<d3.HierarchyNode<Taxon>>([])
+      .forceSimulation<d3.HierarchyNode<LeanTaxon>>([])
       .force(
         "link",
-        d3.forceLink<d3.HierarchyNode<Taxon>, d3.HierarchyLink<Taxon>>([]).id((d) => d.data.id),
+        d3
+          .forceLink<d3.HierarchyNode<LeanTaxon>, d3.HierarchyLink<LeanTaxon>>([])
+          .id((d) => d.data.id),
       )
       .force("charge", d3.forceManyBody())
       .force(
         "collide",
         d3
-          .forceCollide<d3.HierarchyNode<Taxon>>()
+          .forceCollide<d3.HierarchyNode<LeanTaxon>>()
           .radius((d) => ((d as GraphHierarchyNode)._metrics?.r ?? 8) + 4)
-          .iterations(2),
+          .iterations(4)
+          .strength(0.9),
       )
-      .force("center", d3.forceCenter(0, 0))
-      .force("x", d3.forceX().strength(0.02))
-      .force("y", d3.forceY().strength(0.02))
-      .velocityDecay(0.2)
-      .alphaDecay(0.02);
+      .force("x", d3.forceX().strength(0.008))
+      .force("y", d3.forceY().strength(0.008))
+      .velocityDecay(0.3)
+      .alphaDecay(0.022);
 
     this.dragBehavior = (simulation: typeof this.simulation) => {
       function dragstarted(
@@ -70,7 +84,7 @@ export class D3Graph extends D3Visualization {
         d: GraphDragDatum,
       ) {
         if (!event.active) {
-          simulation.alphaTarget(0.3).restart();
+          simulation.alphaTarget(0.15).restart();
         }
         d.fx = d.x;
         d.fy = d.y;
@@ -99,8 +113,26 @@ export class D3Graph extends D3Visualization {
         .on("end", dragended);
     };
 
-    // State abonnieren
     this.activateStateSubscription();
+
+    this.onVisibilityChangeBound = () => {
+      if (document.hidden) {
+        if (this.rafRenderHandle) {
+          cancelAnimationFrame(this.rafRenderHandle);
+          this.rafRenderHandle = undefined;
+        }
+        this.rafRenderScheduled = false;
+        this.simulation.stop();
+      } else {
+        try {
+          this.simulation.alpha(0.5).restart();
+        } catch (e) {
+          console.debug("Simulation restart failed", e);
+        }
+        this.simulation.alphaTarget(0);
+      }
+    };
+    document.addEventListener("visibilitychange", this.onVisibilityChangeBound, { passive: true });
   }
 
   public async render(): Promise<D3VisualizationExtents | undefined> {
@@ -110,24 +142,33 @@ export class D3Graph extends D3Visualization {
 
   public async update(
     _event?: MouseEvent,
-    source?: d3.HierarchyNode<Taxon>,
+    source?: d3.HierarchyNode<LeanTaxon>,
     _duration = 250,
   ): Promise<void> {
     if (!this.root) return;
     this.initializeRootForRender();
+    const theme = this.getThemeColors();
 
-    // Alle Knoten / Links anzeigen (kein Collapse im Graph)
-    const visibleNodes = this.root.descendants() as GraphHierarchyNode[];
-    const visibleLinks = this.root.links();
+    const filteredRoot = this.filterHierarchy(this.root);
+    if (!filteredRoot) {
+      this.gNode.selectAll("*").remove();
+      this.gLink.selectAll("*").remove();
+      return;
+    }
 
-    // Metriken berechnen (Größen-/Abstands-Skalierung)
+    const visibleNodes = filteredRoot.descendants() as GraphHierarchyNode[];
+    const visibleLinks = filteredRoot.links();
+
     this.computeNodeMetrics(visibleNodes);
 
     const linkSel = this.gLink
-      .selectAll<SVGLineElement, d3.HierarchyLink<Taxon>>("line")
-      .data(visibleLinks as d3.HierarchyLink<Taxon>[], (d) => d.target.data.id);
-    linkSel.enter().append("line");
+      .selectAll<SVGLineElement, d3.HierarchyLink<LeanTaxon>>("line")
+      .data(visibleLinks as d3.HierarchyLink<LeanTaxon>[], (d) => d.target.data.id);
+
+    const linkEnter = linkSel.enter().append("line");
     linkSel.exit().remove();
+
+    const linkMerge = linkEnter.merge(linkSel);
 
     const nodeSel = this.gNode
       .selectAll<SVGGElement, GraphHierarchyNode>("g")
@@ -138,39 +179,50 @@ export class D3Graph extends D3Visualization {
       .append("g")
       .attr("data-id", (d: GraphHierarchyNode) => String(d.data.id))
       .attr("data-name", (d: GraphHierarchyNode) => d.data.name)
-      .on("mouseenter", (event: MouseEvent, d: GraphHierarchyNode) => {
-        const bbox = (event.currentTarget as SVGGElement).getBoundingClientRect();
-        const clientX = event.clientX;
-        const clientY = event.clientY;
-        const payload = {
+      .on("contextmenu", (event: MouseEvent, d: GraphHierarchyNode) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const el = event.currentTarget as SVGGElement;
+        const circle = el.querySelector("circle");
+        const bbox = (circle ?? el).getBoundingClientRect();
+        this.handlers?.onHover?.({
           id: d.data.id,
           name: d.data.name,
-          rank: d.data.rank,
           parent: d.parent ? { id: d.parent.data.id, name: d.parent.data.name } : undefined,
-          genomeCount: d.data.genomeCount,
-          genomeCountRecursive: d.data.genomeCountRecursive,
           childrenCount: d.children?.length ?? 0,
           x: bbox.x + bbox.width / 2,
           y: bbox.y + bbox.height / 2,
-          cursorX: clientX,
-          cursorY: clientY,
           node: d,
-        };
-        this.handlers?.onHover?.(payload);
-      })
-      .on("mouseleave", () => {
-        this.handlers?.onUnhover?.();
-      })
-      .call(
-        this.dragBehavior(this.simulation) as unknown as (
-          selection: d3.Selection<SVGGElement, GraphHierarchyNode, SVGGElement, unknown>,
-        ) => void,
-      );
+        });
+      });
+
+    this.longPress.attachTo(nodeEnter, (event: TouchEvent, d: GraphHierarchyNode) => {
+      const el = event.currentTarget as SVGGElement;
+      const circle = el.querySelector("circle");
+      const bbox = (circle ?? el).getBoundingClientRect();
+      this.handlers?.onHover?.({
+        id: d.data.id,
+        name: d.data.name,
+        parent: d.parent ? { id: d.parent.data.id, name: d.parent.data.name } : undefined,
+        childrenCount: d.children?.length ?? 0,
+        x: bbox.x + bbox.width / 2,
+        y: bbox.y + bbox.height / 2,
+        node: d,
+      });
+    });
+
+    nodeEnter.call(
+      this.dragBehavior(this.simulation) as unknown as (
+        selection: d3.Selection<SVGGElement, GraphHierarchyNode, SVGGElement, unknown>,
+      ) => void,
+    );
 
     nodeEnter
       .append("circle")
       .attr("r", (d: GraphHierarchyNode) => d._metrics?.r ?? 6)
       .attr("fill", (d: GraphHierarchyNode) => this.getNodeFill(d))
+      .attr("stroke", theme.text)
+      .attr("stroke-opacity", 0.3)
       .attr("stroke-width", 1);
 
     nodeEnter.append("title").text((d: GraphHierarchyNode) => d.data.name);
@@ -200,119 +252,157 @@ export class D3Graph extends D3Visualization {
       nodeSel as unknown as d3.Selection<SVGGElement, GraphHierarchyNode, SVGGElement, unknown>,
     ) as d3.Selection<SVGGElement, GraphHierarchyNode, SVGGElement, unknown>;
 
-    // cast the link force to the correct type so .links/.distance/.strength are available
+    mergedNodes
+      .selectAll<SVGCircleElement, GraphHierarchyNode>("circle")
+      .attr("r", (d) => d._metrics?.r ?? 6);
+
+    mergedNodes
+      .selectAll<SVGCircleElement, GraphHierarchyNode>("circle")
+      .attr("fill", (d) => this.getNodeFill(d));
+
+    mergedNodes
+      .selectAll<SVGCircleElement, GraphHierarchyNode>("circle")
+      .attr("stroke", theme.text)
+      .attr("stroke-opacity", 0.3);
+    mergedNodes
+      .selectAll<SVGTextElement, GraphHierarchyNode>("text")
+      .attr("x", (d) => (d._metrics?.r ?? 6) + 3)
+      .style("display", (d) =>
+        (d._metrics?.childrenCount ?? 0) === 0 || (d._metrics?.r ?? 6) < 7 ? "none" : "block",
+      );
+
     const linkForce = this.simulation.force("link") as unknown as d3.ForceLink<
-      d3.HierarchyNode<Taxon>,
-      d3.HierarchyLink<Taxon>
+      d3.HierarchyNode<LeanTaxon>,
+      d3.HierarchyLink<LeanTaxon>
     >;
-    linkForce.links(visibleLinks as d3.HierarchyLink<Taxon>[]);
-    linkForce.distance((l: d3.HierarchyLink<Taxon>) =>
+    linkForce.links(visibleLinks as d3.HierarchyLink<LeanTaxon>[]);
+    linkForce.distance((l: d3.HierarchyLink<LeanTaxon>) =>
       this.linkDistance(l.source as GraphHierarchyNode, l.target as GraphHierarchyNode),
     );
-    linkForce.strength((l: d3.HierarchyLink<Taxon>) =>
+    linkForce.strength((l: d3.HierarchyLink<LeanTaxon>) =>
       this.linkStrength(l.source as GraphHierarchyNode, l.target as GraphHierarchyNode),
     );
     this.nodeCountForForces = visibleNodes.length;
 
-    // determine label depth limit, only first N layers get labels (proportional to tree depth)
     const maxDepth = (d3.max(visibleNodes, (n) => n.depth) ?? 1) as number;
     this.labelDepthLimit = Math.max(1, Math.ceil(maxDepth * 0.5));
     const chargeForce = this.simulation.force("charge") as unknown as d3.ForceManyBody<
-      d3.HierarchyNode<Taxon>
+      d3.HierarchyNode<LeanTaxon>
     >;
-    chargeForce.strength((d: d3.HierarchyNode<Taxon>) =>
-      this.chargeStrength(d as GraphHierarchyNode),
-    );
+    chargeForce.strength((d: d3.HierarchyNode<LeanTaxon>) => {
+      const cached = (d as GraphHierarchyNode)._metrics?.cachedCharge;
+      return cached ?? this.chargeStrength(d as GraphHierarchyNode);
+    });
 
     const collideForce = this.simulation.force("collide") as unknown as d3.ForceCollide<
-      d3.HierarchyNode<Taxon>
+      d3.HierarchyNode<LeanTaxon>
     >;
     const adaptiveCollideIters = Math.max(
-      1,
-      Math.floor(4 - Math.log10(Math.max(10, this.nodeCountForForces || 10))),
+      3,
+      Math.floor(6 - Math.log10(Math.max(10, this.nodeCountForForces || 10))),
     );
     collideForce
-      .radius((d: d3.HierarchyNode<Taxon>) => this.collideRadius(d as GraphHierarchyNode))
+      .radius((d: d3.HierarchyNode<LeanTaxon>) => {
+        const cached = (d as GraphHierarchyNode)._metrics?.cachedCollideRadius;
+        return cached ?? this.collideRadius(d as GraphHierarchyNode);
+      })
       .iterations(adaptiveCollideIters);
 
-    // record node count for adaptive tuning
     this.nodeCountForForces = visibleNodes.length;
 
-    // assign nodes and links to simulation
-    this.simulation.nodes(visibleNodes as unknown as d3.HierarchyNode<Taxon>[]);
-    // re-assign links to the link force (ensure correct typing)
-    linkForce.links(visibleLinks as d3.HierarchyLink<Taxon>[]);
+    this.simulation.nodes(visibleNodes as unknown as d3.HierarchyNode<LeanTaxon>[]);
+    linkForce.links(visibleLinks as d3.HierarchyLink<LeanTaxon>[]);
 
     const nodeCountChanged = visibleNodes.length !== this.lastNodeCount;
     if (nodeCountChanged || source) {
-      const burst = Math.max(8, Math.floor(2000 / Math.max(10, this.nodeCountForForces))); // smaller graphs -> larger bursts
-      this.simulation.alpha(0.6).restart();
+      const burst = Math.max(10, Math.floor(2500 / Math.max(10, this.nodeCountForForces)));
+      this.simulation.alpha(0.8).restart();
       try {
         for (let i = 0; i < burst; i++) {
           this.simulation.tick();
         }
-      } catch {
-        // ignore
+      } catch (e) {
+        console.debug("Simulation tick failed", e);
       }
-      this.simulation.alphaTarget(0.02);
+      this.simulation.alphaTarget(0);
     }
 
-    // minimal tick handler to update DOM positions with throttling
-    this.simulation.on("tick", () => {
-      this.tickCounter =
-        (this.tickCounter + 1) %
-        Math.max(1, Math.floor(Math.log10(Math.max(10, this.nodeCountForForces)) + 1));
-      // Only update DOM every N ticks based on graph size
-      if (this.tickCounter !== 0) {
-        return;
-      }
+    const scheduleDomUpdate = () => {
+      if (this.rafRenderScheduled || this.disposed) return;
+      this.rafRenderScheduled = true;
+      this.rafRenderHandle = requestAnimationFrame(() => {
+        if (this.disposed) {
+          this.rafRenderScheduled = false;
+          return;
+        }
 
-      linkSel
-        .attr("x1", (d: d3.HierarchyLink<Taxon>) => (d.source as GraphHierarchyNode).x ?? 0)
-        .attr("y1", (d: d3.HierarchyLink<Taxon>) => (d.source as GraphHierarchyNode).y ?? 0)
-        .attr("x2", (d: d3.HierarchyLink<Taxon>) => (d.target as GraphHierarchyNode).x ?? 0)
-        .attr("y2", (d: d3.HierarchyLink<Taxon>) => (d.target as GraphHierarchyNode).y ?? 0);
+        try {
+          const energy = this.simulation.alpha();
+          if (energy > 0.025 || Math.abs(energy - this.lastEnergy) > 0.008) {
+            this.movingFrames = Math.min(this.movingThreshold, this.movingFrames + 1);
+          } else {
+            this.movingFrames = Math.max(0, this.movingFrames - 1);
+          }
+          this.lastEnergy = energy;
 
-      mergedNodes.attr(
-        "transform",
-        (d) => "translate(" + String(d.x ?? 0) + "," + String(d.y ?? 0) + ")",
-      );
-      mergedNodes
-        .selectAll<SVGCircleElement, GraphHierarchyNode>("circle")
-        .attr("r", (d) => d._metrics?.r ?? 6);
-      mergedNodes
-        .selectAll<SVGTextElement, GraphHierarchyNode>("text")
-        .attr("x", (d) => (d._metrics?.r ?? 6) + 3)
-        .style("display", (d) =>
-          (d._metrics?.childrenCount ?? 0) === 0 || (d._metrics?.r ?? 6) < 7 ? "none" : "block",
-        );
-    });
+          linkMerge
+            .attr("x1", (d: d3.HierarchyLink<LeanTaxon>) => (d.source as GraphHierarchyNode).x ?? 0)
+            .attr("y1", (d: d3.HierarchyLink<LeanTaxon>) => (d.source as GraphHierarchyNode).y ?? 0)
+            .attr("x2", (d: d3.HierarchyLink<LeanTaxon>) => (d.target as GraphHierarchyNode).x ?? 0)
+            .attr(
+              "y2",
+              (d: d3.HierarchyLink<LeanTaxon>) => (d.target as GraphHierarchyNode).y ?? 0,
+            );
+
+          mergedNodes.attr(
+            "transform",
+            (d) => "translate(" + String(d.x ?? 0) + "," + String(d.y ?? 0) + ")",
+          );
+          const inMotion = this.movingFrames >= this.movingThreshold - 1;
+          if (inMotion) {
+            linkMerge.attr("stroke-opacity", 0.12);
+          } else {
+            linkMerge.attr("stroke-opacity", 0.25);
+          }
+        } finally {
+          this.rafRenderScheduled = false;
+        }
+      });
+    };
+
+    this.simulation.on("tick", scheduleDomUpdate);
 
     this.lastNodeCount = visibleNodes.length;
-    // ensure at least one await in async method to satisfy linter rule
     await Promise.resolve();
     return;
   }
 
   public override dispose(): void {
-    super.dispose();
+    this.disposed = true;
+
     this.simulation.stop();
+
+    if (this.rafRenderHandle) {
+      cancelAnimationFrame(this.rafRenderHandle);
+      this.rafRenderHandle = undefined;
+    }
+
+    if (this.onVisibilityChangeBound) {
+      document.removeEventListener("visibilitychange", this.onVisibilityChangeBound);
+      this.onVisibilityChangeBound = undefined;
+    }
+
+    super.dispose();
   }
 
-  /**
-   * Berechnet und annotiert Metriken auf jedem Knoten zur Steuerung von Radius, Distanz & Kräften.
-   */
   private computeNodeMetrics(nodes: GraphHierarchyNode[]): void {
     if (!nodes.length) {
       return;
     }
-    // GenomeCounts einsammeln (recursive bevorzugt)
-    const genomeTotals = nodes.map((n) => {
-      return this.sumGenome(n.data.genomeCountRecursive ?? n.data.genomeCount);
-    });
-    const maxGenome = d3.max(genomeTotals.filter((v) => v !== undefined)) ?? 0;
-    const minGenome = d3.min(genomeTotals.filter((v) => v !== undefined)) ?? 0;
-    const useGenome = maxGenome > 0; // nur falls Daten vorhanden
+    const genomeTotals = nodes.map((n) => this.getGenomeTotalForId(n.data.id));
+    const maxGenome = d3.max(genomeTotals) ?? 0;
+    const minGenome = d3.min(genomeTotals) ?? 0;
+    const useGenome = maxGenome > 0;
     const radiusScale = useGenome
       ? d3
           .scaleSqrt<number, number>()
@@ -326,24 +416,24 @@ export class D3Graph extends D3Visualization {
     nodes.forEach((n) => {
       const childrenCount = n.children?.length ?? 0;
       const degree = childrenCount + (n.parent ? 1 : 0);
-      const gTotal = this.sumGenome(n.data.genomeCountRecursive ?? n.data.genomeCount) ?? 1;
+      const gTotal = this.getGenomeTotalForId(n.data.id);
       const r = radiusScale(useGenome ? gTotal : degree + 1);
+
+      n._metrics = { r, degree, gTotal, childrenCount };
+
+      const cachedCharge = this.chargeStrength(n);
+      const cachedCollideRadius = this.collideRadius(n);
+
       n._metrics = {
         r,
         degree,
         gTotal,
         childrenCount,
+        cachedCharge,
+        cachedCollideRadius,
       };
     });
     this.maxChildrenCount = d3.max(nodes, (n) => n._metrics?.childrenCount ?? 0) ?? 0;
-  }
-
-  private sumGenome(gc: GenomeCount | undefined): number | undefined {
-    if (!gc) return undefined;
-    return Object.values(gc).reduce(
-      (acc: number, v: unknown) => acc + (typeof v === "number" ? v : 0),
-      0,
-    );
   }
 
   private isLeaf(n: GraphHierarchyNode): boolean {
@@ -351,43 +441,61 @@ export class D3Graph extends D3Visualization {
   }
 
   private linkDistance(s: GraphHierarchyNode, t: GraphHierarchyNode): number {
-    if (this.isLeaf(t)) return 3;
+    if (this.isLeaf(t)) return 12;
     const sChildren = s._metrics?.childrenCount ?? 0;
     const tChildren = t._metrics?.childrenCount ?? 0;
-    const childSpacing = Math.min(20, sChildren * 1.0 + tChildren * 0.8);
-    return 4 + childSpacing * 0.6;
+    const sRadius = s._metrics?.r ?? 8;
+    const tRadius = t._metrics?.r ?? 8;
+
+    const baseDistance = sRadius + tRadius + 12;
+
+    const childSpacing = Math.min(35, Math.sqrt(sChildren) * 4.5 + Math.sqrt(tChildren) * 3.5);
+
+    return baseDistance + childSpacing;
   }
 
   private linkStrength(s: GraphHierarchyNode, t: GraphHierarchyNode): number {
     const sChildren = s._metrics?.childrenCount ?? 0;
     const tChildren = t._metrics?.childrenCount ?? 0;
-    let base = 0.85;
-    if (this.isLeaf(t)) base += 0.18;
-    base += Math.min(0.2, (Math.sqrt(sChildren) + Math.sqrt(tChildren)) * 0.04);
-    // If either node has very many children, slightly reduce strength to avoid oscillation
+
+    let base = 0.8;
+
+    if (this.isLeaf(t)) base += 0.15;
+
     const maxCh = this.maxChildrenCount || 1;
-    const highThresh = Math.max(6, Math.floor(maxCh * 0.6));
-    if (sChildren >= highThresh || tChildren >= highThresh) base *= 0.75;
-    return Math.min(0.995, base);
+    const totalChildren = sChildren + tChildren;
+
+    if (totalChildren > 0) {
+      const childrenRatio = totalChildren / (2 * maxCh);
+      base *= 1 - Math.min(0.25, childrenRatio * 0.35);
+    }
+
+    return Math.max(0.5, Math.min(0.95, base));
   }
 
   private chargeStrength(d: GraphHierarchyNode): number {
-    const degree = d._metrics?.degree ?? 1;
     const children = d._metrics?.childrenCount ?? 0;
-    const maxChildren = this.maxChildrenCount || 1;
-    let charge = -20 - Math.min(100, degree * 4);
     const r = d._metrics?.r ?? 8;
-    if (children > 0 && r < 10) {
-      const frac = children / (maxChildren || 1);
-      const damp = 1 - Math.min(0.6, frac * 0.5);
-      charge = Math.floor(charge * (0.6 + 0.4 * damp));
+
+    let charge = -50 - r * 3.5;
+
+    if (children > 0) {
+      const maxChildren = this.maxChildrenCount || 1;
+      const childrenRatio = children / maxChildren;
+
+      const additionalCharge = -Math.min(200, children * 12 + childrenRatio * 100);
+      charge += additionalCharge;
     }
-    return Math.max(-300, charge);
+
+    return Math.max(-400, Math.min(-25, charge));
   }
 
   private collideRadius(d: GraphHierarchyNode): number {
-    const base = (d._metrics?.r ?? 6) + 4;
-    const childPadding = Math.min(18, (d._metrics?.childrenCount ?? 0) * 1.6);
+    const base = (d._metrics?.r ?? 6) + 10;
+    const children = d._metrics?.childrenCount ?? 0;
+
+    const childPadding = Math.min(36, Math.sqrt(children) * 7);
+
     return base + childPadding;
   }
 }
