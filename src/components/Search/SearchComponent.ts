@@ -16,8 +16,6 @@ import "./TaxonomyType/TaxonomyTypeComponent.ts";
 export class SearchComponent extends BaseComponent {
   private input!: HTMLInputElement;
   private button!: HTMLButtonElement;
-  private _buttonText!: HTMLSpanElement;
-  private _buttonIcon!: HTMLSpanElement;
   private section!: HTMLElement;
   private readonly suggestionsComp = new SuggestionsComponent();
   private readonly selectionComp = new SelectionComponent();
@@ -38,8 +36,6 @@ export class SearchComponent extends BaseComponent {
   initialize(): void {
     this.input = requireElement<HTMLInputElement>(this, "#search-input");
     this.button = requireElement<HTMLButtonElement>(this, "button[type=submit]");
-    this._buttonText = requireElement<HTMLSpanElement>(this, "#visualize-text");
-    this._buttonIcon = requireElement<HTMLSpanElement>(this, "#visualize-icon");
     this.section = requireElement<HTMLElement>(this, "section");
 
     this.addEvent(this.button, "click", () => {
@@ -156,8 +152,6 @@ export class SearchComponent extends BaseComponent {
           style="width: 1.5em; height: 1.5em"
         ></span>
       `;
-      this._buttonText = requireElement<HTMLSpanElement>(this, "#visualize-text");
-      this._buttonIcon = requireElement<HTMLSpanElement>(this, "#visualize-icon");
     }
   }
 

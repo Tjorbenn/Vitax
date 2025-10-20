@@ -59,7 +59,8 @@ export class VisualizationComponent extends BaseComponent {
     svg
       .attr("class", "w-full h-full select-none")
       .attr("viewBox", `0 0 ${String(width)} ${String(height)}`)
-      .attr("data-role", "visualization-svg");
+      .attr("data-role", "visualization-svg")
+      .style("touch-action", "none");
     this.svg = svg;
 
     this.mainGroup = svg.append<SVGGElement>("g") as unknown as d3.Selection<
@@ -68,21 +69,21 @@ export class VisualizationComponent extends BaseComponent {
       SVGSVGElement,
       undefined
     >;
-    this.mainGroup!.attr("data-layer", "main");
-    this.gridGroup = this.mainGroup!.append<SVGGElement>("g") as unknown as d3.Selection<
+    this.mainGroup.attr("data-layer", "main");
+    this.gridGroup = this.mainGroup.append<SVGGElement>("g") as unknown as d3.Selection<
       SVGGElement,
       undefined,
       SVGGElement,
       undefined
     >;
-    this.gridGroup!.attr("data-layer", "grid");
-    this.contentGroup = this.mainGroup!.append<SVGGElement>("g") as unknown as d3.Selection<
+    this.gridGroup.attr("data-layer", "grid");
+    this.contentGroup = this.mainGroup.append<SVGGElement>("g") as unknown as d3.Selection<
       SVGGElement,
       undefined,
       SVGGElement,
       undefined
     >;
-    this.contentGroup!.attr("data-layer", "content");
+    this.contentGroup.attr("data-layer", "content");
 
     this.buildGrid();
 
@@ -94,18 +95,21 @@ export class VisualizationComponent extends BaseComponent {
     this.zoomBehavior = d3
       .zoom<SVGSVGElement, unknown>()
       .scaleExtent([0.3, 8])
+      .filter((event: any) => {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        if (event.type === "wheel") return true;
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+        if (event.type.startsWith("touch")) return true;
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        return event.button === 0 || event.button === undefined;
+      })
       .on("zoom", (event: d3.D3ZoomEvent<SVGSVGElement, unknown>) => {
-        if (this.mainGroup) {
-          this.mainGroup.attr("transform", event.transform.toString());
-        }
+        this.mainGroup.attr("transform", event.transform.toString());
       });
 
-    if (this.svg) {
-      // Selection types align with d3.zoom's expected signature
-      (this.svg as unknown as d3.Selection<SVGSVGElement, undefined, null, undefined>).call(
-        this.zoomBehavior as unknown as d3.ZoomBehavior<SVGSVGElement, undefined>,
-      );
-    }
+    (this.svg as unknown as d3.Selection<SVGSVGElement, undefined, null, undefined>).call(
+      this.zoomBehavior as unknown as d3.ZoomBehavior<SVGSVGElement, undefined>,
+    );
 
     this.addSubscription(
       State.subscribeToResetView(() => {
@@ -114,34 +118,27 @@ export class VisualizationComponent extends BaseComponent {
     );
     this.addSubscription(
       State.subscribeToFocusTaxon((id) => {
-        void this.focusTaxonById(id).then(() => {
+        this.focusTaxonById(id);
+        this.highlightTaxon(id);
+        window.setTimeout(() => {
           this.highlightTaxon(id);
-          window.setTimeout(() => {
-            this.highlightTaxon(id);
-          }, 750);
-          window.setTimeout(() => {
-            this.highlightTaxon(id);
-          }, 1500);
-        });
+        }, 750);
+        window.setTimeout(() => {
+          this.highlightTaxon(id);
+        }, 1500);
       }),
     );
 
     this.resizeObserver = new ResizeObserver(() => {
-      if (!this.svg) {
-        return;
-      }
       const r = this.getBoundingClientRect();
-      const wNew = r.width ?? 800;
-      const hNew = r.height ?? 600;
+      const wNew = r.width;
+      const hNew = r.height;
       this.svg.attr("viewBox", `0 0 ${String(wNew)} ${String(hNew)}`);
     });
     this.resizeObserver.observe(this);
   }
 
   private buildGrid() {
-    if (!this.gridGroup || !this.svg) {
-      return;
-    }
     this.gridGroup.selectAll("*").remove();
     const svgNode = this.svg.node();
     if (!svgNode) return;
@@ -169,7 +166,7 @@ export class VisualizationComponent extends BaseComponent {
           .attr("height", size);
         pat
           .append("path")
-          .attr("d", `M ${size} 0 L 0 0 0 ${size}`)
+          .attr("d", `M ${String(size)} 0 L 0 0 0 ${String(size)}`)
           .attr("fill", "none")
           .attr("stroke", "var(--color-base-content, #555)")
           .attr("stroke-opacity", strokeOpacity)
@@ -179,7 +176,7 @@ export class VisualizationComponent extends BaseComponent {
         pat.attr("width", size).attr("height", size);
         pat
           .select("path")
-          .attr("d", `M ${size} 0 L 0 0 0 ${size}`)
+          .attr("d", `M ${String(size)} 0 L 0 0 0 ${String(size)}`)
           .attr("stroke-opacity", strokeOpacity)
           .attr("stroke-width", strokeWidth);
       }
@@ -219,6 +216,7 @@ export class VisualizationComponent extends BaseComponent {
     if (vb) {
       const parts = vb.split(/\s+/).map(Number);
       if (parts.length === 4 && parts.every((n) => Number.isFinite(n))) {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         return { width: parts[2]!, height: parts[3]! };
       }
     }
@@ -261,6 +259,7 @@ export class VisualizationComponent extends BaseComponent {
     const cy = bbox.y + bbox.height / 2;
 
     const target = d3.zoomIdentity.translate(vw / 2 - cx * k, vh / 2 - cy * k).scale(k);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
     d3.select(svgNode).call((this.zoomBehavior as any).transform, target);
     this.updateGridForTransform(target);
     this.didInitialCenter = true;
@@ -270,7 +269,7 @@ export class VisualizationComponent extends BaseComponent {
     const layer = this.contentGroup.node();
     if (!layer) return undefined;
     const query = State.getQuery(); // Taxon[]
-    if (query?.length === 0) return undefined;
+    if (query.length === 0) return undefined;
 
     let minX = Infinity;
     let minY = Infinity;
@@ -279,7 +278,7 @@ export class VisualizationComponent extends BaseComponent {
     let found = false;
 
     const parseTranslate = (el: SVGGElement): { x: number; y: number } | undefined => {
-      const tr = el.getAttribute("transform") || "";
+      const tr = el.getAttribute("transform") ?? "";
       const re = /translate\(([-0-9+.eE]+)[ ,]([-0-9+.eE]+)\)/;
       const m = re.exec(tr);
       if (!m) return undefined;
@@ -298,7 +297,7 @@ export class VisualizationComponent extends BaseComponent {
       if (!center) {
         try {
           const bb = (g as unknown as SVGGraphicsElement).getBBox();
-          if (bb && bb.width > 0 && bb.height > 0) {
+          if (bb.width > 0 && bb.height > 0) {
             found = true;
             minX = Math.min(minX, bb.x);
             minY = Math.min(minY, bb.y);
@@ -330,9 +329,6 @@ export class VisualizationComponent extends BaseComponent {
   }
 
   private renderVisualization() {
-    if (!this.svg || !this.contentGroup) {
-      return;
-    }
     const tree: TaxonomyTree | undefined = State.getTree();
     if (!tree) {
       this.disposeRenderer();
@@ -340,9 +336,6 @@ export class VisualizationComponent extends BaseComponent {
       return;
     }
     const displayType = State.getDisplayType();
-    if (!displayType) {
-      return;
-    }
 
     if (!this.renderer || !this.isRendererOfType(displayType)) {
       this.hideActionMenu();
@@ -410,17 +403,19 @@ export class VisualizationComponent extends BaseComponent {
     }
   }
 
-  public togglePerformanceMode(_enabled: boolean): void {}
-
   public getContentLayer(): SVGGElement | undefined {
-    return this.contentGroup?.node() || undefined;
+    return this.contentGroup.node() ?? undefined;
   }
 
   connectedCallback(): void {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (!this.svg) {
       this.initialize();
-    }
-    if (this.svg) {
+      (this.svg as d3.Selection<SVGSVGElement, undefined, null, undefined>).on(
+        "dblclick.zoom",
+        null,
+      );
+    } else {
       (this.svg as d3.Selection<SVGSVGElement, undefined, null, undefined>).on(
         "dblclick.zoom",
         null,
@@ -436,7 +431,7 @@ export class VisualizationComponent extends BaseComponent {
     if (this.taxonActionEl?.parentElement === this) {
       this.removeChild(this.taxonActionEl);
     }
-    super.disconnectedCallback();
+    this.destroy();
   }
 
   private onExternalReset = () => {
@@ -444,22 +439,20 @@ export class VisualizationComponent extends BaseComponent {
   };
 
   public resetView(): void {
-    if (!this.svg || !this.zoomBehavior) {
-      return;
-    }
     const t = d3.zoomIdentity;
     const svgNode = this.svg.node();
     if (svgNode) {
       d3.select(svgNode)
         .transition()
         .duration(300)
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
         .call((this.zoomBehavior as any).transform, t);
     }
     this.updateGridForTransform(t);
   }
 
-  private async focusTaxonById(id: number): Promise<void> {
-    if (!this.svg || !this.zoomBehavior) return;
+  private focusTaxonById(_id: number): void {
+    const pos = this.getNodeScreenCenterById(_id);
     if (!pos) return;
 
     const svgNode = this.svg.node();
@@ -479,10 +472,10 @@ export class VisualizationComponent extends BaseComponent {
     d3.select(svgNode)
       .transition()
       .duration(1350)
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
       .call((this.zoomBehavior as any).transform, target);
   }
 
-  /** Find the screen center of a node g[data-id] under content layer */
   private getNodeScreenCenterById(id: number): { x: number; y: number } | undefined {
     const layer = this.getContentLayer();
     if (!layer) return undefined;
@@ -493,7 +486,6 @@ export class VisualizationComponent extends BaseComponent {
     return { x: bbox.x + bbox.width / 2, y: bbox.y + bbox.height / 2 };
   }
 
-  /** Briefly highlight a taxon node with a pulsing ring */
   private highlightTaxon(id: number): void {
     const layer = this.getContentLayer();
     if (!layer) return;
@@ -532,7 +524,6 @@ export class VisualizationComponent extends BaseComponent {
       });
   }
 
-  /** Prepare a single TaxonAction overlay */
   private setupActionOverlay(): void {
     if (!this.taxonActionEl) {
       this.taxonActionEl = new TaxonActionComponent();
@@ -554,6 +545,7 @@ export class VisualizationComponent extends BaseComponent {
         onFetchChildren: (id) => void this.onFetchChildren({ id }),
         onDetails: (node) => {
           const tree = State.getTree();
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           const id = (node as any)?.data?.id as number | undefined;
           if (!tree || !id || id === 0) {
             return;
@@ -571,25 +563,29 @@ export class VisualizationComponent extends BaseComponent {
 
   private onTaxonHover = (payload: any): void => {
     if (!this.taxonActionEl) return;
-    const { id, x, y, node } = payload || ({} as any);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const { id, x, y, node } = payload ?? ({} as any);
     if (id === undefined || x === undefined || y === undefined) {
       return;
     }
 
-    const hierarchyNode: (d3.HierarchyNode<LeanTaxon> & { collapsed?: boolean }) | undefined =
+    const hierarchyNode: d3.HierarchyNode<LeanTaxon> & { collapsed?: boolean } =
       node as unknown as d3.HierarchyNode<LeanTaxon> & { collapsed?: boolean };
     const tree = State.getTree();
-    if (hierarchyNode) {
+    if (node) {
       this.taxonActionEl.setNode(hierarchyNode as unknown as d3.HierarchyNode<Taxon>);
-      const full = tree ? tree.findTaxonById(id) : undefined;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      const full = tree?.findTaxonById(id);
       State.setSelectedTaxon(full);
       this.taxonActionEl.setCurrentTaxon(full);
     } else if (tree) {
       const rootLean = tree.root.lean;
       const rootNode = d3.hierarchy<LeanTaxon>(rootLean);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const found = rootNode.descendants().find((d) => d.data.id === id) as any;
       if (!found) return;
       this.taxonActionEl.setNode(found as unknown as d3.HierarchyNode<Taxon>);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       const full = tree.findTaxonById(id);
       State.setSelectedTaxon(full);
       this.taxonActionEl.setCurrentTaxon(full);
@@ -598,13 +594,13 @@ export class VisualizationComponent extends BaseComponent {
     }
     this.taxonActionEl.show();
     const canvasRect = this.getBoundingClientRect();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     this.taxonActionEl.positionAt(canvasRect, x, y);
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     this.startFollowNode(id);
     this.installOutsideDismiss();
   };
-
-  private onTaxonUnhover = (): void => {};
 
   private startFollowNode(id: number): void {
     this.stopFollowNode();
@@ -642,6 +638,7 @@ export class VisualizationComponent extends BaseComponent {
     State.setSelectedTaxon(undefined);
     this.stopFollowNode();
     if (this.renderer && "clearActiveTaxon" in this.renderer) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       (this.renderer as any).clearActiveTaxon();
     }
   }
@@ -686,9 +683,6 @@ export class VisualizationComponent extends BaseComponent {
       return;
     }
     const targetId = payload.id;
-    if (targetId === undefined) {
-      return;
-    }
     if (tree.root.id === targetId) {
       const newTree = await TaxonomyService.expandTreeUp(tree);
       if (newTree.root.id !== tree.root.id) {
@@ -709,9 +703,6 @@ export class VisualizationComponent extends BaseComponent {
       return;
     }
     const targetId = payload.id;
-    if (targetId === undefined) {
-      return;
-    }
     const taxon = tree.findTaxonById(targetId);
     if (!taxon) {
       return;
@@ -720,14 +711,10 @@ export class VisualizationComponent extends BaseComponent {
     State.treeHasChanged();
   };
 
-  /**
-   * Calculates and logs SVG size (Bytes/KB/MB) and element count.
-   * Called after each render/update.
-   */
   private emitVisualizationStats(context: "render" | "update" = "render"): void {
     try {
       const svgSel = this.svg;
-      const svgNode = svgSel?.node();
+      const svgNode = svgSel.node();
       if (!svgNode) return;
 
       const totalElements = svgNode.querySelectorAll("*").length;
@@ -737,17 +724,17 @@ export class VisualizationComponent extends BaseComponent {
       const kb = bytes / 1024;
       const mb = kb / 1024;
 
-      const contentLayer = this.contentGroup?.node();
+      const contentLayer = this.contentGroup.node();
       const contentElements = contentLayer ? contentLayer.querySelectorAll("*").length : undefined;
 
       const prefix = "[Vitax] SVG stats";
       if (typeof contentElements === "number") {
         console.debug(
-          `${prefix} (${context}) — elements: total=${totalElements}, content=${contentElements}; size: ${bytes} B (${kb.toFixed(2)} KB, ${mb.toFixed(2)} MB)`,
+          `${prefix} (${context}) — elements: total=${String(totalElements)}, content=${String(contentElements)}; size: ${String(bytes)} B (${kb.toFixed(2)} KB, ${mb.toFixed(2)} MB)`,
         );
       } else {
         console.debug(
-          `${prefix} (${context}) — elements: ${totalElements}; size: ${bytes} B (${kb.toFixed(2)} KB, ${mb.toFixed(2)} MB)`,
+          `${prefix} (${context}) — elements: ${String(totalElements)}; size: ${String(bytes)} B (${kb.toFixed(2)} KB, ${mb.toFixed(2)} MB)`,
         );
       }
     } catch (err) {
