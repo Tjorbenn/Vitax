@@ -3,7 +3,7 @@
  *
  * The NCBI hosts a couple of Web APIs itself, including an API for taxonomy data.
  * Vitax uses the NCBI Taxonomy API to fetch links to external resources for a given taxon.
- * This `#gls(esm)`{=typst} provides a base abstraction for making requests to the NCBI Taxonomy API.
+ * This `#gls("esm")`{=typst} provides a base abstraction for making requests to the NCBI Taxonomy API.
  */
 
 /**
