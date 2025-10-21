@@ -1,0 +1,39 @@
+name: Render
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [22.x]
+
+    steps:
+      - uses: actions/checkout@v5
+      - uses: typst-community/setup-typst@v4
+      - uses: actions/setup-node@v6
+
+      - name: Install
+        run: |
+          npm ci
+
+      - name: Compile Markdown
+        run: |
+          lits --outputFormat "markdown" --outDir "./thesis/docs"
+
+      - name: Render PDF
+        working-directory: ./thesis
+        run: |
+          typst compile thesis.typ thesis.pdf
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: thesis
+          path: thesis/thesis.pdf
