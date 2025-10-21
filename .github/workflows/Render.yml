@@ -23,7 +23,7 @@ jobs:
         shell: bash
         run: |
           chmod +x ./compileDocs.sh
-          ./compileDocs.sh
+          bash ./compileDocs.sh
 
       - name: Render PDF
         working-directory: ./thesis
