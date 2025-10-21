@@ -10,18 +10,14 @@ jobs:
   render:
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        node-version: [22.x]
-
     steps:
       - uses: actions/checkout@v5
       - uses: typst-community/setup-typst@v4
       - uses: actions/setup-node@v6
 
-      - name: Install
+      - name: Install LitScript
         run: |
-          npm ci
+          npm install --global litscript
 
       - name: Compile Markdown
         run: |
