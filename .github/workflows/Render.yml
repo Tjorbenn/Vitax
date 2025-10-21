@@ -21,7 +21,7 @@ jobs:
 
       - name: Compile Markdown
         run: |
-          lits --outputFormat "markdown" --outDir "./thesis/docs"
+          ./compileDocs.sh
 
       - name: Render PDF
         working-directory: ./thesis

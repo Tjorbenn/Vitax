@@ -1,3 +1,14 @@
+/**
+ * # Taxonomy.ts
+ *
+ * This module defines classes and types for representing and managing biological taxonomy data.
+ */
+
+/**
+ * One important feature of *Vitax* is the ability to quickly access genomes for presented taxa.
+ * To enable this, we define an `Accession` type that links #gls("taxid") to genome accessions and their level in the taxonomy.
+ */
+
 export type Accession = {
   taxid: number;
   accession: string;

@@ -1,7 +1,11 @@
+/**
+ * # Application specific types
+ *
+ * To display structured data in the application, we define some specific types.
+ */
+
 import type { LinkSource } from "../api/NCBI/Ncbi";
 import { Taxon } from "./Taxonomy";
-
-export type Suggestion = Pick<Taxon, "id" | "name" | "commonName">;
 
 export enum Status {
   Idle = "idle",
@@ -53,6 +57,8 @@ export type Journal = {
   volume: string;
   pages: string;
 };
+
+export type Suggestion = Pick<Taxon, "id" | "name" | "commonName">;
 
 export function SuggestionToTaxon(suggestion: Suggestion): Taxon {
   const taxon = new Taxon(suggestion.id, suggestion.name);
