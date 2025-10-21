@@ -20,7 +20,9 @@ jobs:
           npm install --global litscript
 
       - name: Compile Markdown
+        shell: bash
         run: |
+          chmod +x ./compileDocs.sh
           ./compileDocs.sh
 
       - name: Render PDF
