@@ -3,7 +3,7 @@ import * as d3 from "d3";
 import * as State from "../../core/State";
 import * as TaxonomyService from "../../services/TaxonomyService";
 import { VisualizationType } from "../../types/Application";
-import type { LeanTaxon, Taxon, TaxonomyTree } from "../../types/Taxonomy";
+import type { TaxonomyTree } from "../../types/Taxonomy";
 import { optionalElement } from "../../utility/Dom";
 import {
   createVisualizationRenderer,
@@ -34,7 +34,6 @@ export class VisualizationComponent extends BaseComponent {
   private followRaf?: number;
   private outsidePointerDownHandler?: (e: PointerEvent) => void;
   private outsideKeyHandler?: (e: KeyboardEvent) => void;
-  private overlayArmUntil?: number;
   private renderToken = 0;
   private didInitialCenter = false;
 
@@ -345,14 +344,6 @@ export class VisualizationComponent extends BaseComponent {
       if (layerNode) {
         this.renderer = createVisualizationRenderer(displayType, layerNode);
         this.didInitialCenter = false;
-        this.renderer?.setHandlers({
-          onHover: (payload: unknown) => {
-            this.onTaxonHover(payload);
-          },
-          onUnhover: () => {
-            this.onTaxonUnhover();
-          },
-        });
       }
       if (!this.renderer) {
         this.contentGroup
@@ -561,71 +552,6 @@ export class VisualizationComponent extends BaseComponent {
     }
   }
 
-  private onTaxonHover = (payload: any): void => {
-    if (!this.taxonActionEl) return;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const { id, x, y, node } = payload ?? ({} as any);
-    if (id === undefined || x === undefined || y === undefined) {
-      return;
-    }
-
-    const hierarchyNode: d3.HierarchyNode<LeanTaxon> & { collapsed?: boolean } =
-      node as unknown as d3.HierarchyNode<LeanTaxon> & { collapsed?: boolean };
-    const tree = State.getTree();
-    if (node) {
-      this.taxonActionEl.setNode(hierarchyNode as unknown as d3.HierarchyNode<Taxon>);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-      const full = tree?.findTaxonById(id);
-      State.setSelectedTaxon(full);
-      this.taxonActionEl.setCurrentTaxon(full);
-    } else if (tree) {
-      const rootLean = tree.root.lean;
-      const rootNode = d3.hierarchy<LeanTaxon>(rootLean);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      const found = rootNode.descendants().find((d) => d.data.id === id) as any;
-      if (!found) return;
-      this.taxonActionEl.setNode(found as unknown as d3.HierarchyNode<Taxon>);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-      const full = tree.findTaxonById(id);
-      State.setSelectedTaxon(full);
-      this.taxonActionEl.setCurrentTaxon(full);
-    } else {
-      return;
-    }
-    this.taxonActionEl.show();
-    const canvasRect = this.getBoundingClientRect();
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-    this.taxonActionEl.positionAt(canvasRect, x, y);
-
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-    this.startFollowNode(id);
-    this.installOutsideDismiss();
-  };
-
-  private startFollowNode(id: number): void {
-    this.stopFollowNode();
-    const updatePos = () => {
-      const layer = this.getContentLayer();
-      if (!layer || !this.taxonActionEl) {
-        this.stopFollowNode();
-        return;
-      }
-      const g = optionalElement<SVGGElement>(layer, `g[data-id="${String(id)}"]`);
-      if (!g) {
-        this.stopFollowNode();
-        return;
-      }
-      const circle = optionalElement<SVGCircleElement>(g, "circle");
-      const bbox = (circle ?? g).getBoundingClientRect();
-      const canvasRect = this.getBoundingClientRect();
-      const cx = bbox.x + bbox.width / 2;
-      const cy = bbox.y + bbox.height / 2;
-      this.taxonActionEl.positionAt(canvasRect, cx, cy);
-      this.followRaf = requestAnimationFrame(updatePos);
-    };
-    this.followRaf = requestAnimationFrame(updatePos);
-  }
-
   private stopFollowNode(): void {
     if (this.followRaf) {
       cancelAnimationFrame(this.followRaf);
@@ -640,29 +566,6 @@ export class VisualizationComponent extends BaseComponent {
     if (this.renderer && "clearActiveTaxon" in this.renderer) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       (this.renderer as any).clearActiveTaxon();
-    }
-  }
-
-  private installOutsideDismiss(): void {
-    this.overlayArmUntil = performance.now() + 150;
-    if (!this.outsidePointerDownHandler) {
-      this.outsidePointerDownHandler = (e: PointerEvent) => {
-        if ((this.overlayArmUntil ?? 0) > performance.now()) return;
-        if (!this.taxonActionEl) return;
-        const target = e.target as Node | null;
-        if (target && this.taxonActionEl.contains(target)) return;
-        this.hideActionMenu();
-        this.removeOutsideDismiss();
-      };
-      window.addEventListener("pointerdown", this.outsidePointerDownHandler, true);
-    }
-    if (!this.outsideKeyHandler) {
-      this.outsideKeyHandler = (e: KeyboardEvent) => {
-        if (e.key !== "Escape") return;
-        this.hideActionMenu();
-        this.removeOutsideDismiss();
-      };
-      window.addEventListener("keydown", this.outsideKeyHandler, true);
     }
   }
 
