@@ -6,7 +6,9 @@
 
 /**
  * One important feature of *Vitax* is the ability to quickly access genomes for presented taxa.
- * To enable this, we define an `Accession` type that links #gls("taxid") to genome accessions and their level in the taxonomy.
+ * To enable this, we define an `Accession` type that links `#gls("taxid")`{=typst} to genome accessions and their level in the taxonomy.
+ *
+ * Hallo Test
  */
 
 export type Accession = {
@@ -320,3 +322,6 @@ export function TaxaToTree(taxa: Taxon[]): TaxonomyTree {
   const tree = new TaxonomyTree(root);
   return tree;
 }
+test;
+// test comment
+// another test

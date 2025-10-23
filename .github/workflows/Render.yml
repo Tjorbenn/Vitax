@@ -33,10 +33,4 @@ jobs:
       - name: Render PDF
         working-directory: ./thesis
         run: |
-          typst compile thesis.typ thesis.pdf
-
-      - name: Upload
-        uses: actions/upload-artifact@v4
-        with:
-          name: thesis
-          path: thesis/thesis.pdf
+          typst compile thesis.typ thesis.pdfs
