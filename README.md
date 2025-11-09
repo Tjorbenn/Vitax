@@ -23,9 +23,9 @@ Vitax is an intuitive web application designed for scientists, researchers, and 
   - **Most Recent Common Ancestor (MRCA):** Shows the most recent common ancestor of a group of target taxa and their connecting lineage.
 
 - **Interactive Visualizations:** Explore taxonomic relationships through a variety of interactive visualizations, including:
-  - **Tree:** A classic hierarchical view of the taxonomic tree. (_Implemented_)
-  - **Graph:** A network graph that shows the relationships between taxa. (_To be implemented_)
-  - **Pack:** A visualization that packs taxa into a circle. (_To be implemented_)
+  - **Tree:** A classic hierarchical view of the taxonomic tree.
+  - **Graph:** A network graph that shows the relationships between taxa.
+  - **Pack:** A visualization that packs taxa into a circle.
   - When a taxon is focused via the list, the visualization briefly highlights the node with a subtle pulse effect to help locate it.
 - **Powerful Search:** Quickly find any taxon of interest with the powerful search functionality.
 - **Suggestions:** Get suggestions as you type to help you find the right taxon.
