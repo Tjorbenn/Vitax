@@ -1,25 +1,30 @@
 <div
   class="card card-border bg-base-100 grid h-16 w-16 grid-cols-2 grid-rows-2 gap-0 rounded-lg shadow-lg backdrop-blur-sm"
+  role="toolbar"
+  aria-label="Taxon navigation actions"
 >
   <button
     id="show-more"
     class="btn btn-accent tooltip tooltip-top !col-span-2 !m-0 !flex !h-full !min-h-0 !items-center !justify-center !rounded-none !rounded-t-lg !border-0 !p-0 !shadow-none !outline-none"
     data-tip="Show Metadata"
+    aria-label="Show taxon metadata"
   >
-    <span class="icon-[material-symbols--more-horiz] text-base"></span>
+    <span class="icon-[material-symbols--more-horiz] text-base" aria-hidden="true"></span>
   </button>
   <button
     id="fetch-parent"
     class="btn btn-accent tooltip tooltip-left !m-0 !flex !h-full !min-h-0 !items-center !justify-center !rounded-none !rounded-bl-lg !border-0 !p-0 !shadow-none !outline-none"
     data-tip="Fetch Parent"
+    aria-label="Fetch parent taxon"
   >
-    <span class="icon-[material-symbols--arrow-upward-rounded] text-base"></span>
+    <span class="icon-[material-symbols--arrow-upward-rounded] text-base" aria-hidden="true"></span>
   </button>
   <button
     id="fetch-children"
     class="btn btn-accent tooltip tooltip-right !m-0 !flex !h-full !min-h-0 !items-center !justify-center !rounded-none !rounded-br-lg !border-0 !p-0 !shadow-none !outline-none"
     data-tip="Fetch Children"
+    aria-label="Fetch children taxa"
   >
-    <span class="icon-[material-symbols--arrow-downward-rounded] text-base"></span>
+    <span class="icon-[material-symbols--arrow-downward-rounded] text-base" aria-hidden="true"></span>
   </button>
 </div>

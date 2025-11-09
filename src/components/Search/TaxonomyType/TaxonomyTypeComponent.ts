@@ -24,25 +24,26 @@ export class TaxonomyTypeComponent extends BaseComponent {
 
     Object.values(TaxonomyType).forEach((type) => {
       const item = document.createElement("li");
-      const anchor = document.createElement("a");
-      anchor.dataset.type = type;
-      anchor.classList.add("cursor-pointer", "animated");
+      const button = document.createElement("button");
+      button.type = "button";
+      button.dataset.type = type;
+      button.classList.add("cursor-pointer", "animated");
 
       if (type === TaxonomyType.MRCA) {
-        anchor.classList.add("uppercase");
+        button.classList.add("uppercase");
       } else {
-        anchor.classList.add("capitalize");
+        button.classList.add("capitalize");
       }
 
       if (type === currentType) {
-        this.addStatus(anchor);
+        this.addStatus(button);
       }
 
-      anchor.textContent = type;
+      button.textContent = type;
 
-      anchor.addEventListener("click", this.onClick.bind(this));
+      button.addEventListener("click", this.onClick.bind(this));
 
-      item.appendChild(anchor);
+      item.appendChild(button);
       this.list.appendChild(item);
     });
   }
@@ -78,8 +79,8 @@ export class TaxonomyTypeComponent extends BaseComponent {
     anchor.appendChild(status);
   }
 
-  private removeStatus(anchor: HTMLAnchorElement): void {
-    const status = anchor.querySelector(".status");
+  private removeStatus(element: HTMLElement): void {
+    const status = element.querySelector(".status");
     if (status) {
       status.remove();
     }
@@ -95,7 +96,7 @@ export class TaxonomyTypeComponent extends BaseComponent {
     } else {
       this.label.textContent = type;
     }
-    const items = this.list.querySelectorAll("li a") as NodeListOf<HTMLAnchorElement>;
+    const items = this.list.querySelectorAll("li button") as NodeListOf<HTMLButtonElement>;
     items.forEach((item) => {
       if ((item.dataset.type as TaxonomyType) === type) {
         item.classList.add("selected");

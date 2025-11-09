@@ -8,7 +8,7 @@
 }
 
 /* Re-enable pointer events only for drawer content */
-.drawer-side>* {
+.drawer-side > * {
   pointer-events: auto !important;
 }
 

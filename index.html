@@ -2,33 +2,83 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="images/logo_green.svg" />
+
+    <link rel="dns-prefetch" href="https://neighbors.evolbio.mpg.de" />
+    <link rel="preconnect" href="https://neighbors.evolbio.mpg.de" />
+    <link rel="dns-prefetch" href="https://api.ncbi.nlm.nih.gov" />
+    <link rel="dns-prefetch" href="https://api.semanticscholar.org" />
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <title>Vitax</title>
+    <link rel="canonical" href="https://neighbors.evolbio.mpg.de/vitax/" />
+
+    <meta name="title" content="Vitax" />
+    <meta name="description" content="Visualizing the NCBI Taxonomy" />
+
+    <link rel="icon" href="/images/favicon.ico" sizes="any" />
+    <link rel="icon" href="/images/logo_green.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/images/apple-touch-icon-180x180.png" />
+    <link rel="mask-icon" href="/images/logo_green.svg" color="#006c66" />
+
+    <meta name="theme-color" content="#006c66" />
+
+    <meta
+      name="keywords"
+      content="taxonomy, ncbi, ncbi taxonomy, phylogeny, classification, phylogenetic tree, taxonomy visualization, evolutionary biology, bioinformatics"
+    />
+    <meta name="author" content="Tjorben Nawroth" />
+    <meta name="robots" content="index, follow" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://neighbors.evolbio.mpg.de/vitax/" />
+    <meta property="og:title" content="Vitax" />
+    <meta property="og:description" content="Visualizing the NCBI Taxonomy" />
+    <meta
+      property="og:image"
+      content="https://neighbors.evolbio.mpg.de/vitax/images/logo_green.svg"
+    />
   </head>
 
   <body id="app" class="h-full w-full">
-    <main class="relative h-full w-full">
+    <main class="relative h-full w-full" role="main" aria-label="Taxonomy visualization interface">
       <div
         id="menu-overlay"
         class="pointer-events-none relative z-10 flex h-full w-full flex-col justify-between gap-3 p-3 md:gap-6 md:p-6"
+        role="region"
+        aria-label="Main navigation and controls"
       >
         <header
           id="menu-header"
           class="relative flex h-fit w-full flex-col items-center gap-2 md:grid md:grid-cols-[1fr_minmax(0,2fr)_1fr] md:gap-4"
+          role="banner"
         >
           <vitax-title
             class="card card-xs card-border bg-base-100/40 bounce animated pointer-events-auto hidden cursor-pointer justify-self-start shadow-lg backdrop-blur-sm md:block"
+            role="link"
+            aria-label="Vitax home"
           ></vitax-title>
-          <vitax-search class="pointer-events-auto w-full justify-self-center"></vitax-search>
+          <vitax-search
+            class="pointer-events-auto w-full justify-self-center"
+            role="search"
+          ></vitax-search>
           <vitax-theme
             class="btn btn-square bounce animated tooltip tooltip-left pointer-events-auto hidden shadow-lg md:block md:justify-self-end"
             data-tip="Toggle Light/Dark Theme"
           ></vitax-theme>
         </header>
-        <div id="menu-middle" class="flex h-full w-full flex-row items-start justify-between">
+        <div
+          id="menu-middle"
+          class="flex h-full w-full flex-row items-start justify-between"
+          role="complementary"
+          aria-label="Visualization controls"
+        >
           <div class="flex h-full flex-col items-start justify-between">
-            <vitax-list class="pointer-events-auto hidden size-fit md:block"></vitax-list>
+            <vitax-list
+              class="pointer-events-auto hidden size-fit md:block"
+              role="navigation"
+              aria-label="Taxon list"
+            ></vitax-list>
             <vitax-accession-filter
               class="btn btn-square bounce animated tooltip tooltip-right pointer-events-auto hidden shadow-lg md:block"
             ></vitax-accession-filter>
@@ -41,25 +91,38 @@
         <footer
           id="menu-footer"
           class="relative flex w-full items-center justify-center md:grid md:grid-cols-[1fr_auto_1fr] md:gap-4"
+          role="contentinfo"
         >
           <vitax-attribution
             class="card card-xs card-border bg-base-100/40 bounce animated pointer-events-auto hidden justify-self-start shadow-lg backdrop-blur-sm md:block"
+            role="contentinfo"
+            aria-label="Project attribution"
           ></vitax-attribution>
           <vitax-visualization-type
             class="card card-xs card-border bg-base-100/40 bounce animated tooltip pointer-events-auto justify-self-center p-0 shadow-lg backdrop-blur-sm"
             data-tip="Display Type"
+            role="group"
+            aria-label="Visualization type selector"
           ></vitax-visualization-type>
           <vitax-github
             class="card card-xs card-border bg-base-100/40 bounce animated pointer-events-auto hidden justify-self-end shadow-lg backdrop-blur-sm md:block"
           ></vitax-github>
         </footer>
       </div>
-      <vitax-canvas class="absolute inset-0 h-full w-full">
-        <vitax-taxon-action class="hidden"></vitax-taxon-action>
-        <taxon-modal class="hidden"></taxon-modal>
+      <vitax-canvas
+        class="absolute inset-0 h-full w-full"
+        role="img"
+        aria-label="Taxonomy visualization canvas"
+      >
+        <vitax-taxon-action
+          class="hidden"
+          role="toolbar"
+          aria-label="Taxon actions"
+        ></vitax-taxon-action>
+        <taxon-modal class="hidden" role="dialog" aria-label="Taxon metadata"></taxon-modal>
       </vitax-canvas>
     </main>
-    <vitax-welcome></vitax-welcome>
+    <vitax-welcome role="dialog" aria-label="Welcome message"></vitax-welcome>
     <script type="module" src="/src/init.ts"></script>
   </body>
 </html>

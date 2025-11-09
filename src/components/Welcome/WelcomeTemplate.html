@@ -1,11 +1,11 @@
-<dialog id="welcome-modal" class="modal">
-  <div class="modal-box max-h-[90vh] overflow-y-auto p-4 md:p-6">
+<dialog id="welcome-modal" class="modal" aria-labelledby="welcome-heading" aria-describedby="welcome-description">
+  <div class="modal-box max-h-[90vh] overflow-y-auto p-4 md:p-6" role="document">
     <hgroup class="flex flex-col">
-      <h1 class="shrink-0 text-2xl md:text-[34px]">
+      <h1 id="welcome-heading" class="shrink-0 text-2xl md:text-[34px]">
         Welcome to
         <span class="gradient-text font-serif drop-shadow-xl">Vitax!</span>
       </h1>
-      <p class="mb-0 ml-1 text-xs text-neutral-500 md:text-sm">Explore. Discover. Understand.</p>
+      <p id="welcome-description" class="mb-0 ml-1 text-xs text-neutral-500 md:text-sm">Explore. Discover. Understand.</p>
     </hgroup>
     <div class="mt-4 text-sm leading-relaxed md:mt-6 md:text-base">
       <p>Vitax enables you to explore, discover and understand complex taxonomic relationships.</p>
@@ -14,50 +14,56 @@
         provides the tools you need to navigate and analyze taxonomic data effectively:
       </p>
     </div>
-    <ul class="list bg-base-200 card card-border mt-4 text-sm md:mt-6 md:text-base">
-      <li class="list-row animated hover:bg-base-300 items-center">
+    <ul class="list bg-base-200 card card-border mt-4 text-sm md:mt-6 md:text-base" role="list" aria-label="Key features">
+      <li class="list-row animated hover:bg-base-300 items-center" role="listitem">
         <span
           class="icon-[material-symbols--search-rounded] text-primary mr-4"
           style="width: 1.5em; height: 1.5em"
+          aria-hidden="true"
         ></span>
         <span>Autocompleted & Responsive Search</span>
         <span class="badge badge-accent badge-xs">Smart Suggestions</span>
       </li>
-      <li class="list-row animated hover:bg-base-300 items-center">
+      <li class="list-row animated hover:bg-base-300 items-center" role="listitem">
         <span
           class="icon-[material-symbols--imagesmode-rounded] text-primary mr-4"
           style="width: 1.5em; height: 1.5em"
+          aria-hidden="true"
         ></span>
         <span>Tree, Graph and Pack Visualizations</span
         ><span class="badge badge-accent badge-xs">Quick Switch</span>
       </li>
-      <li class="list-row animated hover:bg-base-300 items-center">
+      <li class="list-row animated hover:bg-base-300 items-center" role="listitem">
         <span
           class="icon-[material-symbols--list-alt-rounded] text-primary mr-4"
           style="width: 1.5em; height: 1.5em"
+          aria-hidden="true"
         ></span>
         <span>Inspect Taxon Metadata</span
         ><span class="badge badge-accent badge-xs">Name, ID, Rank ...</span>
       </li>
-      <li class="list-row animated hover:bg-base-300 items-center">
+      <li class="list-row animated hover:bg-base-300 items-center" role="listitem">
         <span
           class="icon-[material-symbols--newspaper-rounded] text-primary mr-4"
           style="width: 1.5em; height: 1.5em"
+          aria-hidden="true"
         ></span>
         <span>Find Research</span>
         <span class="badge badge-accent badge-xs">Publications / Citations</span>
       </li>
-      <li class="list-row animated hover:bg-base-300 items-center">
+      <li class="list-row animated hover:bg-base-300 items-center" role="listitem">
         <span
           class="icon-[material-symbols--download-for-offline-rounded] text-primary mr-4"
           style="width: 1.5em; height: 1.5em"
+          aria-hidden="true"
         ></span>
         <span>Download Accessions</span><span class="badge badge-xs badge-accent">CSV, JSON</span>
       </li>
-      <li class="list-row animated hover:bg-base-300 items-center">
+      <li class="list-row animated hover:bg-base-300 items-center" role="listitem">
         <span
           class="icon-[material-symbols--share] text-primary mr-4"
           style="width: 1.5em; height: 1.5em"
+          aria-hidden="true"
         ></span>
         <span>Save & Share Visualizations</span
         ><span class="badge badge-xs badge-accent">Custom URLs</span>
@@ -73,8 +79,9 @@
           id="welcome-tutorial"
           role="button"
           class="btn btn-primary"
+          aria-label="Start tutorial tour"
         ></vitax-tutorial>
-        <button id="welcome-close" class="btn">Close</button>
+        <button id="welcome-close" class="btn" aria-label="Close welcome dialog">Close</button>
       </form>
     </div>
   </div>

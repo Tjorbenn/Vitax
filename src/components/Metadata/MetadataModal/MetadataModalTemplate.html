@@ -1,5 +1,5 @@
-<dialog class="modal modal-middle">
-  <div class="modal-box bg-base-100/80 w-11/12 max-w-5xl p-4 backdrop-blur-xs md:p-6">
+<dialog class="modal modal-middle" aria-labelledby="taxon-name" aria-describedby="taxon-id">
+  <div class="modal-box bg-base-100/80 w-11/12 max-w-5xl p-4 backdrop-blur-xs md:p-6" role="document">
     <div class="flex flex-col items-stretch gap-2">
       <hgroup
         id="taxon-popover-header"
@@ -9,33 +9,40 @@
           id="taxon-name"
           class="text-primary tooltip m-0 text-base drop-shadow md:text-lg"
           data-tip="Name"
+          role="heading"
+          aria-level="1"
         ></span>
         <span
           id="taxon-id"
           class="badge badge-primary badge-xs tooltip drop-shadow"
           data-tip="ID"
+          aria-label="Taxon ID"
         ></span>
       </hgroup>
       <div
         id="taxon-popover-head"
         class="mb-4 flex flex-col gap-2 md:mb-6 md:flex-row md:flex-wrap md:items-center md:justify-center"
       >
-        <vitax-data-ranks></vitax-data-ranks>
-        <div class="divider divider-horizontal hidden md:flex"></div>
+        <vitax-data-ranks role="region" aria-label="Taxonomic ranks"></vitax-data-ranks>
+        <div class="divider divider-horizontal hidden md:flex" role="separator" aria-hidden="true"></div>
         <vitax-data-links
           class="card card-border bg-base-100 rounded-xl shadow-lg"
+          role="region"
+          aria-label="External links"
         ></vitax-data-links>
       </div>
-      <div id="divider-genomes" class="divider my-2">Genomes</div>
+      <div id="divider-genomes" class="divider my-2" role="separator">Genomes</div>
       <vitax-data-genomes
         class="card card-border bg-base-100 rounded-xl shadow-lg"
+        role="region"
+        aria-label="Genome information"
       ></vitax-data-genomes>
 
-      <div id="divider-publications" class="divider my-2">Publications</div>
-      <vitax-data-publications></vitax-data-publications>
+      <div id="divider-publications" class="divider my-2" role="separator">Publications</div>
+      <vitax-data-publications role="region" aria-label="Related publications"></vitax-data-publications>
     </div>
   </div>
   <form method="dialog" class="modal-backdrop">
-    <button></button>
+    <button aria-label="Close modal"></button>
   </form>
 </dialog>

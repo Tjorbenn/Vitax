@@ -143,7 +143,7 @@ export class SearchComponent extends BaseComponent {
   public onStatusChange(status: Status): void {
     if (status === Status.Loading) {
       this.button.innerHTML = '<span class="loading loading-spinner"></span>';
-    } else {
+    } else if (this.button.querySelector(".loading")) {
       this.button.innerHTML = `
         <span id="visualize-text" class="hidden md:inline">Visualize</span>
         <span

@@ -1,18 +1,28 @@
 <search class="relative w-full">
   <fieldset
     class="card card-border animated bounce bounce-within join flex w-full max-w-full flex-row shadow-lg"
+    aria-label="Taxonomy search"
   >
-    <vitax-taxonomy-type class="join-item"></vitax-taxonomy-type>
+    <vitax-taxonomy-type class="join-item" role="group" aria-label="Select taxonomy type"></vitax-taxonomy-type>
     <label
       id="search-input-label"
       class="input join-item bg-base-100/40 grow border-none !shadow-none backdrop-blur-sm focus-within:outline-none"
+      for="search-input"
     >
       <span
         class="icon-[material-symbols--search-rounded]"
         style="width: 1.5em; height: 1.5em"
+        aria-hidden="true"
       ></span>
-      <input type="search" id="search-input" placeholder="Search taxa..." />
-      <div class="hidden md:flex">
+      <input 
+        type="search" 
+        id="search-input" 
+        placeholder="Search taxa..." 
+        aria-label="Search for taxa"
+        aria-autocomplete="list"
+        aria-controls="suggestions-body"
+      />
+      <div class="hidden md:flex" aria-label="Keyboard shortcut Control K">
         <kbd class="kbd kbd-sm bg-accent text-accent-content">CTRL</kbd>
         +
         <kbd class="kbd kbd-sm bg-accent text-accent-content">K</kbd>
@@ -22,16 +32,21 @@
       id="visualize-button"
       type="submit"
       class="btn btn-primary join-item tooltip tooltip-left md:tooltip-right border-none"
+      aria-label="Visualize selected taxon"
     >
       <span id="visualize-text" class="hidden md:inline">Visualize</span>
       <span
         id="visualize-icon"
         class="icon-[material-symbols--account-tree-rounded] md:hidden"
         style="width: 1.5em; height: 1.5em"
+        aria-hidden="true"
       ></span>
     </button>
   </fieldset>
   <section
     class="animated pointer-events-none absolute right-0 left-0 mt-4 flex flex-col items-center gap-4"
+    role="region"
+    aria-label="Search results"
+    aria-live="polite"
   ></section>
 </search>

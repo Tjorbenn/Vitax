@@ -130,10 +130,10 @@ export class TaxonActionComponent extends BaseComponent {
       this.hideTimer = undefined;
     }
     this.classList.remove("hidden");
-    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-    this.offsetWidth;
-    this.classList.remove("opacity-0", "scale-90", "pointer-events-none");
-    this.classList.add("opacity-100", "scale-100");
+    requestAnimationFrame(() => {
+      this.classList.remove("opacity-0", "scale-90", "pointer-events-none");
+      this.classList.add("opacity-100", "scale-100");
+    });
   }
 
   public hide(): void {

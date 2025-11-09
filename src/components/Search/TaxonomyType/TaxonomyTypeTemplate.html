@@ -2,9 +2,12 @@
   class="btn btn-neutral animated join-item border-none capitalize focus:outline-none"
   id="taxonomy-type-button"
   popovertarget="taxonomy-type-popover"
+  aria-haspopup="menu"
+  aria-expanded="false"
+  aria-label="Select taxonomy type"
 >
   <span id="taxonomy-type-label"></span>
-  <span class="icon-[material-symbols--arrow-drop-down-rounded]"></span>
+  <span class="icon-[material-symbols--arrow-drop-down-rounded]" aria-hidden="true"></span>
 </button>
 <ul
   class="dropdown card card-border bg-base-100/40 menu animated shadow-lg backdrop-blur-sm"
@@ -12,6 +15,8 @@
   id="taxonomy-type-popover"
   anchor="taxonomy-type-button"
   style="left: anchor(-25%); top: anchor(120%)"
+  role="menu"
+  aria-label="Taxonomy type options"
 >
-  <li class="menu-title">Taxonomy Type</li>
+  <li class="menu-title" role="presentation">Taxonomy Type</li>
 </ul>

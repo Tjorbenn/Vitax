@@ -1,34 +1,40 @@
 <div class="drawer size-fit">
-  <input id="list-drawer" type="checkbox" class="drawer-toggle" />
+  <input id="list-drawer" type="checkbox" class="drawer-toggle" aria-hidden="true" />
   <div class="drawer-content">
     <label
       id="drawer-button"
       for="list-drawer"
       data-tip="Show Taxon List"
       class="btn btn-primary btn-square drawer-button animated bounce tooltip tooltip-right hidden drop-shadow-lg starting:opacity-0"
+      aria-label="Show taxon list"
+      aria-controls="list-content"
     >
       <span
         id="drawer-icon"
         class="icon-[material-symbols--left-panel-open-rounded] animated text-xl"
+        aria-hidden="true"
       ></span>
     </label>
   </div>
-  <div class="drawer-side z-10 flex items-center justify-start">
-    <label for="list-drawer" class="drawer-overlay pointer-events-none"></label>
+  <div class="drawer-side z-10 flex items-center justify-start" role="complementary">
+    <label for="list-drawer" class="drawer-overlay pointer-events-none" aria-hidden="true"></label>
     <div
       class="card card-border animated bg-base-300/60 relative z-20 m-4 h-fit max-h-[calc(100vh-2rem)] w-fit max-w-full overflow-auto rounded-2xl p-4 shadow-2xl backdrop-blur-sm"
+      role="dialog"
+      aria-labelledby="list-title"
     >
       <label
         for="list-drawer"
-        aria-label="close sidebar"
+        aria-label="Close sidebar"
         class="btn btn-sm btn-circle btn-ghost absolute top-2 right-2 z-10"
       >
         <span
           class="icon-[material-symbols--left-panel-close-rounded]"
           style="width: 1.5em; height: 1.5em"
+          aria-hidden="true"
         ></span>
       </label>
-      <ul id="list-content" class="menu card-body rounded-lg p-0"></ul>
+      <ul id="list-content" class="menu card-body rounded-lg p-0" role="list" aria-label="Taxa in current view"></ul>
     </div>
   </div>
 </div>

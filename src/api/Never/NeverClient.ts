@@ -103,21 +103,6 @@ export async function getChildrenIdsByTaxonId(taxonId: number): Promise<number[]
   });
 }
 
-export async function getRanksByTaxonIds(taxonIds: number[]): Promise<Map<number, string>> {
-  const request = new Never.Request(Never.Endpoint.Ranks);
-  request.addParameter(Never.ParameterKey.Term, taxonIds.join(","));
-
-  const response = await request.Send();
-  const ranks = new Map<number, string>();
-  for (const entry of response) {
-    if (entry.taxid && entry.rank) {
-      // Store the raw rank string returned by the API. The UI will decide how to display it.
-      ranks.set(entry.taxid, entry.rank);
-    }
-  }
-  return ranks;
-}
-
 /**
  * Get suggestions for a given name.
  * @param name The name to get suggestions for.
@@ -262,20 +247,23 @@ export async function getMrcaByTaxonIds(taxonIds: number[]): Promise<Taxon> {
   return mrca;
 }
 
+/**
+ * Get full taxon information by IDs.
+ * @param taxonIds The IDs of the taxa to fetch.
+ * @returns A promise that resolves to an array of full taxa with rank information.
+ */
 export async function getFullTaxaByIds(taxonIds: number[]): Promise<Taxon[]> {
-  const taxa = await getTaxaByIds(taxonIds);
-  const ranks = await getRanksByTaxonIds(taxonIds);
-
-  taxa.forEach((taxon) => {
-    taxon.rank = ranks.get(taxon.id);
-  });
-
-  return taxa;
+  return await getTaxaByIds(taxonIds);
 }
 
+/**
+ * Get full taxon information by name.
+ * @param name The name of the taxon to fetch.
+ * @returns A promise that resolves to the full taxon with rank information.
+ */
 export async function getFullTaxonByName(name: string): Promise<Taxon> {
   const preTaxon = await getTaxonByName(name);
-  const full = await getFullTaxaByIds([preTaxon.id]);
+  const full = await getTaxaByIds([preTaxon.id]);
   const fullTaxon = full[0];
   if (!fullTaxon) {
     throw new Error(`Full taxon data for '${name}' not found.`);
@@ -305,6 +293,7 @@ function MapResponseToTaxa(response: Never.Response): Taxon[] {
       taxon.commonName = entry.common_name;
       taxon.isLeaf = entry.is_leaf;
       taxon.parentId = entry.parent;
+      taxon.rank = entry.rank;
       taxon.genomeCount = FormatGenomeCount(entry.raw_genome_counts);
       taxon.genomeCountRecursive = FormatGenomeCount(entry.rec_genome_counts);
       taxon.images = FormatImages(entry.images);
