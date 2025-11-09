@@ -1,3 +1,28 @@
+export enum ThemeColor {
+  Primary = "--color-primary",
+  PrimaryContent = "--color-primary-content",
+  Secondary = "--color-secondary",
+  SecondaryContent = "--color-secondary-content",
+  Accent = "--color-accent",
+  AccentContent = "--color-accent-content",
+  Neutral = "--color-neutral",
+  NeutralContent = "--color-neutral-content",
+  Base100 = "--color-base-100",
+  Base200 = "--color-base-200",
+  Base300 = "--color-base-300",
+  BaseContent = "--color-base-content",
+  Info = "--color-info",
+  InfoContent = "--color-info-content",
+  Success = "--color-success",
+  SuccessContent = "--color-success-content",
+  Warning = "--color-warning",
+  WarningContent = "--color-warning-content",
+  Error = "--color-error",
+  ErrorContent = "--color-error-content",
+  DarkAccent = "--color-dark-accent",
+  DarkAccentContent = "--color-dark-accent-content",
+}
+
 export type ThemeColors = {
   text: string;
   primary: string;
@@ -39,7 +64,7 @@ export function refreshThemeColors(): void {
   updateCache();
 }
 
-export function disposeThemeService(): void {
+export function disposeTheme(): void {
   observer?.disconnect();
   observer = undefined;
   cache = undefined;

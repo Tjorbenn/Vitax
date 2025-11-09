@@ -43,7 +43,7 @@ export class D3Tree extends D3Visualization {
       .append("g")
       .attr("fill", "none")
       .attr("stroke", "var(--color-base-content)")
-      .attr("stroke-opacity", 0.2)
+      .attr("stroke-opacity", 0.4)
       .attr("stroke-width", 1);
 
     this.gNode = this.layer.append("g").attr("cursor", "pointer").attr("pointer-events", "all");
@@ -128,6 +128,8 @@ export class D3Tree extends D3Visualization {
       source.y0 = 0;
     }
     const src = source as d3.HierarchyNode<LeanTaxon> & { x0: number; y0: number };
+    src.x ??= src.x0 ?? this.height / 2;
+    src.y ??= src.y0 ?? 0;
 
     const currentDuration = event?.altKey ? 2500 : duration;
     const useTransition = currentDuration > 0;
@@ -264,8 +266,8 @@ export class D3Tree extends D3Visualization {
 
     this.longPress.attachTo(
       nodeEnter.filter((d: TreeNode) => d.data.id !== 0),
-      (event: TouchEvent, d: TreeNode) => {
-        const el = event.currentTarget as SVGGElement;
+      (_event: TouchEvent, d: TreeNode, target: Element) => {
+        const el = target as SVGGElement;
         const circle = el.querySelector("circle");
         const bbox = (circle ?? el).getBoundingClientRect();
         const childrenCount = d.children?.length ?? 0;
@@ -283,13 +285,26 @@ export class D3Tree extends D3Visualization {
 
     const themeColors = this.getThemeColors();
 
+    const nodeSizeScale = this.createGenomeSizeScale([3, 12]);
+    const strokeWidthScale = this.createGenomeStrokeScale([0.5, 6]);
+
     nodeEnter
       .append("circle")
-      .attr("r", (d: TreeNode) => (d.data.id === 0 ? 6 : 4))
+      .attr("r", (d: TreeNode) => {
+        if (d.data.id === 0) return 6;
+        return nodeSizeScale(this.getGenomeTotal(d.data));
+      })
       .attr("fill", (d: TreeNode) => (d.data.id === 0 ? themeColors.accent : this.getNodeFill(d)))
       .attr("stroke-width", 1)
       .attr("stroke", "var(--color-base-content)")
-      .attr("stroke-opacity", 0.3);
+      .attr("stroke-opacity", 0.6);
+
+    nodeEnter
+      .filter((d: TreeNode) => d.data.annotation !== undefined)
+      .append("title")
+      .text((d: TreeNode) =>
+        d.data.annotation ? `${d.data.name} (${d.data.annotation.text})` : d.data.name,
+      );
 
     nodeEnter
       .filter((d: TreeNode) => d.data.id === 0)
@@ -314,7 +329,7 @@ export class D3Tree extends D3Visualization {
       })
       .attr("fill", "none")
       .attr("stroke", "var(--color-base-content)")
-      .attr("stroke-opacity", 0.4)
+      .attr("stroke-opacity", 0.7)
       .attr("stroke-width", 1.5)
       .attr("marker-end", "url(#arrowhead)");
 
@@ -389,6 +404,10 @@ export class D3Tree extends D3Visualization {
 
     nodeMerge
       .select<SVGCircleElement>("circle")
+      .attr("r", (d: TreeNode) => {
+        if (d.data.id === 0) return 6;
+        return nodeSizeScale(this.getGenomeTotal(d.data));
+      })
       .attr("fill", (d: TreeNode) => (d.data.id === 0 ? themeColors.accent : this.getNodeFill(d)));
 
     if (useTransition) {
@@ -425,6 +444,9 @@ export class D3Tree extends D3Visualization {
       .attr("d", () => {
         const o = { x: src.x0, y: src.y0 } as d3.HierarchyPointNode<LeanTaxon>;
         return this.diagonal({ source: o, target: o });
+      })
+      .attr("stroke-width", (l: d3.HierarchyLink<LeanTaxon>) => {
+        return strokeWidthScale(this.getGenomeTotal(l.target.data));
       });
 
     const linkMerged = (
@@ -447,9 +469,16 @@ export class D3Tree extends D3Visualization {
       linkMerged
         .transition(transitionName)
         .duration(currentDuration)
-        .attr("d", (l: d3.HierarchyPointLink<LeanTaxon>) => this.diagonal(l));
+        .attr("d", (l: d3.HierarchyPointLink<LeanTaxon>) => this.diagonal(l))
+        .attr("stroke-width", (l: d3.HierarchyPointLink<LeanTaxon>) => {
+          return strokeWidthScale(this.getGenomeTotal(l.target.data));
+        });
     } else {
-      linkMerged.attr("d", (l: d3.HierarchyPointLink<LeanTaxon>) => this.diagonal(l));
+      linkMerged
+        .attr("d", (l: d3.HierarchyPointLink<LeanTaxon>) => this.diagonal(l))
+        .attr("stroke-width", (l: d3.HierarchyPointLink<LeanTaxon>) => {
+          return strokeWidthScale(this.getGenomeTotal(l.target.data));
+        });
     }
 
     const linkExit = linkSel.exit() as unknown as d3.Selection<

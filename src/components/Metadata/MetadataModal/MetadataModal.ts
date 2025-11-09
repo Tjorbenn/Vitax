@@ -97,7 +97,7 @@ export class TaxonModalComponent extends BaseComponent {
   }
 }
 
-customElements.define("taxon-modal", TaxonModalComponent);
+customElements.define("vitax-taxon-modal", TaxonModalComponent);
 
 let modalInstance: TaxonModalComponent | undefined;
 

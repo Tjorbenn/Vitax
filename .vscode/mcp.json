@@ -1,15 +1,15 @@
 {
   "servers": {
     "tailwindcss Docs": {
-      "type": "http",
+      "type": "sse",
       "url": "https://gitmcp.io/tailwindlabs/tailwindcss"
     },
     "daisyUI": {
-      "type": "http",
+      "type": "sse",
       "url": "https://gitmcp.io/saadeghi/daisyui"
     },
     "d3 Docs": {
-      "type": "http",
+      "type": "sse",
       "url": "https://gitmcp.io/d3/d3"
     },
     "litscript Docs": {

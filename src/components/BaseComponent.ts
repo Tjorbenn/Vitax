@@ -17,19 +17,14 @@ export abstract class BaseComponent extends HTMLElement {
     this.initialize();
   }
 
-  /**
-   * Called after constructor and template loaded. Override to init.
-   */
-  initialize(): void {}
+  initialize(): void {
+    /* empty */
+  }
 
-  /**
-   * Render/setup the component. Called by loadTemplate.
-   */
-  async setup(): Promise<void> {}
+  async setup(): Promise<void> {
+    /* empty */
+  }
 
-  /**
-   * Cleanup event listeners and subscriptions before removal.
-   */
   destroy(): void {
     this.events.removeAll();
     this.subscriptions.forEach((unsub) => {
@@ -37,9 +32,6 @@ export abstract class BaseComponent extends HTMLElement {
     });
   }
 
-  /**
-   * Helper to add an event listener with automatic cleanup
-   */
   protected addEvent(
     target: EventTarget,
     type: string,
@@ -49,10 +41,6 @@ export abstract class BaseComponent extends HTMLElement {
     this.events.add(target, type, listener, options);
   }
 
-  /**
-   * Helper to add a subscription with automatic cleanup
-   * Use this for State subscriptions or any other observables
-   */
   protected addSubscription(unsubscribe: () => void): void {
     this.subscriptions.push(unsubscribe);
   }

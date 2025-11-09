@@ -1,5 +1,5 @@
 /**
- * # NCBI API Client
+ * #### NCBI API Client
  *
  * The NCBI API Client ES module provides an abstraction for the NCBI Taxonomy API base module, that exposes the `getLinksFromTaxonId` function.
  * This function boils down the broad functionality of the NCBI Taxonomy API to the specific use case, that we need for Vitax.

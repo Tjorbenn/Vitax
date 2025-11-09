@@ -31,7 +31,6 @@ export class D3Graph extends D3Visualization {
     simulation: typeof this.simulation,
   ) => d3.DragBehavior<SVGGElement, GraphDragDatum, GraphDragDatum | d3.SubjectPosition>;
   private lastNodeCount = 0;
-  private maxChildrenCount = 0;
   private nodeCountForForces = 0;
   private rafRenderHandle?: number;
   private rafRenderScheduled = false;
@@ -51,7 +50,7 @@ export class D3Graph extends D3Visualization {
       .append("g")
       .attr("class", "vitax-links")
       .attr("stroke", "var(--color-base-content)")
-      .attr("stroke-opacity", 0.2)
+      .attr("stroke-opacity", 0.4)
       .attr("pointer-events", "none");
 
     this.gNode = this.layer.append("g").attr("cursor", "pointer").attr("pointer-events", "all");
@@ -161,14 +160,25 @@ export class D3Graph extends D3Visualization {
 
     this.computeNodeMetrics(visibleNodes);
 
+    const linkStrokeScale = this.createGenomeStrokeScale([0.3, 5]);
+
     const linkSel = this.gLink
       .selectAll<SVGLineElement, d3.HierarchyLink<LeanTaxon>>("line")
       .data(visibleLinks as d3.HierarchyLink<LeanTaxon>[], (d) => d.target.data.id);
 
-    const linkEnter = linkSel.enter().append("line");
+    const linkEnter = linkSel
+      .enter()
+      .append("line")
+      .attr("stroke-width", (d) => {
+        return linkStrokeScale(this.getGenomeTotal(d.target.data));
+      });
     linkSel.exit().remove();
 
     const linkMerge = linkEnter.merge(linkSel);
+
+    linkMerge.attr("stroke-width", (d) => {
+      return linkStrokeScale(this.getGenomeTotal(d.target.data));
+    });
 
     const nodeSel = this.gNode
       .selectAll<SVGGElement, GraphHierarchyNode>("g")
@@ -196,20 +206,23 @@ export class D3Graph extends D3Visualization {
         });
       });
 
-    this.longPress.attachTo(nodeEnter, (event: TouchEvent, d: GraphHierarchyNode) => {
-      const el = event.currentTarget as SVGGElement;
-      const circle = el.querySelector("circle");
-      const bbox = (circle ?? el).getBoundingClientRect();
-      this.handlers?.onHover?.({
-        id: d.data.id,
-        name: d.data.name,
-        parent: d.parent ? { id: d.parent.data.id, name: d.parent.data.name } : undefined,
-        childrenCount: d.children?.length ?? 0,
-        x: bbox.x + bbox.width / 2,
-        y: bbox.y + bbox.height / 2,
-        node: d,
-      });
-    });
+    this.longPress.attachTo(
+      nodeEnter,
+      (_event: TouchEvent, d: GraphHierarchyNode, target: Element) => {
+        const el = target as SVGGElement;
+        const circle = el.querySelector("circle");
+        const bbox = (circle ?? el).getBoundingClientRect();
+        this.handlers?.onHover?.({
+          id: d.data.id,
+          name: d.data.name,
+          parent: d.parent ? { id: d.parent.data.id, name: d.parent.data.name } : undefined,
+          childrenCount: d.children?.length ?? 0,
+          x: bbox.x + bbox.width / 2,
+          y: bbox.y + bbox.height / 2,
+          node: d,
+        });
+      },
+    );
 
     nodeEnter.call(
       this.dragBehavior(this.simulation) as unknown as (
@@ -222,10 +235,14 @@ export class D3Graph extends D3Visualization {
       .attr("r", (d: GraphHierarchyNode) => d._metrics?.r ?? 6)
       .attr("fill", (d: GraphHierarchyNode) => this.getNodeFill(d))
       .attr("stroke", theme.text)
-      .attr("stroke-opacity", 0.3)
+      .attr("stroke-opacity", 0.6)
       .attr("stroke-width", 1);
 
-    nodeEnter.append("title").text((d: GraphHierarchyNode) => d.data.name);
+    nodeEnter
+      .append("title")
+      .text((d: GraphHierarchyNode) =>
+        d.data.annotation ? `${d.data.name} (${d.data.annotation.text})` : d.data.name,
+      );
 
     nodeEnter
       .append("text")
@@ -263,7 +280,7 @@ export class D3Graph extends D3Visualization {
     mergedNodes
       .selectAll<SVGCircleElement, GraphHierarchyNode>("circle")
       .attr("stroke", theme.text)
-      .attr("stroke-opacity", 0.3);
+      .attr("stroke-opacity", 0.6);
     mergedNodes
       .selectAll<SVGTextElement, GraphHierarchyNode>("text")
       .attr("x", (d) => (d._metrics?.r ?? 6) + 3)
@@ -360,9 +377,9 @@ export class D3Graph extends D3Visualization {
           );
           const inMotion = this.movingFrames >= this.movingThreshold - 1;
           if (inMotion) {
-            linkMerge.attr("stroke-opacity", 0.12);
-          } else {
             linkMerge.attr("stroke-opacity", 0.25);
+          } else {
+            linkMerge.attr("stroke-opacity", 0.5);
           }
         } finally {
           this.rafRenderScheduled = false;
@@ -399,25 +416,14 @@ export class D3Graph extends D3Visualization {
     if (!nodes.length) {
       return;
     }
-    const genomeTotals = nodes.map((n) => this.getGenomeTotalForId(n.data.id));
-    const maxGenome = d3.max(genomeTotals) ?? 0;
-    const minGenome = d3.min(genomeTotals) ?? 0;
-    const useGenome = maxGenome > 0;
-    const radiusScale = useGenome
-      ? d3
-          .scaleSqrt<number, number>()
-          .domain([Math.max(1, minGenome), maxGenome])
-          .range([5, 26])
-      : d3
-          .scaleSqrt<number, number>()
-          .domain([1, d3.max(nodes, (n) => (n.children?.length ?? 0) + 1) ?? 10])
-          .range([5, 22]);
+
+    const nodeSizeScale = this.createGenomeSizeScale([4, 40]);
 
     nodes.forEach((n) => {
       const childrenCount = n.children?.length ?? 0;
       const degree = childrenCount + (n.parent ? 1 : 0);
-      const gTotal = this.getGenomeTotalForId(n.data.id);
-      const r = radiusScale(useGenome ? gTotal : degree + 1);
+      const gTotal = this.getGenomeTotal(n.data);
+      const r = nodeSizeScale(gTotal);
 
       n._metrics = { r, degree, gTotal, childrenCount };
 
@@ -433,7 +439,6 @@ export class D3Graph extends D3Visualization {
         cachedCollideRadius,
       };
     });
-    this.maxChildrenCount = d3.max(nodes, (n) => n._metrics?.childrenCount ?? 0) ?? 0;
   }
 
   private isLeaf(n: GraphHierarchyNode): boolean {
@@ -442,60 +447,33 @@ export class D3Graph extends D3Visualization {
 
   private linkDistance(s: GraphHierarchyNode, t: GraphHierarchyNode): number {
     if (this.isLeaf(t)) return 12;
-    const sChildren = s._metrics?.childrenCount ?? 0;
-    const tChildren = t._metrics?.childrenCount ?? 0;
     const sRadius = s._metrics?.r ?? 8;
     const tRadius = t._metrics?.r ?? 8;
 
     const baseDistance = sRadius + tRadius + 12;
 
-    const childSpacing = Math.min(35, Math.sqrt(sChildren) * 4.5 + Math.sqrt(tChildren) * 3.5);
-
-    return baseDistance + childSpacing;
+    return baseDistance;
   }
 
-  private linkStrength(s: GraphHierarchyNode, t: GraphHierarchyNode): number {
-    const sChildren = s._metrics?.childrenCount ?? 0;
-    const tChildren = t._metrics?.childrenCount ?? 0;
-
+  private linkStrength(_s: GraphHierarchyNode, t: GraphHierarchyNode): number {
     let base = 0.8;
 
     if (this.isLeaf(t)) base += 0.15;
-
-    const maxCh = this.maxChildrenCount || 1;
-    const totalChildren = sChildren + tChildren;
-
-    if (totalChildren > 0) {
-      const childrenRatio = totalChildren / (2 * maxCh);
-      base *= 1 - Math.min(0.25, childrenRatio * 0.35);
-    }
 
     return Math.max(0.5, Math.min(0.95, base));
   }
 
   private chargeStrength(d: GraphHierarchyNode): number {
-    const children = d._metrics?.childrenCount ?? 0;
     const r = d._metrics?.r ?? 8;
 
-    let charge = -50 - r * 3.5;
-
-    if (children > 0) {
-      const maxChildren = this.maxChildrenCount || 1;
-      const childrenRatio = children / maxChildren;
-
-      const additionalCharge = -Math.min(200, children * 12 + childrenRatio * 100);
-      charge += additionalCharge;
-    }
+    const charge = -50 - r * 3.5;
 
     return Math.max(-400, Math.min(-25, charge));
   }
 
   private collideRadius(d: GraphHierarchyNode): number {
     const base = (d._metrics?.r ?? 6) + 10;
-    const children = d._metrics?.childrenCount ?? 0;
 
-    const childPadding = Math.min(36, Math.sqrt(children) * 7);
-
-    return base + childPadding;
+    return base;
   }
 }

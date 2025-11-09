@@ -33,4 +33,4 @@ jobs:
       - name: Render PDF
         working-directory: ./thesis
         run: |
-          typst compile thesis.typ thesis.pdfs
+          typst compile thesis.typ thesis.pdf

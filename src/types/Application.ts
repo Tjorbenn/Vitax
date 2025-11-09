@@ -1,5 +1,5 @@
 /**
- * # Application specific types
+ * ##### Application.ts
  *
  * To display structured data in the application, we define some specific types.
  */

@@ -35,7 +35,12 @@ export class D3Pack extends D3Visualization {
     this.gNodes = this.layer.append("g").attr("class", "vitax-pack-nodes");
     this.gLabels = this.layer.append("g").attr("class", "vitax-pack-labels");
 
-    this.packLayout = d3.pack<LeanTaxon>().padding(3);
+    this.packLayout = d3.pack<LeanTaxon>().padding((node) => {
+      if (node.children?.length === 1) {
+        return 15;
+      }
+      return 3;
+    });
 
     this.layer.on("click", (event) => {
       const e = event as MouseEvent;
@@ -86,7 +91,7 @@ export class D3Pack extends D3Visualization {
 
     const newRoot = this.packLayout(
       filteredRoot
-        .sum((d) => this.getGenomeTotalForId(d.id))
+        .sum((d) => this.getGenomeTotal(d))
         .sort((a, b) => (b.value ?? 0) - (a.value ?? 0)),
     );
 
@@ -143,9 +148,9 @@ export class D3Pack extends D3Visualization {
         });
       });
 
-    this.longPress.attachTo(nodeEnter, (event, d) => {
+    this.longPress.attachTo(nodeEnter, (_event, d, target: Element) => {
       this.setActiveTaxon(d.data.id);
-      const el = event.currentTarget as SVGGElement;
+      const el = target as SVGGElement;
       const circle = el.querySelector("circle");
       const bbox = (circle ?? el).getBoundingClientRect();
       this.handlers?.onHover?.({
@@ -161,19 +166,32 @@ export class D3Pack extends D3Visualization {
 
     const theme = this.getThemeColors();
 
+    // Create stroke width scale based on genome counts
+    const strokeWidthScale = this.createGenomeStrokeScale([0.5, 6]);
+
     nodeEnter
       .append("circle")
       .attr("r", 0)
       .attr("fill", (d) => this.getNodeFill(d))
       .attr("stroke", theme.text)
-      .attr("stroke-opacity", 0.3)
-      .attr("stroke-width", 1)
+      .attr("stroke-opacity", 0.6)
+      .attr("stroke-width", (d) => {
+        return strokeWidthScale(this.getGenomeTotal(d.data));
+      })
       .on("mouseover", function () {
         d3.select(this as unknown as SVGCircleElement).attr("stroke-opacity", 0.95);
       })
       .on("mouseout", function () {
-        d3.select(this as unknown as SVGCircleElement).attr("stroke-opacity", 0.3);
+        d3.select(this as unknown as SVGCircleElement).attr("stroke-opacity", 0.6);
       });
+
+    // Add title tooltip for annotated nodes
+    nodeEnter
+      .filter((d: d3.HierarchyCircularNode<LeanTaxon>) => d.data.annotation !== undefined)
+      .append("title")
+      .text((d: d3.HierarchyCircularNode<LeanTaxon>) =>
+        d.data.annotation ? `${d.data.name} (${d.data.annotation.text})` : d.data.name,
+      );
 
     nodeSel
       .exit()
@@ -204,7 +222,12 @@ export class D3Pack extends D3Visualization {
       .select("circle")
       .attr("r", (d) => d.r);
 
-    nodeMerge.select<SVGCircleElement>("circle").attr("fill", (d) => this.getNodeFill(d));
+    nodeMerge
+      .select<SVGCircleElement>("circle")
+      .attr("fill", (d) => this.getNodeFill(d))
+      .attr("stroke-width", (d) => {
+        return strokeWidthScale(this.getGenomeTotal(d.data));
+      });
 
     const labelSel = this.gLabels
       .selectAll<SVGTextElement, d3.HierarchyCircularNode<LeanTaxon>>("text")
@@ -443,12 +466,15 @@ export class D3Pack extends D3Visualization {
     if (nodeSelection.empty()) return;
 
     const theme = this.getThemeColors();
+    const strokeWidthScale = this.createGenomeStrokeScale([0.5, 6]);
 
     nodeSelection
       .select<SVGCircleElement>("circle")
       .attr("data-active", "true")
       .attr("stroke", theme.accent)
-      .attr("stroke-width", 3)
+      .attr("stroke-width", (d) => {
+        return Math.max(3, strokeWidthScale(this.getGenomeTotal(d.data)) * 1.5);
+      })
       .attr("stroke-opacity", 1)
       .style("filter", `drop-shadow(0 0 6px ${theme.accent})`);
   }
@@ -461,12 +487,15 @@ export class D3Pack extends D3Visualization {
       .filter((d) => d.data.id === this.activeTaxonId);
 
     const theme = this.getThemeColors();
+    const strokeWidthScale = this.createGenomeStrokeScale([0.5, 6]);
 
     nodeSelection
       .select<SVGCircleElement>("circle")
       .attr("data-active", null)
       .attr("stroke", theme.text)
-      .attr("stroke-width", 1)
+      .attr("stroke-width", (d) => {
+        return strokeWidthScale(this.getGenomeTotal(d.data));
+      })
       .attr("stroke-opacity", 0.3)
       .style("filter", null);
 

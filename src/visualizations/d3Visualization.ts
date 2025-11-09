@@ -1,9 +1,9 @@
 import * as d3 from "d3";
 import * as State from "../core/State";
 import * as TaxonomyService from "../services/TaxonomyService";
-import { getThemeColors } from "../services/ThemeService";
 import { VisualizationType } from "../types/Application";
 import { Taxon, TaxonomyTree, type LeanTaxon } from "../types/Taxonomy";
+import { getThemeColors, ThemeColor } from "../utility/Theme";
 
 export type D3VisualizationExtents = {
   minX: number;
@@ -24,7 +24,8 @@ export abstract class D3Visualization {
   protected height = 0;
 
   private genomeSumCache = new Map<number, number>();
-  private lastQuerySnapshot?: Set<number>;
+  private maxGenomeCount = 3000000; // Default ~ 3 million for taxid 1
+  private genomeScaleInitialized = false;
 
   protected handlers?: VisualizationHandlers;
   protected root?: d3.HierarchyNode<LeanTaxon> & {
@@ -47,7 +48,7 @@ export abstract class D3Visualization {
       this.safeUpdate();
     });
 
-    this.filterSubscription = State.subscribeToShowOnlyRecursiveAccessions(() => {
+    this.filterSubscription = State.subscribeToOnlyGenomic(() => {
       this.safeUpdate();
     });
   }
@@ -124,8 +125,8 @@ export abstract class D3Visualization {
    * Note: Uses genomeCountRecursive instead of accessions since this data is available on initial load.
    */
   protected passesRecursiveAccessionsFilter(node: d3.HierarchyNode<LeanTaxon>): boolean {
-    const showOnlyRecursive = State.getShowOnlyRecursiveAccessions();
-    if (!showOnlyRecursive) {
+    const onlyGenomic = State.getOnlyGenomic();
+    if (!onlyGenomic) {
       return true;
     }
 
@@ -148,8 +149,8 @@ export abstract class D3Visualization {
   protected filterHierarchy(
     node: d3.HierarchyNode<LeanTaxon>,
   ): d3.HierarchyNode<LeanTaxon> | undefined {
-    const showOnlyRecursive = State.getShowOnlyRecursiveAccessions();
-    if (!showOnlyRecursive) {
+    const onlyGenomic = State.getOnlyGenomic();
+    if (!onlyGenomic) {
       return node;
     }
 
@@ -189,40 +190,30 @@ export abstract class D3Visualization {
     return State.getQuery();
   }
 
-  protected hasQueryChanged(): boolean {
-    const currentQuery = State.getQuery();
-    const currentIds = new Set(currentQuery.map((t) => t.id));
-
-    if (!this.lastQuerySnapshot) {
-      this.lastQuerySnapshot = currentIds;
-      return true;
-    }
-
-    if (currentIds.size !== this.lastQuerySnapshot.size) {
-      this.lastQuerySnapshot = currentIds;
-      return true;
-    }
-
-    for (const id of currentIds) {
-      if (!this.lastQuerySnapshot.has(id)) {
-        this.lastQuerySnapshot = currentIds;
-        return true;
-      }
-    }
-
-    return false;
-  }
-
   protected getNodeFill(d: d3.HierarchyNode<LeanTaxon>): string {
-    const q = this.getQuery();
     const themeVars = getThemeColors();
+
     if (d.data.id === 0) {
       return themeVars.primary;
     }
-    if (q.some((t) => t.id === d.data.id)) {
-      return themeVars.primary;
+
+    if (d.data.annotation) {
+      return this.getColorFromTheme(d.data.annotation.color);
     }
+
     return d.children && d.children.length > 0 ? themeVars.base200 : themeVars.neutral;
+  }
+
+  protected getColorFromTheme(themeColor: ThemeColor): string {
+    const style = getComputedStyle(document.documentElement);
+    const colorValue = style.getPropertyValue(themeColor).trim();
+
+    if (!colorValue) {
+      console.warn(`Theme color ${themeColor} not found, using primary`);
+      return getThemeColors().primary;
+    }
+
+    return colorValue;
   }
 
   protected getThemeColors() {
@@ -283,12 +274,11 @@ export abstract class D3Visualization {
     this.layer.selectAll("*").remove();
   }
 
-  /** Returns the aggregated genome sum (recursively preferred) for a taxon ID. With cache. */
-  protected getGenomeTotalForId(id: number): number {
-    const cached = this.genomeSumCache.get(id);
+  protected getGenomeTotal(taxon: LeanTaxon): number {
+    const cached = this.genomeSumCache.get(taxon.id);
     if (cached !== undefined) return cached;
-    const full = State.getTree()?.findTaxonById(id);
-    const gc = full?.genomeCountRecursive ?? full?.genomeCount;
+
+    const gc = taxon.genomeCountRecursive;
     let sum = 0;
     if (gc) {
       for (const v of Object.values(gc)) {
@@ -296,16 +286,35 @@ export abstract class D3Visualization {
       }
     }
     const value = sum || 1;
-    this.genomeSumCache.set(id, value);
+    this.genomeSumCache.set(taxon.id, value);
     return value;
+  }
+
+  private initializeGenomeScale(): void {
+    if (this.genomeScaleInitialized) return;
+    this.genomeScaleInitialized = true;
+
+    const rootTaxon = State.getTree()?.findTaxonById(1);
+    if (rootTaxon) {
+      const rootGenomeCount = this.getGenomeTotal(rootTaxon.lean);
+      if (rootGenomeCount > 0) {
+        this.maxGenomeCount = rootGenomeCount;
+      }
+    }
+  }
+
+  protected createGenomeSizeScale(range: [number, number]): d3.ScaleSymLog<number, number> {
+    this.initializeGenomeScale();
+    return d3.scaleSymlog([0, this.maxGenomeCount], range).constant(1);
+  }
+
+  protected createGenomeStrokeScale(range: [number, number]): d3.ScaleSymLog<number, number> {
+    this.initializeGenomeScale();
+    return d3.scaleSymlog([0, this.maxGenomeCount], range).constant(1);
   }
 
   public abstract render(): Promise<D3VisualizationExtents | undefined>;
 
-  /**
-   * Update the renderer. `source` is typically a d3.HierarchyNode<Taxon> used by tree renderers
-   * or undefined for full rerender in graph/pack renderers.
-   */
   public abstract update(
     _event?: MouseEvent,
     source?: d3.HierarchyNode<LeanTaxon>,

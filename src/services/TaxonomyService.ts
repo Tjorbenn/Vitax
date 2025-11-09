@@ -1,5 +1,88 @@
 import * as NeverApi from "../api/Never/NeverClient";
-import { Taxon, TaxonomyTree, type Accession } from "../types/Taxonomy";
+import { Taxon, TaxonomyTree, type Accession, type TaxonAnnotation } from "../types/Taxonomy";
+import { ThemeColor } from "../utility/Theme";
+
+export function annotateAsQuery(taxon: Taxon | Taxon[]): void {
+  const taxa = Array.isArray(taxon) ? taxon : [taxon];
+  taxa.forEach((t) => {
+    t.annotation = {
+      text: "Query",
+      color: ThemeColor.Primary,
+    };
+  });
+}
+
+export function annotateAsTarget(taxon: Taxon | Taxon[]): void {
+  const taxa = Array.isArray(taxon) ? taxon : [taxon];
+  taxa.forEach((t) => {
+    t.annotation = {
+      text: "Target",
+      color: ThemeColor.DarkAccent,
+    };
+  });
+}
+
+export function annotateAsTargetRecursive(taxon: Taxon | Taxon[]): void {
+  const taxa = Array.isArray(taxon) ? taxon : [taxon];
+  const annotation: TaxonAnnotation = {
+    text: "Target",
+    color: ThemeColor.DarkAccent,
+  };
+
+  function traverse(t: Taxon): void {
+    t.annotation = annotation;
+    t.children.forEach(traverse);
+  }
+
+  taxa.forEach(traverse);
+}
+
+export function annotateAsNeighbor(taxon: Taxon | Taxon[]): void {
+  const taxa = Array.isArray(taxon) ? taxon : [taxon];
+  taxa.forEach((t) => {
+    t.annotation = {
+      text: "Neighbor",
+      color: ThemeColor.Accent,
+    };
+  });
+}
+
+export function annotateAsNeighborRecursive(taxon: Taxon | Taxon[]): void {
+  const taxa = Array.isArray(taxon) ? taxon : [taxon];
+  const annotation: TaxonAnnotation = {
+    text: "Neighbor",
+    color: ThemeColor.Accent,
+  };
+
+  function traverse(t: Taxon): void {
+    t.annotation = annotation;
+    t.children.forEach(traverse);
+  }
+
+  taxa.forEach(traverse);
+}
+
+export function annotate(taxon: Taxon | Taxon[], annotation: TaxonAnnotation): void {
+  const taxa = Array.isArray(taxon) ? taxon : [taxon];
+  taxa.forEach((t) => {
+    t.annotation = annotation;
+  });
+}
+
+export function annotateById(
+  tree: TaxonomyTree,
+  taxonIds: number[],
+  annotation: TaxonAnnotation,
+): void {
+  const idSet = new Set(taxonIds);
+  function traverse(taxon: Taxon): void {
+    if (idSet.has(taxon.id)) {
+      taxon.annotation = annotation;
+    }
+    taxon.children.forEach(traverse);
+  }
+  traverse(tree.root);
+}
 
 /**
  * Returns a single taxon as a tree. Ideal for exploration from a single taxon.
@@ -13,6 +96,7 @@ export async function getTaxonTree(query: Taxon): Promise<TaxonomyTree> {
     throw new Error(`Taxon with id ${String(query.id)} not found.`);
   }
 
+  annotateAsQuery(taxon);
   const tree = new TaxonomyTree(taxon);
   return tree;
 }
@@ -24,61 +108,51 @@ export async function getTaxonTree(query: Taxon): Promise<TaxonomyTree> {
  */
 export async function getDescendantsTree(query: Taxon): Promise<TaxonomyTree> {
   const subtree = await NeverApi.getSubtreeByTaxonId(query.id);
+  annotateAsQuery(subtree.root);
   return subtree;
 }
 
-/**
- * Get the taxonomic neighbors of a taxon as a tree.
- * The taxonomic neighbors are the taxa that are in the subtree of the parent taxon of the MRCA of the group of target taxa without the taxa in the subtree of the MRCA that are not the target taxa or taxa in the direct lineage of the target taxa.
- * This method retrieves the MRCA of the target taxa, then retrieves the subtree of the parent taxon of the MRCA.
- * It then removes all children of the subtree of the MRCA from the subtree of the parent of the MRCA that are not the target taxa or taxa in the direct lineage of the target taxa.
- * @param query The taxon to find neighbors for. Can be a single taxon or multiple taxa.
- * @returns A promise that resolves to the taxonomic neighbors tree.
- */
 export async function getNeighborsTree(query: Taxon[]): Promise<TaxonomyTree> {
   if (query.length < 1) {
     throw new Error("At least one taxon is required to find neighbors.");
   }
 
-  // For a single taxon, use its parent as MRCA
-  const mrca =
-    query.length === 1 && query[0]
-      ? await getParent(query[0])
-      : await NeverApi.getMrcaByTaxonIds(query.map((taxon) => taxon.id));
-
-  const sparseMrcaTree = await getMrcaTree(query);
-
+  const initialQueryIds = new Set(query.map((t) => t.id));
+  const mrca = await NeverApi.getMrcaByTaxonIds(query.map((taxon) => taxon.id));
+  const targetSubtree = await NeverApi.getSubtreeByTaxonId(mrca.id);
   const parent = await getParent(mrca);
   const parentSubtree = await NeverApi.getSubtreeByTaxonId(parent.id);
-
-  // Remove the MRCA from the children of the parent subtrees root and add the sparse MRCA tree as a child
   parentSubtree.root.children = parentSubtree.root.children.filter((child) => {
     return child.id !== mrca.id;
   });
-  parentSubtree.root.children.push(sparseMrcaTree.root);
+  parentSubtree.root.children.push(targetSubtree.root);
+  annotateAsTargetRecursive(targetSubtree.root);
+  const neighbors = parentSubtree.root.children.filter(
+    (child) => child.id !== targetSubtree.root.id,
+  );
+  annotateAsNeighborRecursive(neighbors);
+  annotateById(parentSubtree, Array.from(initialQueryIds), {
+    text: "Query",
+    color: ThemeColor.Primary,
+  });
 
   return parentSubtree;
 }
 
-/**
- * Get the most recent common ancestor (MRCA) tree for a set of taxa.
- * @param query The taxa to find the MRCA for. For a single taxon, the parent will be used as MRCA.
- * @returns A promise that resolves to the MRCA tree.
- */
 export async function getMrcaTree(query: Taxon[]): Promise<TaxonomyTree> {
   if (query.length < 1) {
     throw new Error("At least one taxon is required to find the MRCA.");
   }
 
-  // For a single taxon, use its parent as MRCA
+  annotateAsQuery(query);
+
   if (query.length === 1) {
     const taxon = query[0];
     if (!taxon) {
       throw new Error("Invalid taxon provided.");
     }
-    const parent = await getParent(taxon);
-    const mrcaTree = new TaxonomyTree(parent);
-    mrcaTree.root.children = [taxon];
+    const mrcaTree = new TaxonomyTree(taxon);
+    mrcaTree.root.children = [];
     return mrcaTree;
   }
 
@@ -89,7 +163,6 @@ export async function getMrcaTree(query: Taxon[]): Promise<TaxonomyTree> {
   for (const taxon of query) {
     if (taxon.id !== mrca.id) {
       const lineage = await NeverApi.getLineageFromTaxonIds(mrca.id, taxon.id);
-      // lineage.root.children is an array; iterate if it has members
       if (lineage.root.children.length > 0) {
         lineage.root.children.forEach((child) => {
           return mrcaTree.root.children.push(child);

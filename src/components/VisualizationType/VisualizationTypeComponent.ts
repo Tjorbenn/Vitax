@@ -1,9 +1,10 @@
+import * as Routing from "../../core/Routing";
 import * as State from "../../core/State";
 import { VisualizationType } from "../../types/Application";
 import { BaseComponent } from "../BaseComponent";
-import HTMLtemplate from "./DisplayTypeTemplate.html?raw";
+import HTMLtemplate from "./VisualizationTypeTemplate.html?raw";
 
-export class DisplayTypeComponent extends BaseComponent {
+export class VisualizationTypeComponent extends BaseComponent {
   private tabs!: HTMLDivElement;
 
   constructor() {
@@ -20,7 +21,7 @@ export class DisplayTypeComponent extends BaseComponent {
     Object.values(VisualizationType).forEach((type) => {
       const radio = document.createElement("input");
       radio.type = "radio";
-      radio.name = "display-type";
+      radio.name = "visualization-type";
       radio.value = type;
       radio.ariaLabel = type;
       radio.classList.add("tab", "animated", "capitalize");
@@ -31,17 +32,31 @@ export class DisplayTypeComponent extends BaseComponent {
 
       this.tabs.appendChild(radio);
     });
+
+    this.addSubscription(
+      State.subscribeToDisplayType((displayType) => {
+        this.updateSelectedTab(displayType);
+      }),
+    );
+  }
+
+  private updateSelectedTab(displayType: VisualizationType): void {
+    const radios = this.tabs.querySelectorAll<HTMLInputElement>('input[name="visualization-type"]');
+    radios.forEach((radio) => {
+      radio.checked = radio.value === (displayType as string);
+    });
   }
 
   private onChange(event: Event) {
     const target = event.target as HTMLInputElement;
-    if (target.name === "display-type") {
+    if (target.name === "visualization-type") {
       const type = target.value as VisualizationType;
       if (State.getDisplayType() !== type) {
         State.setDisplayType(type);
+        Routing.updateUrl();
       }
     }
   }
 }
 
-customElements.define("display-type", DisplayTypeComponent);
+customElements.define("vitax-visualization-type", VisualizationTypeComponent);

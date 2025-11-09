@@ -1,5 +1,5 @@
 /**
- * # Never API Client
+ * #### Never API Client
  *
  * As another abstraction layer over the Never API, this ES module exports specific functions that are directly used by the Service layer.
  * All exported functions of this module return data in the format defined by our Taxonomy and Application types.
@@ -72,7 +72,7 @@ export async function getNamesByTaxonIds(taxonIds: number[]): Promise<string[]> 
 }
 
 /**
- * ## Fetching additional metadata
+ * ##### Fetching additional metadata
  *
  * To be able to fetch additional metadata for single taxa, we create a couple of functions that take a taxon ID as input and return the requested metadata.
  */

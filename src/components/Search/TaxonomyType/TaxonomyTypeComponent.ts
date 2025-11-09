@@ -114,4 +114,4 @@ export class TaxonomyTypeComponent extends BaseComponent {
   }
 }
 
-customElements.define("taxonomy-type", TaxonomyTypeComponent);
+customElements.define("vitax-taxonomy-type", TaxonomyTypeComponent);

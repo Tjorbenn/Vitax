@@ -1,8 +1,10 @@
 /**
- * # Taxonomy.ts
+ * ##### `Taxonomy.ts`
  *
  * This module defines classes and types for representing and managing biological taxonomy data.
  */
+
+import type { ThemeColor } from "../utility/Theme";
 
 /**
  * One important feature of *Vitax* is the ability to quickly access genomes for presented taxa.
@@ -63,12 +65,19 @@ export type LeanTaxon = {
   id: number;
   name: string;
   children: LeanTaxon[];
+  annotation?: TaxonAnnotation;
   hasSelfReference?: boolean;
+  genomeCountRecursive?: GenomeCount;
 };
 
 export type TaxonImage = {
   url: URL;
   attribution: string;
+};
+
+export type TaxonAnnotation = {
+  text: string;
+  color: ThemeColor;
 };
 
 export class Taxon {
@@ -83,6 +92,7 @@ export class Taxon {
   public children: Taxon[];
   public genomeCount?: GenomeCount;
   public genomeCountRecursive?: GenomeCount;
+  public annotation?: TaxonAnnotation;
   public images?: TaxonImage[];
 
   constructor(id: number, name: string) {
@@ -180,7 +190,9 @@ export class Taxon {
       name: this.name,
       // Filter out self-references (e.g., root taxon that has itself as a child)
       children: this.children.filter((c) => c.id !== this.id).map((c) => c.lean) as LeanTaxon[],
+      annotation: this.annotation,
       hasSelfReference: hasSelfRef || undefined,
+      genomeCountRecursive: this.genomeCountRecursive,
     };
   }
 

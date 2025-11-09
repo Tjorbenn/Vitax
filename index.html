@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="images/logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="images/logo_green.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Vitax</title>
   </head>
@@ -31,11 +31,10 @@
             <vitax-list class="pointer-events-auto hidden size-fit md:block"></vitax-list>
             <vitax-accession-filter
               class="btn btn-square bounce animated tooltip tooltip-right pointer-events-auto hidden shadow-lg md:block"
-              data-tip="Show only taxa with genomes"
             ></vitax-accession-filter>
           </div>
           <vitax-tutorial
-            class="hover:text-primary-content tooltip tooltip-left animated bounce hover:btn-primary btn btn-square btn-ghost pointer-events-auto hidden cursor-pointer self-start bg-none drop-shadow-lg md:block"
+            class="hover:text-primary-content tooltip tooltip-left animated bounce hover:btn-primary btn btn-square btn-ghost pointer-events-auto hidden cursor-pointer self-start bg-none drop-shadow-lg md:flex"
             data-tip="Tutorial"
           ></vitax-tutorial>
         </div>
@@ -46,13 +45,13 @@
           <vitax-attribution
             class="card card-xs card-border bg-base-100/40 bounce animated pointer-events-auto hidden justify-self-start shadow-lg backdrop-blur-sm md:block"
           ></vitax-attribution>
-          <display-type
+          <vitax-visualization-type
             class="card card-xs card-border bg-base-100/40 bounce animated tooltip pointer-events-auto justify-self-center p-0 shadow-lg backdrop-blur-sm"
             data-tip="Display Type"
-          ></display-type>
-          <vitax-version
+          ></vitax-visualization-type>
+          <vitax-github
             class="card card-xs card-border bg-base-100/40 bounce animated pointer-events-auto hidden justify-self-end shadow-lg backdrop-blur-sm md:block"
-          ></vitax-version>
+          ></vitax-github>
         </footer>
       </div>
       <vitax-canvas class="absolute inset-0 h-full w-full">

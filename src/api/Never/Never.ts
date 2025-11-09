@@ -1,5 +1,5 @@
 /**
- * # Never-API
+ * #### Never.ts
  *
  * The Never-API is a custom-built RESTful API for retrieving the taxonomic data contained in the NCBI.
  * This API was built to provide a more streamlined and efficient way to access the taxonomic data compared to the already existing NCBI Entrez API, as well as to have full control over the full stack.
@@ -11,7 +11,7 @@
 import type { GenomeLevel } from "../../types/Taxonomy";
 
 /**
- * ## Endpoints
+ * ##### Endpoints
  *
  * To be able to painlessly extend our API-Client, we define an enum `Endpoint` that contains the available Endpoints of the Never-API.
  * This way we have a single source of truth for all API endpoints, that can be easily referenced and modified.
@@ -34,7 +34,7 @@ export enum Endpoint {
 }
 
 /**
- * ## Entry
+ * ##### Entry
  *
  * To be able to restrict the returned data from the Never-API to our specific set of expected values we import our custom enums `GenomeLevel` and `Rank`.
  */
@@ -83,7 +83,7 @@ export type Entry = {
 export type Response = Entry[];
 
 /**
- * # Request
+ * ##### Request
  *
  * To be able to effortlessly and safely send requests to the Never-API, we create a general and extensible `Request` class that handles the construction and sending of API requests.
  */

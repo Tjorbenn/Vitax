@@ -63,6 +63,10 @@
   /* Standard Red */
   --color-error-content: oklch(100% 0 0);
   /* White */
+  --color-dark-accent: oklch(0.3871 0.0514 239.6);
+  /* Dark Accent Blue */
+  --color-dark-accent-content: oklch(100% 0 0);
+  /* White */
   --radius-selector: 0.5rem;
   --radius-field: 0.5rem;
   --radius-box: 0.5rem;
@@ -117,6 +121,10 @@
   --color-error: oklch(62.79% 0.224 19.69);
   /* Standard Red (unchanged) */
   --color-error-content: oklch(100% 0 0);
+  /* White */
+  --color-dark-accent: oklch(0.3871 0.0514 239.6);
+  /* Dark Accent Blue */
+  --color-dark-accent-content: oklch(100% 0 0);
   /* White */
   --radius-selector: 0.5rem;
   --radius-field: 0.5rem;

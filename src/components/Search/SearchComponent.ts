@@ -159,11 +159,7 @@ export class SearchComponent extends BaseComponent {
     const taxonomyType = State.getTaxonomyType();
     const query = State.getQuery();
 
-    const singleSelectTypes = [
-      TaxonomyType.Descendants,
-      TaxonomyType.Taxon,
-      TaxonomyType.Neighbors,
-    ];
+    const singleSelectTypes = [TaxonomyType.Descendants, TaxonomyType.Taxon];
     const multiSelectTypes: TaxonomyType[] = [];
 
     if (

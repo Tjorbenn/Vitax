@@ -1,5 +1,5 @@
 /**
- * # Semantic Scholar API
+ * #### Semantic Scholar API
  *
  * Semantic Scholar is a free, AI-powered research tool for scientific literature, hosted by the Allen Institute for AI (AI2), a nonprofit research institute.
  * Semantic Scholar offers a free API to search for academic papers and retrieve metadata.

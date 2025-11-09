@@ -3,7 +3,7 @@ import * as d3 from "d3";
 import * as State from "../../core/State";
 import * as TaxonomyService from "../../services/TaxonomyService";
 import { VisualizationType } from "../../types/Application";
-import type { TaxonomyTree } from "../../types/Taxonomy";
+import type { LeanTaxon, Taxon, TaxonomyTree } from "../../types/Taxonomy";
 import { optionalElement } from "../../utility/Dom";
 import {
   createVisualizationRenderer,
@@ -99,6 +99,8 @@ export class VisualizationComponent extends BaseComponent {
         if (event.type === "wheel") return true;
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
         if (event.type.startsWith("touch")) return true;
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        if (event.type === "contextmenu") return false;
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         return event.button === 0 || event.button === undefined;
       })
@@ -344,6 +346,13 @@ export class VisualizationComponent extends BaseComponent {
       if (layerNode) {
         this.renderer = createVisualizationRenderer(displayType, layerNode);
         this.didInitialCenter = false;
+        if (this.renderer) {
+          this.renderer.setHandlers({
+            onHover: (payload) => {
+              this.showActionMenu(payload);
+            },
+          });
+        }
       }
       if (!this.renderer) {
         this.contentGroup
@@ -567,6 +576,79 @@ export class VisualizationComponent extends BaseComponent {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       (this.renderer as any).clearActiveTaxon();
     }
+  }
+
+  private showActionMenu(payload: unknown): void {
+    this.setupActionOverlay();
+    if (!this.taxonActionEl) return;
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const id = (payload as any)?.id as number | undefined;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const x = (payload as any)?.x as number | undefined;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const y = (payload as any)?.y as number | undefined;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const node = (payload as any)?.node as
+      | (d3.HierarchyNode<LeanTaxon> & { collapsed?: boolean })
+      | undefined;
+
+    if (!id || typeof x !== "number" || typeof y !== "number" || !node) {
+      return;
+    }
+
+    const tree = State.getTree();
+    if (!tree) return;
+
+    const taxon = tree.findTaxonById(id);
+    if (!taxon) return;
+
+    State.setSelectedTaxon(taxon);
+
+    this.taxonActionEl.setNode(
+      node as unknown as d3.HierarchyNode<Taxon> & { collapsed?: boolean },
+    );
+    this.taxonActionEl.setCurrentTaxon(taxon);
+
+    const canvasRect = this.getBoundingClientRect();
+    this.taxonActionEl.positionAt(canvasRect, x, y);
+    this.taxonActionEl.show();
+
+    // Setup dismiss handlers
+    this.removeOutsideDismiss();
+    this.outsidePointerDownHandler = (e: PointerEvent) => {
+      if (!this.taxonActionEl || !this.contains(e.target as Node)) {
+        return;
+      }
+      if (this.taxonActionEl.contains(e.target as Node)) {
+        return;
+      }
+      this.hideActionMenu();
+    };
+    window.addEventListener("pointerdown", this.outsidePointerDownHandler, true);
+
+    this.outsideKeyHandler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        this.hideActionMenu();
+      }
+    };
+    window.addEventListener("keydown", this.outsideKeyHandler, true);
+
+    // Follow node position
+    this.stopFollowNode();
+    const followLoop = () => {
+      if (!this.taxonActionEl) return;
+      const layer = this.getContentLayer();
+      if (!layer) return;
+      const g = optionalElement<SVGGElement>(layer, `g[data-id="${String(id)}"]`);
+      if (!g) return;
+      const circle = optionalElement<SVGCircleElement>(g, "circle");
+      const bbox = (circle ?? g).getBoundingClientRect();
+      const rect = this.getBoundingClientRect();
+      this.taxonActionEl.positionAt(rect, bbox.x + bbox.width / 2, bbox.y + bbox.height / 2);
+      this.followRaf = requestAnimationFrame(followLoop);
+    };
+    this.followRaf = requestAnimationFrame(followLoop);
   }
 
   private removeOutsideDismiss(): void {
