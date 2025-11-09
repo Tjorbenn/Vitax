@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="public/images/logo.svg" alt="Vitax Logo" width="200"/>
+  <img src="public/images/logo_green.svg" alt="Vitax Logo" width="200"/>
   <h1 align="center">Vitax</h1>
   <p align="center">
     Visualizing the NCBI Taxonomy
