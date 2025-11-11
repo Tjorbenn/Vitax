@@ -66,6 +66,11 @@ export class D3Pack extends D3Visualization {
     this.activateStateSubscription();
   }
 
+  protected clearContent(): void {
+    this.gNodes.selectAll("*").remove();
+    this.gLabels.selectAll("*").remove();
+  }
+
   public async render(): Promise<D3VisualizationExtents | undefined> {
     if (!this.root) return undefined;
     await this.update();
@@ -172,7 +177,11 @@ export class D3Pack extends D3Visualization {
     nodeEnter
       .append("circle")
       .attr("r", 0)
-      .attr("fill", (d) => this.getNodeFill(d))
+      .attr("fill", (d) => {
+        const fill = this.getNodeFill(d);
+        return fill;
+      })
+      .attr("data-base-fill", (d) => this.getNodeFill(d))
       .attr("stroke", theme.text)
       .attr("stroke-opacity", 0.6)
       .attr("stroke-width", (d) => {
@@ -307,9 +316,9 @@ export class D3Pack extends D3Visualization {
       "transform",
       (d) =>
         "translate(" +
-        String((d.x - v0) * k - size / 2) +
+        String((d.x - v0) * k + this.width / 2) +
         "," +
-        String((d.y - v1) * k - size / 2) +
+        String((d.y - v1) * k + this.height / 2) +
         ")",
     );
     nodeSel.select<SVGCircleElement>("circle").attr("r", (d) => d.r * k);
@@ -318,9 +327,9 @@ export class D3Pack extends D3Visualization {
       "transform",
       (d) =>
         "translate(" +
-        String((d.x - v0) * k - size / 2) +
+        String((d.x - v0) * k + this.width / 2) +
         "," +
-        String((d.y - v1) * k - size / 2) +
+        String((d.y - v1) * k + this.height / 2) +
         ")",
     );
 
@@ -414,9 +423,42 @@ export class D3Pack extends D3Visualization {
     nodeSel: d3.Selection<SVGGElement, d3.HierarchyCircularNode<LeanTaxon>, any, any>,
   ): void {
     const focus = this.focus;
+    const theme = this.getThemeColors();
+    const strokeWidthScale = this.createGenomeStrokeScale([0.5, 6]);
+    const getGenomeTotal = this.getGenomeTotal.bind(this);
+
     nodeSel
       .style("pointer-events", (n) => (n.parent === focus || n === focus?.parent ? "all" : "none"))
       .style("cursor", (n) => (n.parent === focus || n === focus?.parent ? "pointer" : "default"));
+
+    nodeSel.select<SVGCircleElement>("circle").each(function (d) {
+      const circle = d3.select(this);
+      if (d === focus) {
+        // Focused node
+        const baseFill = circle.attr("data-base-fill") ?? "#cccccc";
+        const baseWidth = strokeWidthScale(getGenomeTotal(d.data));
+        const focusWidth = Math.max(baseWidth, 3); // Ensure minimum width for visibility
+        circle
+          .attr("fill", baseFill)
+          .attr("fill-opacity", 1)
+          .attr("stroke", theme.text)
+          .attr("stroke-width", focusWidth)
+          .attr("stroke-opacity", 1)
+          .attr("stroke-dasharray", "12,6") // Larger dashes for better visibility
+          .style("filter", null);
+      } else {
+        // Not focused
+        const baseFill = circle.attr("data-base-fill") ?? "#cccccc";
+        circle
+          .attr("fill", baseFill)
+          .attr("fill-opacity", 1)
+          .attr("stroke", theme.text)
+          .attr("stroke-width", strokeWidthScale(getGenomeTotal(d.data)))
+          .attr("stroke-opacity", 0.6)
+          .attr("stroke-dasharray", null)
+          .style("filter", null);
+      }
+    });
   }
 
   public override getExtents(): D3VisualizationExtents | undefined {

@@ -3,7 +3,11 @@
     class="card card-border animated bounce bounce-within join flex w-full max-w-full flex-row shadow-lg"
     aria-label="Taxonomy search"
   >
-    <vitax-taxonomy-type class="join-item" role="group" aria-label="Select taxonomy type"></vitax-taxonomy-type>
+    <vitax-taxonomy-type
+      class="join-item"
+      role="group"
+      aria-label="Select taxonomy type"
+    ></vitax-taxonomy-type>
     <label
       id="search-input-label"
       class="input join-item bg-base-100/40 grow border-none !shadow-none backdrop-blur-sm focus-within:outline-none"
@@ -14,10 +18,10 @@
         style="width: 1.5em; height: 1.5em"
         aria-hidden="true"
       ></span>
-      <input 
-        type="search" 
-        id="search-input" 
-        placeholder="Search taxa..." 
+      <input
+        type="search"
+        id="search-input"
+        placeholder="Search taxa..."
         aria-label="Search for taxa"
         aria-autocomplete="list"
         aria-controls="suggestions-body"

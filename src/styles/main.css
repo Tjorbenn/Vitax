@@ -151,17 +151,6 @@
       /* Prevents zoom on iOS */
     }
 
-    /* Make display type tabs smaller on mobile */
-    vitax-visualization-type .tabs {
-      gap: 0.25rem;
-    }
-
-    vitax-visualization-type .tab {
-      font-size: 0.75rem;
-      padding: 0.375rem 0.5rem;
-      min-height: 2rem;
-    }
-
     /* Adjust card padding on mobile */
     .card-xs .card-body {
       padding: 0.5rem;

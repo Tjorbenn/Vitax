@@ -37,6 +37,7 @@ export abstract class D3Visualization {
   protected treeSubscription?: () => void;
   protected themeSubscription?: () => void;
   protected filterSubscription?: () => void;
+  private currentTree?: TaxonomyTree;
 
   constructor(layer: SVGGElement) {
     this.layer = d3.select(layer);
@@ -59,7 +60,6 @@ export abstract class D3Visualization {
 
   protected activateStateSubscription(): void {
     this.treeSubscription = State.subscribeToTree(this.updateHierarchy.bind(this));
-    this.updateHierarchy(State.getTree());
   }
 
   protected updateHierarchy(tree: TaxonomyTree | undefined): void {
@@ -67,8 +67,15 @@ export abstract class D3Visualization {
       this.root = undefined;
       this.clear();
       this.genomeSumCache.clear();
+      this.currentTree = undefined;
       return;
     }
+
+    if (this.currentTree !== tree) {
+      this.clearContent();
+      this.currentTree = tree;
+    }
+
     const leanRoot: LeanTaxon = tree.root.lean;
     this.root = d3.hierarchy<LeanTaxon>(leanRoot);
     this.genomeSumCache.clear();
@@ -78,6 +85,10 @@ export abstract class D3Visualization {
   private updateInProgress = false;
   protected safeUpdate(): void {
     if (this.updateInProgress) {
+      return;
+    }
+
+    if (!this.root) {
       return;
     }
 
@@ -143,27 +154,61 @@ export abstract class D3Visualization {
   }
 
   /**
-   * Creates a filtered copy of the hierarchy based on the genome filter.
-   * Removes nodes without genomes recursively while maintaining structure.
+   * Filter hierarchy by hiding nodes without genomes.
+   * Uses in-place filtering via _children property to maintain object constancy.
    */
   protected filterHierarchy(
     node: d3.HierarchyNode<LeanTaxon>,
   ): d3.HierarchyNode<LeanTaxon> | undefined {
     const onlyGenomic = State.getOnlyGenomic();
     if (!onlyGenomic) {
+      this.restoreChildren(node);
       return node;
     }
 
-    if (node.data.id === 0) {
-      const filteredChildren = node.children
-        ?.map((child) => this.filterHierarchy(child))
-        .filter((child): child is d3.HierarchyNode<LeanTaxon> => child !== undefined);
+    return this.applyGenomeFilter(node);
+  }
 
-      const filteredData: LeanTaxon = {
-        ...node.data,
-        children: filteredChildren?.map((c) => c.data) ?? [],
-      };
-      return d3.hierarchy(filteredData);
+  /**
+   * Restore all children that were hidden by filtering.
+   * Recursively restores the entire subtree.
+   */
+  private restoreChildren(node: d3.HierarchyNode<LeanTaxon>): void {
+    const nodeWithHidden = node as d3.HierarchyNode<LeanTaxon> & {
+      _children?: typeof node.children;
+    };
+    if (nodeWithHidden._children) {
+      node.children = nodeWithHidden._children;
+      nodeWithHidden._children = undefined;
+    }
+
+    if (node.children) {
+      node.children.forEach((child) => {
+        this.restoreChildren(child);
+      });
+    }
+  }
+
+  /**
+   * Apply genome filter by hiding nodes without genomes.
+   * Returns undefined if node should be completely removed.
+   */
+  private applyGenomeFilter(
+    node: d3.HierarchyNode<LeanTaxon>,
+  ): d3.HierarchyNode<LeanTaxon> | undefined {
+    if (node.data.id === 0) {
+      if (node.children) {
+        const filteredChildren = node.children
+          .map((child) => this.applyGenomeFilter(child))
+          .filter((child): child is d3.HierarchyNode<LeanTaxon> => child !== undefined);
+
+        if (filteredChildren.length !== node.children.length) {
+          const nodeWithHidden = node as typeof node & { _children?: typeof node.children };
+          nodeWithHidden._children = node.children;
+          node.children = filteredChildren.length > 0 ? filteredChildren : undefined;
+        }
+      }
+      return node;
     }
 
     if (!this.passesRecursiveAccessionsFilter(node)) {
@@ -172,18 +217,18 @@ export abstract class D3Visualization {
 
     if (node.children && node.children.length > 0) {
       const filteredChildren = node.children
-        .map((child) => this.filterHierarchy(child))
+        .map((child) => this.applyGenomeFilter(child))
         .filter((child): child is d3.HierarchyNode<LeanTaxon> => child !== undefined);
 
-      const filteredData: LeanTaxon = {
-        ...node.data,
-        children: filteredChildren.map((c) => c.data),
-      };
-      return d3.hierarchy(filteredData);
+      // Update in place (maintains object reference)
+      const nodeWithHidden = node as typeof node & { _children?: typeof node.children };
+      if (filteredChildren.length !== node.children.length) {
+        nodeWithHidden._children = node.children;
+        node.children = filteredChildren.length > 0 ? filteredChildren : undefined;
+      }
     }
 
-    const leafData: LeanTaxon = { ...node.data, children: [] };
-    return d3.hierarchy(leafData);
+    return node;
   }
 
   protected getQuery(): Taxon[] {
@@ -201,7 +246,9 @@ export abstract class D3Visualization {
       return this.getColorFromTheme(d.data.annotation.color);
     }
 
-    return d.children && d.children.length > 0 ? themeVars.base200 : themeVars.neutral;
+    const hasHierarchyChildren = d.children && d.children.length > 0;
+    const hasDataChildren = d.data.children.length > 0;
+    return hasHierarchyChildren || hasDataChildren ? themeVars.base200 : themeVars.neutral;
   }
 
   protected getColorFromTheme(themeColor: ThemeColor): string {
@@ -272,6 +319,11 @@ export abstract class D3Visualization {
 
   public clear(): void {
     this.layer.selectAll("*").remove();
+  }
+
+  protected clearContent(): void {
+    // Default: clear everything
+    this.clear();
   }
 
   protected getGenomeTotal(taxon: LeanTaxon): number {

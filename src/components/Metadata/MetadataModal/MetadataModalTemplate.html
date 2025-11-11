@@ -1,5 +1,8 @@
 <dialog class="modal modal-middle" aria-labelledby="taxon-name" aria-describedby="taxon-id">
-  <div class="modal-box bg-base-100/80 w-11/12 max-w-5xl p-4 backdrop-blur-xs md:p-6" role="document">
+  <div
+    class="modal-box bg-base-100/80 w-11/12 max-w-5xl p-4 backdrop-blur-xs md:p-6"
+    role="document"
+  >
     <div class="flex flex-col items-stretch gap-2">
       <hgroup
         id="taxon-popover-header"
@@ -24,7 +27,11 @@
         class="mb-4 flex flex-col gap-2 md:mb-6 md:flex-row md:flex-wrap md:items-center md:justify-center"
       >
         <vitax-data-ranks role="region" aria-label="Taxonomic ranks"></vitax-data-ranks>
-        <div class="divider divider-horizontal hidden md:flex" role="separator" aria-hidden="true"></div>
+        <div
+          class="divider divider-horizontal hidden md:flex"
+          role="separator"
+          aria-hidden="true"
+        ></div>
         <vitax-data-links
           class="card card-border bg-base-100 rounded-xl shadow-lg"
           role="region"
@@ -39,7 +46,10 @@
       ></vitax-data-genomes>
 
       <div id="divider-publications" class="divider my-2" role="separator">Publications</div>
-      <vitax-data-publications role="region" aria-label="Related publications"></vitax-data-publications>
+      <vitax-data-publications
+        role="region"
+        aria-label="Related publications"
+      ></vitax-data-publications>
     </div>
   </div>
   <form method="dialog" class="modal-backdrop">

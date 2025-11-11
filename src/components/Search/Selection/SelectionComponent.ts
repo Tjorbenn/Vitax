@@ -1,6 +1,6 @@
 import * as State from "../../../core/State.ts";
-import { remove as removeAnimated, toggleState } from "../../../features/DisplayAnimations.ts";
-import { type Suggestion, SuggestionToTaxon, TaxaToSuggestions } from "../../../types/Application";
+import { toggleState } from "../../../features/DisplayAnimations.ts";
+import { type Suggestion, SuggestionToTaxon } from "../../../types/Application";
 import { Taxon } from "../../../types/Taxonomy";
 import { BaseComponent } from "../../BaseComponent";
 import HTMLtemplate from "./SelectionTemplate.html?raw";
@@ -59,37 +59,17 @@ export class SelectionComponent extends BaseComponent {
 
   private removeSelection(taxon: Taxon): void {
     State.removeFromQuery(taxon);
-    this.removeBadge(taxon.id);
   }
 
   private async setVisibility(): Promise<void> {
     await toggleState(this, State.getQuery().length > 0);
   }
 
-  // Adds new Badges for Taxons that are not yet present and removes all badges of taxons that are not in the query anymore
-  private updateBadges(query: Taxon[]) {
-    const querySuggestions = TaxaToSuggestions(query);
-
-    const currentBadges = this.container.querySelectorAll(".badge") as NodeListOf<HTMLSpanElement>;
-
-    currentBadges.forEach((badge) => {
-      if (
-        !querySuggestions.some((t) => {
-          return t.id === Number(badge.id);
-        })
-      ) {
-        this.removeBadge(Number(badge.id));
-      }
-    });
+  private updateBadges(query: Taxon[]): void {
+    this.container.innerHTML = "";
 
     query.forEach((taxon) => {
-      if (
-        !Array.from(currentBadges).some((badge) => {
-          return Number(badge.dataset.id) === taxon.id;
-        })
-      ) {
-        this.createBadge(taxon);
-      }
+      this.createBadge(taxon);
     });
   }
 
@@ -122,13 +102,6 @@ export class SelectionComponent extends BaseComponent {
     badge.addEventListener("click", this.onClickSelection.bind(this));
 
     this.container.appendChild(badge);
-  }
-
-  private removeBadge(id: number): void {
-    const badge = this.container.querySelector(`.badge[data-id="${String(id)}"]`);
-    if (badge) {
-      void removeAnimated(badge as HTMLElement);
-    }
   }
 
   private onClickSelection(event: MouseEvent): void {

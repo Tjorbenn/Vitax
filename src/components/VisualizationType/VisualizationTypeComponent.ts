@@ -24,7 +24,16 @@ export class VisualizationTypeComponent extends BaseComponent {
       radio.name = "visualization-type";
       radio.value = type;
       radio.ariaLabel = type;
-      radio.classList.add("tab", "animated", "capitalize");
+      radio.classList.add(
+        "tab",
+        "animated",
+        "capitalize",
+        "inline-flex",
+        "flex-none",
+        "whitespace-nowrap",
+        "px-3",
+        "py-2",
+      );
 
       if (type === currentDisplayType) {
         radio.checked = true;

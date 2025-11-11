@@ -134,6 +134,11 @@ export class D3Graph extends D3Visualization {
     document.addEventListener("visibilitychange", this.onVisibilityChangeBound, { passive: true });
   }
 
+  protected clearContent(): void {
+    this.gNode.selectAll("*").remove();
+    this.gLink.selectAll("*").remove();
+  }
+
   public async render(): Promise<D3VisualizationExtents | undefined> {
     await this.update();
     return this.getExtents();

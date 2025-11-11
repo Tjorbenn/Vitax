@@ -104,6 +104,11 @@ export class D3Tree extends D3Visualization {
     this.safeUpdate();
   }
 
+  protected clearContent(): void {
+    this.gNode.selectAll("*").remove();
+    this.gLink.selectAll("*").remove();
+  }
+
   public async render(): Promise<D3VisualizationExtents | undefined> {
     if (!this.root) {
       return undefined;
@@ -385,18 +390,15 @@ export class D3Tree extends D3Visualization {
       const placeRight = isLeaf || d.collapsed;
 
       d._placeRight = placeRight;
-      d3.select(this)
-        .attr("x", placeRight ? 9 : -9)
-        .attr("text-anchor", placeRight ? "start" : "end");
+      const textElement = d3.select(this);
+      textElement.attr("x", placeRight ? 9 : -9).attr("text-anchor", placeRight ? "start" : "end");
 
       const maxPx = placeRight ? maxLabelWidthRight : maxLabelWidthLeft;
       const truncated = truncateEnter(d._fullLabel ?? d.data.name, maxPx);
       if (truncated !== d._label) {
         d._label = truncated;
-        d3.select(this).text(truncated).select("title").remove();
-        d3.select(this)
-          .append("title")
-          .text(d._fullLabel ?? d.data.name);
+        textElement.text(truncated).select("title").remove();
+        textElement.append("title").text(d._fullLabel ?? d.data.name);
       }
     });
 
