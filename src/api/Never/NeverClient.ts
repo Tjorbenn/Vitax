@@ -23,7 +23,11 @@ import * as Never from "./Never";
 
 /**
  * We create a `getTaxonByName` function to fetch a taxon by its name.
- * To be able to use this function for suggestions as well, we add an `exact` parameter which defaults to be `true` (the default behaviour for fetching a specific taxon). This corresponds to the exact parameter of the Never API itself.
+ * To be able to use this function for suggestions as well, we add an `exact` parameter which defaults to be `true` (the default behavior for fetching a specific taxon). This corresponds to the exact parameter of the Never API itself.
+ *
+ * @param name The name of the taxon to fetch.
+ * @param exact Whether to search for an exact match. Defaults to true.
+ * @returns A promise that resolves to the found Taxon.
  */
 export async function getTaxonByName(name: string, exact = true): Promise<Taxon> {
   const request = new Never.Request(Never.Endpoint.Taxon);
@@ -45,6 +49,9 @@ export async function getTaxonByName(name: string, exact = true): Promise<Taxon>
 /**
  * To be able to fetch multiple taxa by their IDs, we implement a `getTaxaByIds` function.
  * This enables efficient fetching of multiple taxa in a single request, minimizing the number of API calls and improving performance.
+ *
+ * @param taxonIds An array of taxon IDs to fetch.
+ * @returns A promise that resolves to an array of Taxon objects.
  */
 export async function getTaxaByIds(taxonIds: number[]): Promise<Taxon[]> {
   const request = new Never.Request(Never.Endpoint.TaxonInfo);
@@ -57,6 +64,9 @@ export async function getTaxaByIds(taxonIds: number[]): Promise<Taxon[]> {
 /**
  * The same goes for fetching multiple names by their taxon IDs.
  * For this, we implement a `getNamesByTaxonIds` function, that returns an array of names corresponding to the provided taxon IDs.
+ *
+ * @param taxonIds An array of taxon IDs to fetch names for.
+ * @returns A promise that resolves to an array of names.
  */
 export async function getNamesByTaxonIds(taxonIds: number[]): Promise<string[]> {
   const request = new Never.Request(Never.Endpoint.Names);
@@ -79,6 +89,9 @@ export async function getNamesByTaxonIds(taxonIds: number[]): Promise<string[]> 
 
 /**
  * To fetch the accessions for a taxon, we implement a `getAccessionsFromTaxonId` function.
+ *
+ * @param taxonId The ID of the taxon to fetch accessions for.
+ * @returns A promise that resolves to an array of Accession objects.
  */
 export async function getAccessionsFromTaxonId(taxonId: number): Promise<Accession[]> {
   const request = new Never.Request(Never.Endpoint.Accessions);
@@ -89,6 +102,12 @@ export async function getAccessionsFromTaxonId(taxonId: number): Promise<Accessi
   return MapResponseToAccessions(response);
 }
 
+/**
+ * Get the children IDs of a taxon by its ID.
+ *
+ * @param taxonId The ID of the taxon to get children IDs for.
+ * @returns A promise that resolves to an array of children taxon IDs.
+ */
 export async function getChildrenIdsByTaxonId(taxonId: number): Promise<number[]> {
   const request = new Never.Request(Never.Endpoint.Children);
   request.addParameter(Never.ParameterKey.Term, taxonId);
@@ -201,8 +220,9 @@ export async function getSubtreeByTaxonIdAsArray(taxonId: number): Promise<Taxon
 
 /**
  * Get the lineage from one taxon to another by their IDs.
- * @param ancestorId The ID of the ancestor taxon.
- * @param descendantID The ID of the descendant taxon.
+ * @param ancestorId - The unique identifier of the ancestor taxon.
+ * @param descendantId - The unique identifier of the descendant taxon.
+ * @returns A promise that resolves to the taxonomy tree representing the lineage.
  */
 export async function getLineageFromTaxonIds(
   ancestorId: number,
@@ -271,6 +291,13 @@ export async function getFullTaxonByName(name: string): Promise<Taxon> {
   return fullTaxon;
 }
 
+/**
+ * Maps the API response to an array of taxon objects.
+ *
+ * @param response - The API response to map.
+ * @returns An array of Taxon objects.
+ * @throws {Error} If the response contains incomplete entries.
+ */
 function MapResponseToTaxa(response: Never.Response): Taxon[] {
   if (
     response.some((entry) => {
@@ -303,6 +330,13 @@ function MapResponseToTaxa(response: Never.Response): Taxon[] {
   return taxa;
 }
 
+/**
+ * Maps the API response to an array of Accession objects.
+ *
+ * @param response - The API response to map.
+ * @returns An array of Accession objects.
+ * @throws {Error} If the response contains incomplete entries.
+ */
 function MapResponseToAccessions(response: Never.Response): Accession[] {
   const accessions: Accession[] = [];
 
@@ -325,6 +359,13 @@ function MapResponseToAccessions(response: Never.Response): Accession[] {
   return accessions;
 }
 
+/**
+ * Maps the API response to an array of full Taxon objects by fetching full data for each ID.
+ *
+ * @param response - The API response to map.
+ * @returns A promise that resolves to an array of full Taxon objects.
+ * @throws {Error} If the response contains incomplete entries.
+ */
 async function ResponseToFullTaxa(response: Never.Response): Promise<Taxon[]> {
   if (
     response.some((entry) => {
@@ -341,13 +382,22 @@ async function ResponseToFullTaxa(response: Never.Response): Promise<Taxon[]> {
     );
   } else {
     const taxonIds = response.map((entry) => {
-      if (entry.taxid) return entry.taxid;
+      if (entry.taxid) {
+        return entry.taxid;
+      }
       return -1;
     });
     return await getFullTaxaByIds(taxonIds.filter((id) => id !== -1));
   }
 }
 
+/**
+ * Maps the API response to an array of Suggestion objects.
+ *
+ * @param response - The API response to map.
+ * @returns An array of Suggestion objects.
+ * @throws {Error} If the response contains incomplete entries.
+ */
 function ResponseToSuggestions(response: Never.Response): Suggestion[] {
   if (
     response.some((entry) => {
@@ -374,10 +424,16 @@ function ResponseToSuggestions(response: Never.Response): Suggestion[] {
       }
       return undefined;
     })
-    .filter((s): s is Suggestion => s !== undefined);
+    .filter((suggestion): suggestion is Suggestion => suggestion !== undefined);
   return suggestions;
 }
 
+/**
+ * Formats the genome counts from the API response to the GenomeCount object.
+ *
+ * @param neverGenomeCounts - The genome counts from the API.
+ * @returns The formatted GenomeCount object or undefined if input is missing.
+ */
 function FormatGenomeCount(neverGenomeCounts?: Never.NeverGenomeCount[]): GenomeCount | undefined {
   if (!neverGenomeCounts) {
     return;
@@ -389,6 +445,12 @@ function FormatGenomeCount(neverGenomeCounts?: Never.NeverGenomeCount[]): Genome
   return genomeCount;
 }
 
+/**
+ * Formats the images from the API response to TaxonImage objects.
+ *
+ * @param neverImages - The images from the API.
+ * @returns An array of TaxonImage objects or undefined if input is missing or empty.
+ */
 function FormatImages(neverImages?: Never.NeverImage[]): TaxonImage[] | undefined {
   if (!neverImages || neverImages.length === 0) {
     return;

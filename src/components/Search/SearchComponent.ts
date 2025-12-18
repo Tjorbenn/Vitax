@@ -13,6 +13,10 @@ import "./Suggestions/SuggestionsComponent.ts";
 import { SuggestionsComponent } from "./Suggestions/SuggestionsComponent.ts";
 import "./TaxonomyType/TaxonomyTypeComponent.ts";
 
+/**
+ * Main Search Component.
+ * Orchestrates search input, suggestions, selection, taxonomy type toggling.
+ */
 export class SearchComponent extends BaseComponent {
   private input!: HTMLInputElement;
   private button!: HTMLButtonElement;
@@ -28,11 +32,17 @@ export class SearchComponent extends BaseComponent {
   private outsideListener?: (e: Event) => void;
   private _keepOpenOnBlur = false;
 
+  /**
+   * Creates a new SearchComponent instance.
+   */
   constructor() {
     super(HTMLtemplate);
     this.loadTemplate();
   }
 
+  /**
+   * Initialize child components and event listeners.
+   */
   initialize(): void {
     this.input = requireElement<HTMLInputElement>(this, "#search-input");
     this.button = requireElement<HTMLButtonElement>(this, "button[type=submit]");
@@ -44,8 +54,8 @@ export class SearchComponent extends BaseComponent {
     this.addEvent(this.input, "input", () => {
       this.onInput();
     });
-    this.addEvent(this.input, "keydown", (e: Event) => {
-      void this.onKeyDown(e as KeyboardEvent);
+    this.addEvent(this.input, "keydown", (event: Event) => {
+      void this.onKeyDown(event as KeyboardEvent);
     });
     this.addEvent(
       this.suggestionsComp,
@@ -60,8 +70,8 @@ export class SearchComponent extends BaseComponent {
     this.addSubscription(State.subscribeToQuery(this.updateVisualizeButton.bind(this)));
     this.addSubscription(State.subscribeToStatus(this.onStatusChange.bind(this)));
 
-    this.outsideListener = (e: Event) => {
-      const target = e.target as Node | null;
+    this.outsideListener = (event: Event) => {
+      const target = event.target as Node | null;
       if (this._keepOpenOnBlur) {
         return;
       }
@@ -75,6 +85,9 @@ export class SearchComponent extends BaseComponent {
     this.updateVisualizeButton();
   }
 
+  /**
+   * Handle input event.
+   */
   private onInput(): void {
     const newTerm = this.input.value.trim();
 
@@ -100,11 +113,18 @@ export class SearchComponent extends BaseComponent {
     }, this.debounceDelay);
   }
 
+  /**
+   * Handle select suggestion event.
+   * @param event - The selection event containing the selected suggestion.
+   */
   private onSelectSuggestion(event: Event): void {
     const selectEvent = event as CustomEvent<Suggestion>;
     this.selectionComp.addSelection(selectEvent.detail);
   }
 
+  /**
+   * Handle visualize button click event.
+   */
   private onVisualize(): void {
     if (State.getQuery().length > 0) {
       void Orchestrator.resolveTree();
@@ -113,13 +133,20 @@ export class SearchComponent extends BaseComponent {
     }
   }
 
+  /**
+   * Hides the suggestions list.
+   */
   private closeSuggestions(): void {
     this.suggestionsComp.hide();
   }
 
-  private async onKeyDown(e: KeyboardEvent): Promise<void> {
-    if (e.key === "Enter") {
-      e.preventDefault();
+  /**
+   * Handle keydown event.
+   * @param event - The keydown event.
+   */
+  private async onKeyDown(event: KeyboardEvent): Promise<void> {
+    if (event.key === "Enter") {
+      event.preventDefault();
 
       const term = this.input.value.trim();
       if (!term) {
@@ -140,6 +167,11 @@ export class SearchComponent extends BaseComponent {
     }
   }
 
+  /**
+   * Callback for application status changes.
+   * Updates loading state of the visualize button.
+   * @param status The new status.
+   */
   public onStatusChange(status: Status): void {
     if (status === Status.Loading) {
       this.button.innerHTML = '<span class="loading loading-spinner"></span>';
@@ -155,6 +187,9 @@ export class SearchComponent extends BaseComponent {
     }
   }
 
+  /**
+   * Update the disabled state and tooltip of the visualize button based on the current selection count and taxonomy type.
+   */
   public updateVisualizeButton(): void {
     const taxonomyType = State.getTaxonomyType();
     const query = State.getQuery();
@@ -184,6 +219,9 @@ export class SearchComponent extends BaseComponent {
     }
   }
 
+  /**
+   * Callback for when the component is disconnected from the DOM.
+   */
   disconnectedCallback(): void {
     if (this.debounceTimer) {
       clearTimeout(this.debounceTimer);

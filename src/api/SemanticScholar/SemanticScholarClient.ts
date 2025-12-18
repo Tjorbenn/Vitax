@@ -1,21 +1,40 @@
 import type { Publication } from "../../types/Application";
 import * as AcademicScholar from "./SemanticScholar";
 
+/**
+ * Get publications related to a taxon by its name.
+ *
+ * @param name - The scientific name of the taxon to fetch publications for.
+ * @returns A promise that resolves to an array of Publication objects.
+ */
 export async function getPublicationsFromTaxonName(name: string): Promise<Publication[]> {
   const response = await AcademicScholar.paperRequest(name);
   const entries = response.data;
   return entries.map(entryToPublication);
 }
 
-function safeUrl(u?: string): URL | undefined {
+/**
+ * Safely parse a URL string.
+ *
+ * @param url - The URL string to parse.
+ * @returns A URL object or undefined if parsing fails.
+ */
+function safeUrl(url?: string): URL | undefined {
   try {
-    if (!u) return undefined;
-    return new URL(u);
+    if (!url) {
+      return undefined;
+    }
+    return new URL(url);
   } catch {
     return undefined;
   }
 }
 
+/**
+ * Convert a raw Semantic Scholar paper entry to a Vitax Publication.
+ * @param entry The raw paper entry from the API.
+ * @returns The formatted Publication object.
+ */
 function entryToPublication(entry: AcademicScholar.PaperEntry): Publication {
   const ext = entry[AcademicScholar.PaperFields.ExternalIds];
   const doiUrl = ext?.DOI ? `https://doi.org/${ext.DOI}` : undefined;

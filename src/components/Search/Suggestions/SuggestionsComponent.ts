@@ -1,10 +1,15 @@
 import * as State from "../../../core/State";
 import { enter, hide, toggleState } from "../../../features/DisplayAnimations";
 import { type Suggestion, sortSuggestions } from "../../../types/Application";
+import { requireElement } from "../../../utility/Dom";
 import { BaseComponent } from "../../BaseComponent";
 import { SuggestionSession } from "./SuggestionSession";
 import HTMLtemplate from "./SuggestionsTemplate.html?raw";
 
+/**
+ * Component to display search suggestions in a scrollable list.
+ * Supports paging and lazy loading through SuggestionSession.
+ */
 export class SuggestionsComponent extends BaseComponent {
   private session?: SuggestionSession;
   private latestTerm = "";
@@ -13,13 +18,25 @@ export class SuggestionsComponent extends BaseComponent {
   private loader!: HTMLElement;
   private _keepOpenOnBlur = false;
 
+  /**
+   * Whether to keep the suggestions open on blur.
+   * @returns True if keep open on blur is enabled.
+   */
   public get keepOpenOnBlur(): boolean {
     return this._keepOpenOnBlur;
   }
-  public set keepOpenOnBlur(v: boolean) {
-    this._keepOpenOnBlur = v;
+
+  /**
+   * Sets whether to keep the suggestions open on blur.
+   * @param value - The new value.
+   */
+  public set keepOpenOnBlur(value: boolean) {
+    this._keepOpenOnBlur = value;
   }
 
+  /**
+   * Creates a new SuggestionsComponent instance.
+   */
   constructor() {
     super(HTMLtemplate);
 
@@ -42,6 +59,9 @@ export class SuggestionsComponent extends BaseComponent {
     this.loadTemplate();
   }
 
+  /**
+   * Initialize elements and scroll listener.
+   */
   initialize(): void {
     this.table = requireElement<HTMLTableElement>(this, "#suggestions-table");
     this.loader = requireElement<HTMLElement>(this, "#suggestions-loader");
@@ -55,6 +75,10 @@ export class SuggestionsComponent extends BaseComponent {
     );
   }
 
+  /**
+   * Handle input changes to start a new suggestion session.
+   * @param term - The current search term input by the user.
+   */
   public onInput(term: string): void {
     this.latestTerm = term;
     if (!term || term.trim() === "") {
@@ -68,6 +92,9 @@ export class SuggestionsComponent extends BaseComponent {
     void this.startSession(term);
   }
 
+  /**
+   * Hide the suggestions list and reset state.
+   */
   public hide(): void {
     this.latestTerm = "";
     this.session = undefined;
@@ -80,6 +107,9 @@ export class SuggestionsComponent extends BaseComponent {
     void hide(this);
   }
 
+  /**
+   * Handle scroll events and load more suggestions if needed.
+   */
   private onScroll(): void {
     const nearBottom = this.scrollTop + this.clientHeight >= this.scrollHeight - 8;
     if (nearBottom) {
@@ -87,6 +117,9 @@ export class SuggestionsComponent extends BaseComponent {
     }
   }
 
+  /**
+   * Load more suggestions if needed.
+   */
   private getMoreSuggestions() {
     if (!this.session || this.session.loading || this.session.endReached) {
       return;
@@ -95,6 +128,10 @@ export class SuggestionsComponent extends BaseComponent {
     }
   }
 
+  /**
+   * Start a new suggestion session.
+   * @param term - The term to start a session for.
+   */
   private async startSession(term: string) {
     const session = new SuggestionSession(term);
     this.session = session;
@@ -108,6 +145,9 @@ export class SuggestionsComponent extends BaseComponent {
     this.updateTable();
   }
 
+  /**
+   * Fetch additional suggestions from the current session.
+   */
   private async loadMore() {
     const session = this.session;
     if (!session) {
@@ -125,6 +165,9 @@ export class SuggestionsComponent extends BaseComponent {
     this.updateTable();
   }
 
+  /**
+   * Reset the suggestions list.
+   */
   private resetSuggestions() {
     const tbody = this.table.querySelector("#suggestions-body");
     if (tbody) {
@@ -133,6 +176,9 @@ export class SuggestionsComponent extends BaseComponent {
     void hide(this);
   }
 
+  /**
+   * Update the suggestions table element.
+   */
   private updateTable() {
     const suggestionsSet = this.session ? this.session.suggestions : [];
     const sortedSuggestions = sortSuggestions(suggestionsSet, this.latestTerm);
@@ -142,8 +188,8 @@ export class SuggestionsComponent extends BaseComponent {
     }
 
     const selectedIds = new Set(
-      State.getQuery().map((t) => {
-        return t.id;
+      State.getQuery().map((taxon) => {
+        return taxon.id;
       }),
     );
 
@@ -191,14 +237,17 @@ export class SuggestionsComponent extends BaseComponent {
     void toggleState(this, suggestionsSet.length > 0);
   }
 
+  /**
+   * Update the disabled state of rows based on the current query.
+   */
   private updateDisabledRows(): void {
     const tbody = this.table.querySelector("#suggestions-body");
     if (!tbody) {
       return;
     }
     const selectedIds = new Set(
-      State.getQuery().map((t) => {
-        return t.id;
+      State.getQuery().map((taxon) => {
+        return taxon.id;
       }),
     );
     tbody.querySelectorAll<HTMLTableRowElement>("tr").forEach((row) => {
@@ -212,6 +261,11 @@ export class SuggestionsComponent extends BaseComponent {
     });
   }
 
+  /**
+   * Apply the styles associated with the disabled state to a row.
+   * @param row The row to apply the style to.
+   * @param disabled If the row should be disabled.
+   */
   private applyDisabledStyle(row: HTMLTableRowElement, disabled: boolean) {
     if (disabled) {
       row.classList.add("opacity-40", "pointer-events-none");
@@ -226,6 +280,12 @@ export class SuggestionsComponent extends BaseComponent {
     }
   }
 
+  /**
+   * Create a custom event for selecting a suggestion.
+   * Needed for reactivity of other components.
+   * @param suggestion - The suggestion object to select.
+   * @returns The custom event.
+   */
   private createSelectEvent(suggestion: Suggestion): CustomEvent<Suggestion> {
     return new CustomEvent("vitax:selectSuggestion", {
       detail: suggestion,
@@ -234,6 +294,10 @@ export class SuggestionsComponent extends BaseComponent {
     });
   }
 
+  /**
+   * Handle clicking on a suggestion.
+   * @param event - The mouse click event.
+   */
   private onClickSuggestion(event: MouseEvent): void {
     const target = event.target as HTMLElement;
     const row = target.parentElement as HTMLTableRowElement;
@@ -255,10 +319,16 @@ export class SuggestionsComponent extends BaseComponent {
     this.dispatchEvent(selectEvent);
   }
 
+  /**
+   * Show the loading animation at the bottom of the table.
+   */
   private showLoader(): void {
     enter(this.loader);
   }
 
+  /**
+   * Hide the loading animation at the bottom of the table.
+   */
   private hideLoader(): void {
     void hide(this.loader);
   }

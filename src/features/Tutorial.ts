@@ -1,6 +1,9 @@
 import { driver } from "driver.js";
 import "driver.js/dist/driver.css";
 
+/**
+ * Start the interactive application tutorial using driver.js.
+ */
 export function startTutorial() {
   const driverObj = driver({
     disableActiveInteraction: true,

@@ -1,3 +1,7 @@
+/**
+ * Type definitions for Vite environment variables.
+ * Ensures type safety for import.meta.env usage across the application.
+ */
 /// <reference types="vite/client" />
 
 import type { TaxonomyType, VisualizationType } from "./types/Application";

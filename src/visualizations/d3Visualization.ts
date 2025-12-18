@@ -1,9 +1,20 @@
+//#region -h d3imports
 import * as d3 from "d3";
 import * as State from "../core/State";
 import * as TaxonomyService from "../services/TaxonomyService";
 import { VisualizationType } from "../types/Application";
 import { Taxon, TaxonomyTree, type LeanTaxon } from "../types/Taxonomy";
-import { getThemeColors, ThemeColor } from "../utility/Theme";
+import { getThemeColors, resolveThemeColor, ThemeColor } from "../utility/Theme";
+//#endregion
+
+/**
+ * This module represents the base class, that the renderer implementations extend from.
+ * It abstracts reusable properties and methods, that are shared between all renderer implementations.
+ *
+ * First, we define two basic types, that define needed data structures.
+ * The `D3VisualizationExtents` shapes a structure containing the extents of a rendering canvas.
+ * The second custom type, the `VisualizationHandler`, defines a type containing two functions that are being called when a specific object is being hovered over or unhovered.
+ */
 
 export type D3VisualizationExtents = {
   minX: number;
@@ -17,6 +28,13 @@ export type VisualizationHandlers = {
   onUnhover?: () => void;
 };
 
+/**
+ * Now we can implement the abstract `D3Visualization` class.
+ */
+
+/**
+ * Abstract base class for D3-based visualizations.
+ */
 export abstract class D3Visualization {
   public abstract readonly type: VisualizationType;
   protected layer: d3.Selection<SVGGElement, unknown, null, undefined>;
@@ -39,6 +57,15 @@ export abstract class D3Visualization {
   protected filterSubscription?: () => void;
   private currentTree?: TaxonomyTree;
 
+  /**
+   * On construction, we initialize the SVG layer, set up subscriptions to state changes and determine the dimensions of the visualization area.
+   * At the same time, we prepare to handle theme changes and filtering options.
+   */
+
+  /**
+   * Creates a new D3Visualization.
+   * @param layer - The SVG group element to render into.
+   */
   constructor(layer: SVGGElement) {
     this.layer = d3.select(layer);
     const bbox = (layer.ownerSVGElement ?? layer).getBoundingClientRect();
@@ -54,14 +81,33 @@ export abstract class D3Visualization {
     });
   }
 
-  public setHandlers(h: VisualizationHandlers): void {
-    this.handlers = h;
+  /**
+   * Set the interaction handlers for the visualization.
+   * @param handlers - The handlers object containing onHover and onUnhover callbacks.
+   */
+  public setHandlers(handlers: VisualizationHandlers): void {
+    this.handlers = handlers;
   }
 
+  /**
+   * Activate the State subscription to listen for tree changes.
+   * Should be called in the constructor.
+   */
   protected activateStateSubscription(): void {
     this.treeSubscription = State.subscribeToTree(this.updateHierarchy.bind(this));
   }
 
+  /**
+   * Interactivity is one of the main focus points of _Vitax_, therefore we need to ensure that the visualizations update correctly when the underlying data changes.
+   * The `updateHierarchy` method is responsible for updating the internal representation of the taxonomy tree whenever there are changes in the state.
+   * It checks if the new tree is different from the current one, and if so, it clears the existing content and sets up the new hierarchy.
+   * Finally, it triggers a safe update to re-render the visualization with the new data.
+   */
+
+  /**
+   * Updates the hierarchy when the underlying taxonomy tree changes.
+   * @param tree - The new TaxonomyTree, or undefined to clear.
+   */
   protected updateHierarchy(tree: TaxonomyTree | undefined): void {
     if (!tree) {
       this.root = undefined;
@@ -82,7 +128,16 @@ export abstract class D3Visualization {
     this.safeUpdate();
   }
 
+  /**
+   * To ensure that updates to the visualization are handled safely and efficiently, we implement the `safeUpdate` method.
+   * This method checks if an update is already in progress and the root node exists before proceeding.
+   * If an update is not already underway, it sets the `updateInProgress` flag to indicate that an update is in progress, calls the abstract `update` method, and finally resets the flag once the update is complete.
+   */
   private updateInProgress = false;
+
+  /**
+   * Safely triggers an update, ensuring only one update runs at a time.
+   */
   protected safeUpdate(): void {
     if (this.updateInProgress) {
       return;
@@ -105,28 +160,45 @@ export abstract class D3Visualization {
   }
 
   private transitionCounter = 0;
+  /**
+   * Create a D3 transition with a unique name and specified duration.
+   * @param duration Duration in milliseconds (default: 300).
+   * @returns A D3 transition selection.
+   */
   protected createTransition(duration = 300): d3.Transition<SVGGElement, unknown, null, undefined> {
     this.transitionCounter++;
     const transitionName = `d3viz-transition-${this.transitionCounter.toString()}`;
     return this.layer.transition(transitionName).duration(duration);
   }
 
+  /**
+   * Initialize the root node coordinates and collapsed state for rendering.
+   * Sets default x0/y0 if missing for animation continuity.
+   */
   protected initializeRootForRender(): void {
     if (!this.root) {
       return;
     }
     this.root.x0 ??= this.height / 2;
     this.root.y0 ??= 0;
-    this.root.descendants().forEach((d) => {
-      d.collapsed = Boolean((d as d3.HierarchyNode<LeanTaxon> & { collapsed?: boolean }).collapsed);
+    this.root.descendants().forEach((descendant) => {
+      descendant.collapsed = Boolean(
+        (descendant as d3.HierarchyNode<LeanTaxon> & { collapsed?: boolean }).collapsed,
+      );
     });
   }
 
-  /** Visibility: all ancestors must not be collapsed. */
+  /**
+   * To hide and show nodes based on their collapsed state, we implement the `isNodeVisible` method.
+   * This method checks the ancestors of a given node to determine if any of them are collapsed.
+   * If any ancestor is collapsed, the node is considered not visible.
+   * @param node - The node to check visibility for.
+   * @returns True if the node is visible (no ancestors are collapsed).
+   */
   protected isNodeVisible(node: d3.HierarchyNode<LeanTaxon>): boolean {
-    const ancestors = node.ancestors().filter((a) => a !== node);
-    return ancestors.every((a) => {
-      return !(a as unknown as { collapsed?: boolean }).collapsed;
+    const ancestors = node.ancestors().filter((ancestor) => ancestor !== node);
+    return ancestors.every((ancestor) => {
+      return !(ancestor as unknown as { collapsed?: boolean }).collapsed;
     });
   }
 
@@ -134,6 +206,8 @@ export abstract class D3Visualization {
    * Checks if a node should be visible based on the recursive accessions filter.
    * When active, only nodes with recursive genomes are shown.
    * Note: Uses genomeCountRecursive instead of accessions since this data is available on initial load.
+   * @param node - The node to validate against the filter.
+   * @returns True if the node passes the filter.
    */
   protected passesRecursiveAccessionsFilter(node: d3.HierarchyNode<LeanTaxon>): boolean {
     const onlyGenomic = State.getOnlyGenomic();
@@ -156,6 +230,8 @@ export abstract class D3Visualization {
   /**
    * Filter hierarchy by hiding nodes without genomes.
    * Uses in-place filtering via _children property to maintain object constancy.
+   * @param node - The hierarchy node to filter.
+   * @returns The filtered node or undefined if hidden.
    */
   protected filterHierarchy(
     node: d3.HierarchyNode<LeanTaxon>,
@@ -172,6 +248,7 @@ export abstract class D3Visualization {
   /**
    * Restore all children that were hidden by filtering.
    * Recursively restores the entire subtree.
+   * @param node - The node to restore children for.
    */
   private restoreChildren(node: d3.HierarchyNode<LeanTaxon>): void {
     const nodeWithHidden = node as d3.HierarchyNode<LeanTaxon> & {
@@ -192,6 +269,8 @@ export abstract class D3Visualization {
   /**
    * Apply genome filter by hiding nodes without genomes.
    * Returns undefined if node should be completely removed.
+   * @param node - The node to apply the filter to.
+   * @returns The filtered node or undefined.
    */
   private applyGenomeFilter(
     node: d3.HierarchyNode<LeanTaxon>,
@@ -231,46 +310,65 @@ export abstract class D3Visualization {
     return node;
   }
 
+  /**
+   * Get the current query taxa from State.
+   * @returns Array of query Taxon objects.
+   */
   protected getQuery(): Taxon[] {
     return State.getQuery();
   }
 
-  protected getNodeFill(d: d3.HierarchyNode<LeanTaxon>): string {
+  /**
+   * Determine the fill color for a node based on state and properties.
+   * @param node - The hierarchy node to get color for.
+   * @returns CSS color string.
+   */
+  protected getNodeFill(node: d3.HierarchyNode<LeanTaxon>): string {
     const themeVars = getThemeColors();
 
-    if (d.data.id === 0) {
+    if (node.data.id === 0) {
       return themeVars.primary;
     }
 
-    if (d.data.annotation) {
-      return this.getColorFromTheme(d.data.annotation.color);
+    if (node.data.annotation) {
+      return this.getColorFromTheme(node.data.annotation.color);
     }
 
-    const hasHierarchyChildren = d.children && d.children.length > 0;
-    const hasDataChildren = d.data.children.length > 0;
+    const hasHierarchyChildren = node.children && node.children.length > 0;
+    const hasDataChildren = node.data.children.length > 0;
     return hasHierarchyChildren || hasDataChildren ? themeVars.base200 : themeVars.neutral;
   }
 
+  /**
+   * Resolve a specific theme color variable to its value.
+   * @param themeColor The ThemeColor enum value.
+   * @returns CSS color value string.
+   */
   protected getColorFromTheme(themeColor: ThemeColor): string {
-    const style = getComputedStyle(document.documentElement);
-    const colorValue = style.getPropertyValue(themeColor).trim();
-
-    if (!colorValue) {
-      console.warn(`Theme color ${themeColor} not found, using primary`);
-      return getThemeColors().primary;
-    }
-
-    return colorValue;
+    return resolveThemeColor(themeColor);
   }
 
+  /**
+   * Get all current theme colors.
+   * @returns ThemeColors object.
+   */
   protected getThemeColors() {
     return getThemeColors();
   }
 
+  /**
+   * Resolve a full taxon object from an ID using the current tree state.
+   * @param id - The unique identifier of the taxon.
+   * @returns The Taxon object or undefined.
+   */
   protected resolveFullTaxon(id: number): Taxon | undefined {
     return State.getTree()?.findTaxonById(id);
   }
 
+  /**
+   * Move the tree root up one level ("Uproot").
+   * Triggers a state update if the root changes.
+   */
   protected async upRoot(): Promise<void> {
     const tree = State.getTree();
     if (!tree) {
@@ -282,6 +380,15 @@ export abstract class D3Visualization {
     }
   }
 
+  /**
+   * We create more accessor methods to handle child nodes and extents.
+   * The `getChildren` method retrieves the children of a node using the `TaxonomyService`.
+   */
+
+  /**
+   * Fetches and resolves children for a given hierarchy node.
+   * @param datum - The node to resolve children for.
+   */
   protected async getChildren(datum: d3.HierarchyNode<LeanTaxon>): Promise<void> {
     const full = State.getTree()?.findTaxonById(datum.data.id);
     if (full) {
@@ -290,6 +397,10 @@ export abstract class D3Visualization {
     State.treeHasChanged();
   }
 
+  /**
+   * Get the bounding box of the current visualization nodes.
+   * @returns D3VisualizationExtents object or undefined if no root.
+   */
   public getExtents(): D3VisualizationExtents | undefined {
     if (!this.root) {
       return undefined;
@@ -298,9 +409,9 @@ export abstract class D3Visualization {
     let maxX = -Infinity;
     let minY = Infinity;
     let maxY = -Infinity;
-    this.root.descendants().forEach((d) => {
-      const dx = Number(d.x);
-      const dy = Number(d.y);
+    this.root.descendants().forEach((descendant) => {
+      const dx = Number(descendant.x);
+      const dy = Number(descendant.y);
       minX = Math.min(minX, dx);
       maxX = Math.max(maxX, dx);
       minY = Math.min(minY, dy);
@@ -317,24 +428,41 @@ export abstract class D3Visualization {
     };
   }
 
+  /**
+   * Clear all elements from the visualization layer.
+   */
   public clear(): void {
     this.layer.selectAll("*").remove();
   }
 
+  /**
+   * Clear content specific to the visualization implementation.
+   * Defaults to calling `clear()`.
+   */
   protected clearContent(): void {
     // Default: clear everything
     this.clear();
   }
 
+  /**
+   * Get the total recursive genome count for a taxon.
+   * Uses caching for performance.
+   * @param taxon The LeanTaxon object.
+   * @returns The total genome count.
+   */
   protected getGenomeTotal(taxon: LeanTaxon): number {
     const cached = this.genomeSumCache.get(taxon.id);
-    if (cached !== undefined) return cached;
+    if (cached !== undefined) {
+      return cached;
+    }
 
     const gc = taxon.genomeCountRecursive;
     let sum = 0;
     if (gc) {
-      for (const v of Object.values(gc)) {
-        if (typeof v === "number" && Number.isFinite(v)) sum += v;
+      for (const val of Object.values(gc)) {
+        if (typeof val === "number" && Number.isFinite(val)) {
+          sum += val;
+        }
       }
     }
     const value = sum || 1;
@@ -342,8 +470,14 @@ export abstract class D3Visualization {
     return value;
   }
 
+  /**
+   * Initialize the max genome count for scaling.
+   * Should be called before creating scales.
+   */
   private initializeGenomeScale(): void {
-    if (this.genomeScaleInitialized) return;
+    if (this.genomeScaleInitialized) {
+      return;
+    }
     this.genomeScaleInitialized = true;
 
     const rootTaxon = State.getTree()?.findTaxonById(1);
@@ -355,24 +489,48 @@ export abstract class D3Visualization {
     }
   }
 
+  /**
+   * Create a D3 symlog scale for genome count to size.
+   * @param range The output range [min, max].
+   * @returns The d3 scale function.
+   */
   protected createGenomeSizeScale(range: [number, number]): d3.ScaleSymLog<number, number> {
     this.initializeGenomeScale();
     return d3.scaleSymlog([0, this.maxGenomeCount], range).constant(1);
   }
 
+  /**
+   * Create a D3 symlog scale for genome count to stroke width.
+   * @param range The output range [min, max].
+   * @returns The d3 scale function.
+   */
   protected createGenomeStrokeScale(range: [number, number]): d3.ScaleSymLog<number, number> {
     this.initializeGenomeScale();
     return d3.scaleSymlog([0, this.maxGenomeCount], range).constant(1);
   }
 
+  /**
+   * Abstract method to render the visualization.
+   * @returns Promise resolving to the visualization extents.
+   */
   public abstract render(): Promise<D3VisualizationExtents | undefined>;
 
+  /**
+   * Abstract method to update the visualization.
+   * @param _event Optional event triggering the update.
+   * @param source Optional source node for the update (e.g. for animations).
+   * @param duration Duration of the update animation.
+   */
   public abstract update(
     _event?: MouseEvent,
     source?: d3.HierarchyNode<LeanTaxon>,
     duration?: number,
   ): Promise<void>;
 
+  /**
+   * Dispose of the visualization, removing all subscriptions and elements.
+   * Must be called when the visualization is no longer needed to prevent memory leaks.
+   */
   public dispose(): void {
     if (this.treeSubscription) {
       this.treeSubscription();

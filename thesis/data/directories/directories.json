@@ -1,0 +1,47 @@
+[
+  {"type":"directory","name":".","contents":[
+    {"type":"directory","name":"api","contents":[
+      {"type":"directory","name":"NCBI"},
+      {"type":"directory","name":"Never"},
+      {"type":"directory","name":"SemanticScholar"}
+    ]},
+    {"type":"directory","name":"components","contents":[
+      {"type":"directory","name":"AccessionFilter"},
+      {"type":"directory","name":"Attribution"},
+      {"type":"directory","name":"Github"},
+      {"type":"directory","name":"Legend"},
+      {"type":"directory","name":"List"},
+      {"type":"directory","name":"Metadata","contents":[
+        {"type":"directory","name":"Genomes"},
+        {"type":"directory","name":"Image"},
+        {"type":"directory","name":"Links"},
+        {"type":"directory","name":"MetadataModal"},
+        {"type":"directory","name":"Publications"},
+        {"type":"directory","name":"Ranks"}
+      ]},
+      {"type":"directory","name":"Search","contents":[
+        {"type":"directory","name":"Selection"},
+        {"type":"directory","name":"Suggestions"},
+        {"type":"directory","name":"TaxonomyType"}
+      ]},
+      {"type":"directory","name":"Theme"},
+      {"type":"directory","name":"Title"},
+      {"type":"directory","name":"Tutorial"},
+      {"type":"directory","name":"Visualization","contents":[
+        {"type":"directory","name":"TaxonAction"}
+      ]},
+      {"type":"directory","name":"VisualizationType"},
+      {"type":"directory","name":"Welcome"}
+    ]},
+    {"type":"directory","name":"core"},
+    {"type":"directory","name":"features"},
+    {"type":"directory","name":"services"},
+    {"type":"directory","name":"styles"},
+    {"type":"directory","name":"types"},
+    {"type":"directory","name":"utility"},
+    {"type":"directory","name":"visualizations","contents":[
+      {"type":"directory","name":"renderers"}
+    ]}
+  ]}
+
+]

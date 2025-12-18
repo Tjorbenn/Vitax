@@ -6,6 +6,10 @@ import { optionalElement, requireElement } from "../../../utility/Dom";
 import { BaseComponent } from "../../BaseComponent";
 import HTMLtemplate from "./GenomesTemplate.html?raw";
 
+/**
+ * Component displaying genome counts for a Taxon.
+ * Allows downloading accession lists.
+ */
 export class GenomesComponent extends BaseComponent {
   private taxon?: Taxon;
   private tbody!: HTMLTableSectionElement;
@@ -15,11 +19,17 @@ export class GenomesComponent extends BaseComponent {
   private totalDirectBadge?: HTMLSpanElement;
   private totalRecursiveBadge?: HTMLSpanElement;
 
+  /**
+   * Creates a new GenomesComponent instance.
+   */
   constructor() {
     super(HTMLtemplate);
     this.loadTemplate();
   }
 
+  /**
+   * Initialize elements and bindings.
+   */
   initialize(): void {
     this.tbody = requireElement<HTMLTableSectionElement>(this, "#genomes-body");
     this.filetypeToggle = requireElement<HTMLInputElement>(this, "#accessions-filetype");
@@ -34,21 +44,33 @@ export class GenomesComponent extends BaseComponent {
     this.addEvent(this.directBtn, "click", () => void this.downloadDirect());
     this.addEvent(this.recursiveBtn, "click", () => void this.downloadRecursive());
     const divider = optionalElement<HTMLElement>(document, "#divider-genomes");
-    if (divider) divider.style.display = "";
+    if (divider) {
+      divider.style.display = "";
+    }
   }
 
-  public setTaxon(t: Taxon): void {
-    this.taxon = t;
+  /**
+   * Set the taxon to display genomes for.
+   * Triggers a render.
+   * @param taxon The Taxon object.
+   */
+  public setTaxon(taxon: Taxon): void {
+    this.taxon = taxon;
     this.render();
   }
 
+  /**
+   * Render the genomes table.
+   */
   private render(): void {
     this.tbody.innerHTML = "";
-    const t = this.taxon;
-    if (!t) return;
+    const taxon = this.taxon;
+    if (!taxon) {
+      return;
+    }
 
-    const genomeCount = t.genomeCount;
-    const genomeCountRecursive = t.genomeCountRecursive;
+    const genomeCount = taxon.genomeCount;
+    const genomeCountRecursive = taxon.genomeCountRecursive;
     if (genomeCount || genomeCountRecursive) {
       for (const level of Object.values(GenomeLevelEnum)) {
         const count = genomeCount?.[level as GenomeLevel];
@@ -67,45 +89,75 @@ export class GenomesComponent extends BaseComponent {
         }
       }
       const totalDirect = Object.values(GenomeLevelEnum).reduce((sum, lvl) => {
-        const c = genomeCount?.[lvl as GenomeLevel] ?? 0;
-        return sum + c;
+        const count = genomeCount?.[lvl as GenomeLevel] ?? 0;
+        return sum + count;
       }, 0);
       const totalRecursive = Object.values(GenomeLevelEnum).reduce((sum, lvl) => {
-        const c = genomeCountRecursive?.[lvl as GenomeLevel] ?? 0;
-        return sum + c;
+        const count = genomeCountRecursive?.[lvl as GenomeLevel] ?? 0;
+        return sum + count;
       }, 0);
-      if (this.totalDirectBadge) this.totalDirectBadge.textContent = String(totalDirect);
-      if (this.totalRecursiveBadge) this.totalRecursiveBadge.textContent = String(totalRecursive);
+      if (this.totalDirectBadge) {
+        this.totalDirectBadge.textContent = String(totalDirect);
+      }
+      if (this.totalRecursiveBadge) {
+        this.totalRecursiveBadge.textContent = String(totalRecursive);
+      }
     } else {
       const divider = optionalElement<HTMLElement>(document, "#divider-genomes");
       this.closest("vitax-data-genomes")?.setAttribute("style", "display: none");
-      if (divider) divider.style.display = "none";
-      if (this.totalDirectBadge) this.totalDirectBadge.textContent = "0";
-      if (this.totalRecursiveBadge) this.totalRecursiveBadge.textContent = "0";
+      if (divider) {
+        divider.style.display = "none";
+      }
+      if (this.totalDirectBadge) {
+        this.totalDirectBadge.textContent = "0";
+      }
+      if (this.totalRecursiveBadge) {
+        this.totalRecursiveBadge.textContent = "0";
+      }
     }
   }
 
+  /**
+   * Download the direct accessions of the taxon.
+   */
   private async downloadDirect(): Promise<void> {
-    const t = this.taxon;
-    if (!t) throw new Error("No taxon found");
-    const accessions = await TaxonomyService.getDirectAccessions(t);
-    if (accessions.length === 0) throw new Error("No direct accessions found");
+    const taxon = this.taxon;
+    if (!taxon) {
+      throw new Error("No taxon found");
+    }
+    const accessions = await TaxonomyService.getDirectAccessions(taxon);
+    if (accessions.length === 0) {
+      throw new Error("No direct accessions found");
+    }
     this.download(accessions);
   }
 
+  /**
+   * Download the recursive accessions of the taxon.
+   */
   private async downloadRecursive(): Promise<void> {
-    const t = this.taxon;
-    if (!t) throw new Error("No taxon found");
-    const accessions = await TaxonomyService.getRecursiveAccessions(t);
-    if (accessions.length === 0) throw new Error("No recursive accessions found");
+    const taxon = this.taxon;
+    if (!taxon) {
+      throw new Error("No taxon found");
+    }
+    const accessions = await TaxonomyService.getRecursiveAccessions(taxon);
+    if (accessions.length === 0) {
+      throw new Error("No recursive accessions found");
+    }
     this.download(accessions);
   }
 
+  /**
+   * Download the accessions of the taxon.
+   * @param accessions The accessions to download.
+   */
   private download(accessions: Accession[]): void {
-    const t = this.taxon;
-    if (!t) throw new Error("No taxon found");
+    const taxon = this.taxon;
+    if (!taxon) {
+      throw new Error("No taxon found");
+    }
 
-    const filename = `accessions_${t.id.toString()}-${t.name}`;
+    const filename = `accessions_${taxon.id.toString()}-${taxon.name}`;
     if (this.filetypeToggle.checked) {
       downloadObjectsAsCsv(accessions, filename);
     } else {

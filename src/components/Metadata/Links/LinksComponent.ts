@@ -7,25 +7,42 @@ import { optionalElement, requireElement } from "../../../utility/Dom";
 import { DataComponent } from "../DataComponent";
 import HTMLtemplate from "./LinksTemplate.html?raw";
 
+/**
+ * Component displaying external links for a Taxon.
+ * Fetches links from NCBI API.
+ */
 export class LinksComponent extends DataComponent {
   private links: Link[] = [];
   private statsContainer!: HTMLDivElement;
 
+  /**
+   * Creates a new LinksComponent instance.
+   */
   constructor() {
     super(HTMLtemplate);
     this.loadTemplate();
   }
 
+  /**
+   * Initialize component elements.
+   */
   initialize(): void {
     this.statsContainer = requireElement<HTMLDivElement>(this, ".stats");
   }
 
+  /**
+   * Set the taxon and fetch links.
+   * @param taxon - The Taxon object to fetch links for.
+   */
   public async setTaxon(taxon: Taxon): Promise<void> {
     this.taxon = taxon;
     this.links = await NCBI.getLinksFromTaxonId(this.taxon.id);
     this.render();
   }
 
+  /**
+   * Visualizes the retrieved links.
+   */
   private render(): void {
     if (!this.taxon) {
       throw new Error("Taxon not set");
@@ -37,17 +54,26 @@ export class LinksComponent extends DataComponent {
       : undefined;
     if (!this.links.length) {
       this.style.display = "none";
-      if (headerDivider) headerDivider.style.display = "none";
+      if (headerDivider) {
+        headerDivider.style.display = "none";
+      }
       return;
     }
     this.style.display = "";
-    if (headerDivider) headerDivider.style.display = "";
+    if (headerDivider) {
+      headerDivider.style.display = "";
+    }
 
     this.links.forEach((link) => {
       this.statsContainer.appendChild(this.createLinkStat(link));
     });
   }
 
+  /**
+   * Create a stat element for a link.
+   * @param link - The link data to create a stat element for.
+   * @returns The link stat element.
+   */
   private createLinkStat(link: Link): HTMLDivElement {
     const statDiv = document.createElement("div");
     const titleDiv = document.createElement("div");

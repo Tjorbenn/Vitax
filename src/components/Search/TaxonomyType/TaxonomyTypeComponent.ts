@@ -1,13 +1,21 @@
 import * as State from "../../../core/State";
 import { TaxonomyType } from "../../../types/Application";
+import { requireElement } from "../../../utility/Dom";
 import { BaseComponent } from "../../BaseComponent";
 import HTMLtemplate from "./TaxonomyTypeTemplate.html?raw";
 
+/**
+ * Component to toggle the Taxonomy Type (e.g. Descendants, MRCA).
+ * Displays as a dropdown/popover.
+ */
 export class TaxonomyTypeComponent extends BaseComponent {
   private button!: HTMLButtonElement;
   private label!: HTMLSpanElement;
   private list!: HTMLUListElement;
 
+  /**
+   * Creates a new TaxonomyTypeComponent instance.
+   */
   constructor() {
     super(HTMLtemplate);
     this.loadTemplate();
@@ -15,6 +23,9 @@ export class TaxonomyTypeComponent extends BaseComponent {
     this.addSubscription(State.subscribeToTaxonomyType(this.onChange.bind(this)));
   }
 
+  /**
+   * Initialize elements and populate options.
+   */
   initialize(): void {
     this.list = requireElement<HTMLUListElement>(this, "#taxonomy-type-popover");
     this.button = requireElement<HTMLButtonElement>(this, "#taxonomy-type-button");
@@ -48,6 +59,9 @@ export class TaxonomyTypeComponent extends BaseComponent {
     });
   }
 
+  /**
+   * Open the dropdown.
+   */
   public open() {
     this.list.classList.remove("hidden");
     this.list.setAttribute("data-open", "true");
@@ -55,6 +69,9 @@ export class TaxonomyTypeComponent extends BaseComponent {
     this.button.setAttribute("aria-expanded", "true");
   }
 
+  /**
+   * Close the dropdown.
+   */
   public close() {
     this.list.classList.add("hidden");
     this.list.removeAttribute("data-open");
@@ -62,6 +79,9 @@ export class TaxonomyTypeComponent extends BaseComponent {
     this.button.setAttribute("aria-expanded", "false");
   }
 
+  /**
+   * Toggle dropdown visibility.
+   */
   public toggle() {
     if (this.list.classList.contains("hidden")) {
       this.open();
@@ -70,6 +90,10 @@ export class TaxonomyTypeComponent extends BaseComponent {
     }
   }
 
+  /**
+   * Add status dot to a taxonomy type option.
+   * @param anchor - The button element to add the status indicator to.
+   */
   private addStatus(anchor: HTMLElement): void {
     // Remove existing status if present to avoid duplicates
     this.removeStatus(anchor as HTMLAnchorElement);
@@ -79,6 +103,10 @@ export class TaxonomyTypeComponent extends BaseComponent {
     anchor.appendChild(status);
   }
 
+  /**
+   * Remove status dot from a taxonomy type option.
+   * @param element The element to remove the dot from.
+   */
   private removeStatus(element: HTMLElement): void {
     const status = element.querySelector(".status");
     if (status) {
@@ -86,6 +114,11 @@ export class TaxonomyTypeComponent extends BaseComponent {
     }
   }
 
+  /**
+   * Handle changes to the taxonomy type.
+   * Updates visual state of options.
+   * @param type The new TaxonomyType.
+   */
   public onChange(type?: TaxonomyType) {
     if (!type) {
       throw new Error("Taxonomy type not found");
@@ -108,6 +141,11 @@ export class TaxonomyTypeComponent extends BaseComponent {
     });
   }
 
+  /**
+   * Handle click event of a taxonomy type option.
+   * Set the taxonomy type and closes the dropdown.
+   * @param event - The mouse click event.
+   */
   private onClick(event: MouseEvent) {
     const item = event.target as HTMLLIElement;
     State.setTaxonomyType(item.dataset.type as TaxonomyType);

@@ -5,6 +5,10 @@ import { optionalElement } from "../../../utility/Dom";
 import { DataComponent } from "../DataComponent";
 import HTMLtemplate from "./PublicationsTemplate.html?raw";
 
+/**
+ * Component displaying academic publications related to a Taxon.
+ * Uses data from Semantic Scholar.
+ */
 export class PublicationsComponent extends DataComponent {
   private container?: HTMLDivElement;
   private publications: Publication[] = [];
@@ -12,11 +16,18 @@ export class PublicationsComponent extends DataComponent {
   private error?: string;
   private accordionName = `publications-accordion-${Math.random().toString(36).slice(2)}`;
   private fetchToken = 0;
+
+  /**
+   * Creates a new PublicationsComponent instance.
+   */
   constructor() {
     super(HTMLtemplate);
     this.loadTemplate();
   }
 
+  /**
+   * Initialize container.
+   */
   initialize(): void {
     const el = optionalElement<HTMLDivElement>(this, "#publications-container");
     this.container = el ?? undefined;
@@ -26,6 +37,10 @@ export class PublicationsComponent extends DataComponent {
     this.setVisibility(true, optionalElement<HTMLElement>(document, "#divider-publications"));
   }
 
+  /**
+   * Set the taxon and trigger publication fetch.
+   * @param taxon - The Taxon object to display publications for.
+   */
   public setTaxon(taxon: Taxon): void {
     this.taxon = taxon;
     this.fetchToken++;
@@ -36,6 +51,11 @@ export class PublicationsComponent extends DataComponent {
     void this.fetchPublications(this.fetchToken, taxon.name);
   }
 
+  /**
+   * Fetch publications from Semantic Scholar.
+   * @param token - The unique identifier for the current request.
+   * @param nameSnapshot - The name of the taxon at the time of request.
+   */
   private async fetchPublications(token: number, nameSnapshot: string): Promise<void> {
     if (!this.taxon) {
       throw new Error("Taxon not set");
@@ -46,17 +66,23 @@ export class PublicationsComponent extends DataComponent {
         return;
       }
       this.publications = pubs;
-      this.publications.sort((a, b) => {
-        const ai = a.citations;
-        const bi = b.citations;
-        if (ai === -1 && bi === -1) return 0;
-        if (ai === -1) return 1;
-        if (bi === -1) return -1;
-        return bi - ai;
+      this.publications.sort((pubA, pubB) => {
+        const aCitations = pubA.citations;
+        const bCitations = pubB.citations;
+        if (aCitations === -1 && bCitations === -1) {
+          return 0;
+        }
+        if (aCitations === -1) {
+          return 1;
+        }
+        if (bCitations === -1) {
+          return -1;
+        }
+        return bCitations - aCitations;
       });
-    } catch (e) {
+    } catch (error) {
       if (token === this.fetchToken) {
-        this.error = (e as Error).message || "Failed to fetch publications";
+        this.error = (error as Error).message || "Failed to fetch publications";
       }
     } finally {
       if (token === this.fetchToken) {
@@ -66,6 +92,9 @@ export class PublicationsComponent extends DataComponent {
     }
   }
 
+  /**
+   * Visualizes the list of publications.
+   */
   private render(): void {
     if (!this.container) {
       throw new Error("Publications container not initialized");
@@ -103,6 +132,12 @@ export class PublicationsComponent extends DataComponent {
     });
   }
 
+  /**
+   * Create a publication entry HTML element.
+   * @param pub - The publication data object.
+   * @param index - The index of the item.
+   * @returns The publication entry HTML element.
+   */
   private createPublicationEntry(pub: Publication, index: number): HTMLDivElement {
     const wrapper = document.createElement("div");
     wrapper.classList.add(
@@ -119,7 +154,9 @@ export class PublicationsComponent extends DataComponent {
     const input = document.createElement("input");
     input.type = "radio";
     input.name = this.accordionName;
-    if (index === 0) input.checked = true;
+    if (index === 0) {
+      input.checked = true;
+    }
 
     const titleDiv = document.createElement("div");
     titleDiv.classList.add(
@@ -200,10 +237,10 @@ export class PublicationsComponent extends DataComponent {
     if (pub.fields && pub.fields.length > 0) {
       const fieldsCol = document.createElement("div");
       fieldsCol.classList.add("flex", "flex-wrap", "gap-2", "items-center");
-      for (const f of pub.fields) {
+      for (const field of pub.fields) {
         const badge = document.createElement("span");
         badge.classList.add("badge", "badge-ghost", "badge-sm");
-        badge.textContent = f;
+        badge.textContent = field;
         fieldsCol.appendChild(badge);
       }
       headerRow.appendChild(fieldsCol);

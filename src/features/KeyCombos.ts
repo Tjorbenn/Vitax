@@ -1,11 +1,19 @@
-export function handleKeyCombos(e: KeyboardEvent): void {
-  handleCtrlK(e);
-  handleEscape(e);
+/**
+ * Handle global keyboard shortcuts.
+ * @param event - The keyboard event.
+ */
+export function handleKeyCombos(event: KeyboardEvent): void {
+  handleCtrlK(event);
+  handleEscape(event);
 }
 
-function handleCtrlK(e: KeyboardEvent): void {
-  if (e.ctrlKey && e.key === "k") {
-    e.preventDefault();
+/**
+ * Handles Ctrl+K shortcut to focus search.
+ * @param event - The keyboard event.
+ */
+function handleCtrlK(event: KeyboardEvent): void {
+  if (event.ctrlKey && event.key === "k") {
+    event.preventDefault();
 
     const input = document.querySelector<HTMLInputElement>("#search-input");
     if (!input) {
@@ -16,8 +24,12 @@ function handleCtrlK(e: KeyboardEvent): void {
   }
 }
 
-function handleEscape(e: KeyboardEvent): void {
-  if (e.key === "Escape") {
+/**
+ * Handles Escape shortcut to clear search.
+ * @param event - The keyboard event.
+ */
+function handleEscape(event: KeyboardEvent): void {
+  if (event.key === "Escape") {
     const input = document.querySelector<HTMLInputElement>("#search-input");
     if (input) {
       input.value = "";

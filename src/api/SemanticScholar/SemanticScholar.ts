@@ -135,6 +135,19 @@ export type ExternalIds = {
  * The main function to search for papers related to a taxon name is `paperRequest`. It constructs the request URL with appropriate query parameters, including the taxon name, result limit, fields of study, and desired metadata fields. The function handles rate limiting by implementing a retry mechanism with delays.
  */
 
+/**
+ * Searches for papers related to a taxon name.
+ *
+ * Constructs the request URL with appropriate query parameters, including the taxon name, result limit, fields of study, and desired metadata fields.
+ * Handles rate limiting by implementing a retry mechanism.
+ *
+ * @param name - The name of the taxon / search term.
+ * @param limit - The maximum number of results to return.
+ * @param study - The fields of study to filter by.
+ * @param fields - The metadata fields to retrieve for each paper.
+ * @returns A promise that resolves to the PaperResponse containing the search results.
+ * @throws {Error} If the fetch fails after retries.
+ */
 export async function paperRequest(
   name: string,
   limit = 10,
@@ -180,14 +193,21 @@ export async function paperRequest(
 }
 
 /**
- * The Semantic Scholar API has a shared rate limit of 1000 requests per second for all unauthenticated users. To handle this, the `fetchAroundRatelimit` function implements a retry mechanism that waits and retries the request if a 429 (Too Many Requests) HTTP status code is received.
+ * Fetches a URL with a retry mechanism to handle rate limiting.
+ *
+ * The Semantic Scholar API has a shared rate limit of 1000 requests per second.
+ * This function waits and retries the request if a 429 (Too Many Requests) is received.
+ *
+ * @param url - The URL to send the request to.
+ * @param options - Options for the fetch request.
+ * @returns A promise that resolves to the Response object.
+ * @throws {Error} If the maximum number of retries is exceeded or if a non-429 error occurs.
  */
-
 async function fetchAroundRatelimit(url: URL, options: RequestInit): Promise<Response> {
   let retries = 20;
   const delay = 1000;
 
-  for (let i = 0; i <= retries; i++) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       const response = await fetch(url, options);
 
@@ -210,15 +230,16 @@ async function fetchAroundRatelimit(url: URL, options: RequestInit): Promise<Res
 }
 
 /**
- * To improve the relevance of search results, the `buildSearchQuery` function constructs a search query that prioritizes title matches while still allowing for general query fallback. It cleans the taxon name by trimming whitespace and escaping quotes, then formats it appropriately for the Semantic Scholar search syntax.
+ * The `buildSearchQuery` function cleans the taxon name by trimming whitespace and replacing hyphens with spaces, as recommended by the Semantic Scholar API documentation for better search results.
  */
 
+/**
+ * Constructs a search query for the Semantic Scholar API.
+ * Cleans the taxon name by trimming whitespace and replacing hyphens with spaces.
+ *
+ * @param name - The raw name to build the query from.
+ * @returns The constructed search query string.
+ */
 function buildSearchQuery(name: string): string {
-  const cleaned = name
-    .trim()
-    .replace(/[\s\u00A0]+/g, " ")
-    .replace(/"/g, '\\"');
-  const phrase = cleaned.includes(" ") ? `"${cleaned}"` : cleaned;
-  // Prefer title matches but allow general query fallback
-  return `title:${phrase} ${cleaned}`.trim();
+  return name.trim().replace(/[\s\u00A0-]+/g, " ");
 }

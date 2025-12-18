@@ -1,19 +1,33 @@
 import type { Taxon } from "../../../types/Taxonomy";
 import { getRankIcon } from "../../../types/UI";
+import { requireElement } from "../../../utility/Dom";
 import { DataComponent } from "../DataComponent";
 import HTMLtemplate from "./ImageTemplate.html?raw";
 
+/**
+ * Component displaying a Taxon image or rank icon fallback.
+ */
 export class ImageComponent extends DataComponent {
+  /**
+   * Creates a new ImageComponent instance.
+   */
   constructor() {
     super(HTMLtemplate);
     this.loadTemplate();
   }
 
-  public setTaxon(t: Taxon): void {
-    this.taxon = t;
+  /**
+   * Set the taxon to display image for.
+   * @param taxon - The Taxon object to display image for.
+   */
+  public setTaxon(taxon: Taxon): void {
+    this.taxon = taxon;
     this.render();
   }
 
+  /**
+   * Visualizes the image or fallback icon.
+   */
   private render(): void {
     if (!this.taxon) {
       throw new Error("Taxon not set");

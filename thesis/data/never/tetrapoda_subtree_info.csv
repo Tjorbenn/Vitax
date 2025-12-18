@@ -1,0 +1,7 @@
+Category,Phase,Duration
+Resource Scheduling,Queueing,107.16 ms
+Connection Start,Stalled,3.54 ms
+Request/Response,Request sent,51.61 ms
+,Waiting for server response (TTFB),25.48 s
+,Content Download,11.73 s
+Total,,37.36 s

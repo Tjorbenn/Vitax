@@ -3,10 +3,19 @@ import { Rank, type TaxonImage } from "./Taxonomy";
 
 export type IconClass = string;
 
+/**
+ * Custom Web Component for displaying icons.
+ * Extends HTMLSpanElement.
+ */
 export class Icon extends HTMLSpanElement {
   private class: IconClass;
   private size = "2em";
 
+  /**
+   * Creates a new Icon instance.
+   * @param iconClass - The CSS class for the icon.
+   * @param size - The size of the icon (e.g. "2em").
+   */
   constructor(iconClass: IconClass, size?: string) {
     super();
     this.class = iconClass;
@@ -16,17 +25,26 @@ export class Icon extends HTMLSpanElement {
     this.initialize();
   }
 
+  /**
+   * Initializes the icon element by setting class and size.
+   */
   private initialize(): void {
     this.className = this.class;
     this.style.width = this.size;
     this.style.height = this.size;
   }
 
+  /**
+   * Sets the icon class and re-initializes.
+   */
   public set iconClass(iconClass: IconClass) {
     this.class = iconClass;
     this.initialize();
   }
 
+  /**
+   * Sets the icon size and re-initializes.
+   */
   public set iconSize(size: string) {
     this.size = size;
     this.initialize();
@@ -69,13 +87,24 @@ export const LinkSourceIcons: Record<LinkSource, IconClass> = {
   [LinkSource.ViralZone]: "icon-[material-symbols--coronavirus]",
 };
 
+/**
+ * Get an Icon element for a given Rank.
+ * @param rank The Rank to get the icon for.
+ * @param size CSS size string (default "2em").
+ * @returns An Icon element.
+ */
 export function getRankIcon(rank?: string | Rank, size = "2em"): Icon {
-  const createIcon = (iconClass: IconClass): Icon => {
+  /**
+   * Helper to create an Icon element.
+   * @param iconClass - The CSS class string for the icon.
+   * @returns The Icon element.
+   */
+  function createIcon(iconClass: IconClass): Icon {
     const icon = document.createElement("span", { is: "vitax-icon" }) as Icon;
     icon.iconClass = iconClass;
     icon.iconSize = size;
     return icon;
-  };
+  }
 
   if (!rank) {
     return createIcon(RankIcons[Rank.Unknown]);
@@ -85,15 +114,20 @@ export function getRankIcon(rank?: string | Rank, size = "2em"): Icon {
   // Lookup-Map: value->Rank und key->Rank jeweils lowercase
   const valueToRank: Record<string, Rank> = {};
   const keyToRank: Record<string, Rank> = {};
-  (Object.keys(Rank) as (keyof typeof Rank)[]).forEach((k) => {
-    const value = Rank[k];
-    keyToRank[k.toLowerCase()] = value as unknown as Rank;
+  (Object.keys(Rank) as (keyof typeof Rank)[]).forEach((key) => {
+    const value = Rank[key];
+    keyToRank[key.toLowerCase()] = value as unknown as Rank;
     valueToRank[(value as unknown as string).toLowerCase()] = value as unknown as Rank;
   });
   const hit = valueToRank[input] ?? keyToRank[input] ?? Rank.Unknown;
   return createIcon(RankIcons[hit]);
 }
 
+/**
+ * Convert a TaxonImage to an HTMLImageElement.
+ * @param image The TaxonImage to convert.
+ * @returns An HTMLImageElement.
+ */
 export function ImageToElement(image: TaxonImage): HTMLImageElement {
   const imageEl = document.createElement("img");
   imageEl.src = image.url.toString();

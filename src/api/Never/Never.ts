@@ -47,11 +47,17 @@ export type NeverGenomeCount = {
   count: number;
 };
 
+/**
+ * Type for accession data returned by the Never-API.
+ */
 export type NeverAccession = {
   accession: string;
   level: GenomeLevel;
 };
 
+/**
+ * Type for image data returned by the Never-API.
+ */
 export type NeverImage = {
   id: number;
   url: string;
@@ -99,20 +105,42 @@ export enum ParameterKey {
   PageSize = "n",
 }
 
+/**
+ * A general and extensible Request class that handles the construction and sending of API requests to the Never-API.
+ * Implements the Builder pattern for constructing requests.
+ */
 export class Request {
   baseURL = "https://neighbors.evolbio.mpg.de/";
   endpoint?: Endpoint;
   parameters: URLSearchParams = new URLSearchParams();
 
+  /**
+   * Creates a new Request instance.
+   *
+   * @param endpoint - The endpoint to send the request to.
+   */
   constructor(endpoint?: Endpoint) {
     this.endpoint = endpoint;
   }
 
+  /**
+   * Adds a query parameter to the request.
+   *
+   * @param key - The name of the query parameter.
+   * @param value - The value to assign to the parameter.
+   * @returns The Request instance for chaining.
+   */
   addParameter(key: ParameterKey, value: string | number | boolean): this {
     this.parameters.append(key, String(value));
     return this;
   }
 
+  /**
+   * Adds multiple query parameters to the request.
+   *
+   * @param params - The URLSearchParams to add.
+   * @returns The Request instance for chaining.
+   */
   addParameters(params: URLSearchParams): this {
     for (const [key, value] of params) {
       this.parameters.append(key, value);
@@ -120,28 +148,32 @@ export class Request {
     return this;
   }
 
+  /**
+   * Gets the current query parameters of the request.
+   *
+   * @returns The URLSearchParams object containing the query parameters.
+   */
   getParameters(): URLSearchParams {
     return this.parameters;
   }
 
+  /**
+   * Sets the endpoint for the request.
+   *
+   * @param endpoint - The endpoint to set.
+   * @returns The Request instance for chaining.
+   */
   setEndpoint(endpoint: Endpoint): this {
     this.endpoint = endpoint;
     return this;
   }
 
   /**
-   * We implement the `Request` class using the Builder pattern.
+   * Constructs the full request URL using the base URL, endpoint, and query parameters and fetches the response from the Never-API.
    *
-   * Since the location of the Never-API does not change, we can hardcode the base URL, reducing the need for another parameter.
-   * The `Request` class contains methods for setting the endpoint and adding query parameters (Builder pattern).
-   *
+   * @returns A promise that resolves to the API response.
+   * @throws {Error} If the endpoint is not set or if the response is not ok.
    */
-
-  /**
-   * The `Send` method constructs the full request URL using the base URL, endpoint, and query parameters and fetches the response from the Never-API.
-   * We check if the response is ok (status code 2XX) before returning the JSON data.
-   */
-
   async Send(): Promise<Response> {
     if (!this.endpoint) {
       throw new Error("Endpoint is not set!");

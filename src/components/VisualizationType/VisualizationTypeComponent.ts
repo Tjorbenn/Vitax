@@ -1,17 +1,27 @@
 import * as Routing from "../../core/Routing";
 import * as State from "../../core/State";
 import { VisualizationType } from "../../types/Application";
+import { requireElement } from "../../utility/Dom";
 import { BaseComponent } from "../BaseComponent";
 import HTMLtemplate from "./VisualizationTypeTemplate.html?raw";
 
+/**
+ * Component to toggle between different visualization types (Tree, Graph, Pack).
+ */
 export class VisualizationTypeComponent extends BaseComponent {
   private tabs!: HTMLDivElement;
 
+  /**
+   * Creates a new VisualizationTypeComponent instance.
+   */
   constructor() {
     super(HTMLtemplate);
     this.loadTemplate();
   }
 
+  /**
+   * Initialize toggle buttons and subscriptions.
+   */
   initialize(): void {
     this.tabs = requireElement<HTMLDivElement>(this, ".tabs");
 
@@ -49,6 +59,10 @@ export class VisualizationTypeComponent extends BaseComponent {
     );
   }
 
+  /**
+   * Updates the selected tab button.
+   * @param displayType - The new display type to select.
+   */
   private updateSelectedTab(displayType: VisualizationType): void {
     const radios = this.tabs.querySelectorAll<HTMLInputElement>('input[name="visualization-type"]');
     radios.forEach((radio) => {
@@ -56,6 +70,10 @@ export class VisualizationTypeComponent extends BaseComponent {
     });
   }
 
+  /**
+   * Handles change event on the tab buttons.
+   * @param event - The UI event triggering the change.
+   */
   private onChange(event: Event) {
     const target = event.target as HTMLInputElement;
     if (target.name === "visualization-type") {

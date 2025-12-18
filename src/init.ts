@@ -1,3 +1,6 @@
+/**
+ * Application Entry Point.
+ */
 import "./styles/main.css";
 
 // Register global utilities

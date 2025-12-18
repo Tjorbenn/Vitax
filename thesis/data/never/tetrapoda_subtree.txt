@@ -1,0 +1,8 @@
+     time_namelookup:  0.002183s
+        time_connect:  0.018134s
+     time_appconnect:  0.039516s
+    time_pretransfer:  0.039583s
+       time_redirect:  0.000000s
+  time_starttransfer:  5.557949s
+                     ----------
+          time_total:  5.782377s

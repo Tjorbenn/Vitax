@@ -1,13 +1,23 @@
+import { requireElement } from "../../utility/Dom";
 import { BaseComponent } from "../BaseComponent";
 import { TutorialComponent } from "../Tutorial/TutorialComponent";
 import HTMLtemplate from "./WelcomeTemplate.html?raw";
 
+/**
+ * Component displaying the welcome modal for first-time users.
+ */
 export class WelcomeComponent extends BaseComponent {
+  /**
+   * Creates a new WelcomeComponent instance.
+   */
   constructor() {
     super(HTMLtemplate);
     this.loadTemplate();
   }
 
+  /**
+   * Initialize modal and check onboarding status.
+   */
   initialize(): void {
     const modal = requireElement<HTMLDialogElement>(this, "#welcome-modal");
     const tutorialButton = requireElement<TutorialComponent>(this, "vitax-tutorial");
@@ -28,6 +38,9 @@ export class WelcomeComponent extends BaseComponent {
     }
   }
 
+  /**
+   * Marks the user as onboarded in local storage.
+   */
   private setOnboarded() {
     localStorage.setItem("vitax.onboarded", "true");
   }

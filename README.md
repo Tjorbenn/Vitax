@@ -6,14 +6,17 @@
   </p>
   <p align="center">
     <a href="https://github.com/Tjorbenn/Vitax/actions/workflows/Build.yml"><img src="https://github.com/Tjorbenn/Vitax/actions/workflows/Build.yml/badge.svg" alt="Build Status"></a>
+    <a href="https://github.com/Tjorbenn/Vitax/releases"><img src="https://img.shields.io/github/v/release/Tjorbenn/Vitax" alt="Latest Release"></a>
     <a href="https://github.com/Tjorbenn/Vitax/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Tjorbenn/Vitax" alt="License"></a>
-    <a href="https://github.com/Tjorbenn/Vitax/releases"><img src="https://img.shields.io/github/v/release/Tjorbenn/Vitax" alt="Version"></a>
   </p>
 </div>
 
 ## Introduction
 
-Vitax is an intuitive web application designed for scientists, researchers, and students alike who need to explore and understand the complex relationships between biological taxa. The application provides a user-friendly interface for searching and visualizing a wide range of taxonomic information in various formats.
+Vitax is a web application for exploring and working with the NCBI Taxonomy in a visual way.
+It provides a user-friendly interface for searching and visualizing a wide range of taxonomic information in various formats.
+
+One of its key features is direct access to genome accessions from within the visualization, which enables a visual interface for genomic analysis based on the taxonomy.
 
 ## Features
 
@@ -21,14 +24,14 @@ Vitax is an intuitive web application designed for scientists, researchers, and 
   - **Neighbors:** Displays the the taxonomic neighbors of a group of target taxa.
   - **Descendants:** Shows the descendants of a taxon.
   - **Most Recent Common Ancestor (MRCA):** Shows the most recent common ancestor of a group of target taxa and their connecting lineage.
-
+- **Suggestions:** Quickly find any taxon of interest with autocomplete suggestions as you type.
 - **Interactive Visualizations:** Explore taxonomic relationships through a variety of interactive visualizations, including:
   - **Tree:** A classic hierarchical view of the taxonomic tree.
   - **Graph:** A network graph that shows the relationships between taxa.
-  - **Pack:** A visualization that packs taxa into a circle.
-  - When a taxon is focused via the list, the visualization briefly highlights the node with a subtle pulse effect to help locate it.
-- **Powerful Search:** Quickly find any taxon of interest with the powerful search functionality.
-- **Suggestions:** Get suggestions as you type to help you find the right taxon.
+  - **Pack:** A space-efficient circle packing visualiztion, where taxa are represented as circles packed hierarchically.
+  - Find any taxon in the visualization from a hierarchical list.
+  - Get metadata for any taxon right from the visualization.
+- **Genome Accessions:** Access genome accessions for any taxon in the visualization.
 - **Data Sources:**
   - **[Never API](https://neighbors.evolbio.mpg.de):** Vitax uses the Never API to provide the taxonomic relationship as well as taxonomic metadata. The Never API is a custom API developed by the [Research Group for Bioinformatics](https://neighbors.evolbio.mpg.de) of the [Max-Planck-Institute for Evolutionary Biology](https://www.evolbio.mpg.de) that provides access to the taxonomic data from the [NCBI Taxonomy](https://www.ncbi.nlm.nih.gov/taxonomy).
   - **[NCBI Taxonomy](https://www.ncbi.nlm.nih.gov/datasets/docs/v2/api/rest-api/):** Vitax uses the NCBI Taxonomy API to add additional metadata. This includes images as well as links to external resources.
@@ -38,47 +41,103 @@ Vitax is an intuitive web application designed for scientists, researchers, and 
 
 A live demo of the application is available on the website of the [Research Group for Bioinformatics](https://neighbors.evolbio.mpg.de/vitax).
 
-## Getting Started
+## Usage
 
-To get started with Vitax, you will need to have [Node.js](https://nodejs.org/) and [npm](https://www.npmjs.com/) installed on your machine.
+1.  Enter a taxon name in the search box.
+2.  Select a taxon from the suggestions list (or press Enter to select the entered taxon if it exists). Repeat for additional taxa.
+3.  Choose a visualization type from the display type component.
+4.  Press "Visualize" to generate the visualization.
+
+## Architecture
+
+Vitax is built in [TypeScript](https://www.typescriptlang.org/), uses [Vite](https://vite.dev) as the build tool, and [DaisyUI](https://daisyui.com) combined with [TailwindCSS](https://tailwindcss.com/) for styling. [D3.js](https://d3js.org/) is used for creating the data visualizations.
+
+## Development
+
+To get started with Vitax, follow the steps below to set up the project on your local machine.
+
+### Prerequisites
+
+Ensure you have the following installed:
+
+- [Node.js](https://nodejs.org/) (Latest LTS version recommended)
+- [npm](https://www.npmjs.com/) (Included with Node.js)
+
+### Installation
 
 1.  Clone the repository:
 
 ```bash
 git clone https://github.com/Tjorbenn/Vitax.git
+cd Vitax
 ```
 
 2.  Install the dependencies:
 
 ```bash
-cd Vitax
 npm install
 ```
 
-3.  Run the application:
+### Environment Setup
+
+The project uses a `.env` file for configuration. A default `.env` file is included in the repository.
+
+To override these defaults locally, create a `.env.local` file in the root directory or modify the `.env` file:
+
+```bash
+cp .env .env.local
+```
+
+### Running the Application
+
+Start the development server:
 
 ```bash
 npm run dev
 ```
 
-4. Build the application for production:
+The application will be available at `http://localhost:5173`.
+
+### Development Workflow
+
+Here are some common commands used during development:
+
+- **Linting:** Check for implementation errors and potential bugs.
+
+  ```bash
+  npm run lint
+  ```
+
+  To automatically fix linting issues:
+
+  ```bash
+  npm run lint:fix
+  ```
+
+- **Formatting:** Check if code adheres to the defined formatting style.
+  ```bash
+  npm run format
+  ```
+  To automatically format code:
+  ```bash
+  npm run format:fix
+  ```
+
+### Building for Production
+
+To build the application for production:
 
 ```bash
 npm run build
 ```
 
-The application will be available at `http://localhost:5173`.
+You can preview the production build locally using:
 
-## Usage
+```bash
+npm run preview
+```
 
-1.  Enter a taxon name in the search box.
-2.  Select a taxon from the suggestions list (or press Enter to search for the entered name).
-3.  Choose a visualization type from the display type component.
-4.  The visualization will be displayed in the visualization component.
-
-## Architecture
-
-Vitax is built in [TypeScript](https://www.typescriptlang.org/), uses [Vite](https://vite.dev) as the build tool, and [TailwindCSS](https://tailwindcss.com/) for styling. [D3.js](https://d3js.org/) is used for creating the data visualizations.
+Or you can use your own web server of choice to serve the `dist` directory that is created when running `npm run build`.
 
 ## Built With
 

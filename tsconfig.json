@@ -1,28 +1,29 @@
 {
   "compilerOptions": {
-    "target": "ESNext",
-    "useDefineForClassFields": true,
-    "module": "ESNext",
-    "lib": ["ESNext", "DOM", "DOM.Iterable"],
-    "skipLibCheck": true,
+    "target": "ESNext", // Compile to newest version of ECMAScript
+    "useDefineForClassFields": true, // Conform to ECMAScript standard for class fields
+    "module": "ESNext", // Use ESNext module system
+    "lib": ["ESNext", "DOM", "DOM.Iterable"], // Include necessary libraries (e.g. DOM for browser APIs)
+    "skipLibCheck": true, // Skip type checking of library declaration files
     /* Bundler mode */
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "verbatimModuleSyntax": true,
-    "moduleDetection": "force",
-    "noEmit": true,
-    "allowJs": true,
+    "moduleResolution": "bundler", // Import modules as the bundler expects
+    "allowImportingTsExtensions": true, // Allow importing TypeScript files with extensions
+    "verbatimModuleSyntax": true, // Preserve module syntax as is
+    "moduleDetection": "force", // Force module detection
+    /* Output */
+    "noEmit": true, // Just type check. Leave compilation to Vite
+    "allowJs": true, // Allow JavaScript files to be used
     /* Linting */
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "erasableSyntaxOnly": false,
-    "noFallthroughCasesInSwitch": true,
-    "noUncheckedIndexedAccess": true,
-    "noUncheckedSideEffectImports": false,
-    "noImplicitAny": false,
+    "strict": true, // Enable all strict type-checking options
+    "noUnusedLocals": true, // Report errors on unused locals
+    "noUnusedParameters": true, // Report errors on unused parameters
+    "erasableSyntaxOnly": false, // Allow non-erasable syntax like enums
+    "noFallthroughCasesInSwitch": true, // Report errors for fallthrough cases in switch statements
+    "noUncheckedIndexedAccess": true, // Force checking for undefined when accessing arrays/objects by index/key
+    "noUncheckedSideEffectImports": false, // Allow imports that may have side effects without checking
+    "noImplicitAny": true, // Raise error on expressions and declarations with an implied 'any' type
     /* Custom */
-    "inlineSourceMap": true
+    "inlineSourceMap": true // Inline source maps for easier debugging
   },
   "include": ["src"]
 }

@@ -6,6 +6,12 @@ import { D3Tree } from "./renderers/d3Tree";
 import { D3Visualization } from "./d3Visualization";
 // import { D3Treemap } from "./renderers/d3Treemap";
 
+/**
+ * Factory function to create a visualization renderer instance based on the type.
+ * @param type The VisualizationType enum value.
+ * @param layer The SVG group element to render into.
+ * @returns An instance of D3Visualization or undefined if unknown type.
+ */
 export function createVisualizationRenderer(
   type: VisualizationType,
   layer: SVGGElement,

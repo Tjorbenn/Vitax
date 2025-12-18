@@ -5,17 +5,30 @@ import { DataComponent } from "../DataComponent";
 import { ImageComponent } from "../Image/ImageComponent";
 import HTMLtemplate from "./RanksTemplate.html?raw";
 
+/**
+ * Component displaying the rank of a Taxon.
+ */
 export class RanksComponent extends DataComponent {
+  /**
+   * Creates a new RanksComponent instance.
+   */
   constructor() {
     super(HTMLtemplate);
     this.loadTemplate();
   }
 
-  public setTaxon(t: Taxon): void {
-    this.taxon = t;
+  /**
+   * Set the taxon to display the rank for.
+   * @param taxon - The Taxon object to display the rank for.
+   */
+  public setTaxon(taxon: Taxon): void {
+    this.taxon = taxon;
     this.render();
   }
 
+  /**
+   * Visualizes the current taxon rank.
+   */
   private render(): void {
     if (!this.taxon) {
       throw new Error("Taxon not set");

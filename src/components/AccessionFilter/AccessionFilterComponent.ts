@@ -4,14 +4,24 @@ import { requireElement } from "../../utility/Dom";
 import { BaseComponent } from "../BaseComponent";
 import HTMLtemplate from "./AccessionFilterTemplate.html?raw";
 
+/**
+ * Component to toggle the "Accession filter".
+ * Hides/shows based on whether a tree is loaded.
+ */
 export class AccessionFilterComponent extends BaseComponent {
   private toggle!: HTMLInputElement;
 
+  /**
+   * Creates a new AccessionFilterComponent instance.
+   */
   constructor() {
     super(HTMLtemplate);
     this.loadTemplate();
   }
 
+  /**
+   * Initialize the component elements and subscriptions.
+   */
   initialize(): void {
     this.toggle = requireElement<HTMLInputElement>(this, "#accession-filter-toggle");
 
@@ -29,10 +39,17 @@ export class AccessionFilterComponent extends BaseComponent {
     }
   }
 
+  /**
+   * Handle toggling of the accession filter.
+   */
   private handleToggle(): void {
     State.setOnlyGenomic(this.toggle.checked);
   }
 
+  /**
+   * Handle changes to the TaxonomyTree.
+   * @param tree - The new TaxonomyTree.
+   */
   private handleTreeChange(tree: TaxonomyTree | undefined): void {
     if (tree) {
       this.classList.remove("md:hidden");
@@ -43,6 +60,10 @@ export class AccessionFilterComponent extends BaseComponent {
     }
   }
 
+  /**
+   * Update the toggle element based on the current filter state.
+   * @param onlyGenomic - Whether to filter only taxa with accessions.
+   */
   private updateElement(onlyGenomic: boolean): void {
     this.toggle.checked = onlyGenomic;
     this.dataset.tip = onlyGenomic ? "Filter: Only Taxa with Accessions" : "Filter: All Taxa";

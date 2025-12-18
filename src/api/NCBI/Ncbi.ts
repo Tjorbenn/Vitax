@@ -48,6 +48,12 @@ export enum LinkSource {
  * It takes the taxon ID as an argument and returns a promise that resolves to a `LinkResponse` object.
  */
 
+/**
+ * Fetches external resource links for a given taxon ID from the NCBI Taxonomy API.
+ *
+ * @param taxonId - The taxId of the taxon to fetch links for.
+ * @returns A promise that resolves to the `LinkResponse` object containing the links.
+ */
 export async function linksRequest(taxonId: number): Promise<LinkResponse> {
   const url = new URL(`taxon/${taxonId.toString()}/links`, taxonomyBaseUrl);
   const options: RequestInit = {

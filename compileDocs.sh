@@ -13,5 +13,6 @@ find thesis/docs -type f -name "*.md" -print0 | while IFS= read -r -d $'\0' md_f
     echo '#import "@preview/glossarium:0.5.9": make-glossary, register-glossary, print-glossary, gls, glspl'
     echo ''
     cat "$typ_file"
-  } > "${typ_file}.tmp" && mv "${typ_file}.tmp" "$typ_file"
+  } >"${typ_file}.tmp" && mv "${typ_file}.tmp" "$typ_file"
 done
+

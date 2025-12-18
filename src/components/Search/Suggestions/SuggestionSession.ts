@@ -1,6 +1,10 @@
 import { SuggestionsService } from "../../../services/SuggestionsService";
 import type { Suggestion } from "../../../types/Application";
 
+/**
+ * Manages a single suggestion search session.
+ * Handles pagination and unique deduplication of results.
+ */
 export class SuggestionSession {
   private service: SuggestionsService;
   private suggestionsMap = new Map<number, Suggestion>();
@@ -10,18 +14,35 @@ export class SuggestionSession {
   readonly term: string;
   private readonly pageSize: number = Number(import.meta.env.VITAX_SUGGESTIONS_PAGESIZE) || 10;
 
+  /**
+   * Create a new SuggestionSession.
+   * @param term The search term.
+   */
   constructor(term: string) {
     this.term = term;
     this.service = new SuggestionsService();
   }
 
+  /**
+   * Get the number of unique suggestions.
+   * @returns The count of suggestions.
+   */
   get size() {
     return this.suggestionsMap.size;
   }
+
+  /**
+   * Get the list of unique suggestions.
+   * @returns The array of suggestions.
+   */
   get suggestions(): Suggestion[] {
     return Array.from(this.suggestionsMap.values());
   }
 
+  /**
+   * Start the session by fetching the first page of suggestions.
+   * @returns The initial list of suggestions.
+   */
   async start(): Promise<Suggestion[]> {
     const current = ++this.requestId;
     this.loading = true;
@@ -47,6 +68,10 @@ export class SuggestionSession {
     }
   }
 
+  /**
+   * Load the next page of suggestions if available.
+   * @returns The updated list of suggestions.
+   */
   async loadMore(): Promise<Suggestion[]> {
     if (this.loading || this.endReached) {
       return this.suggestions;
@@ -77,10 +102,14 @@ export class SuggestionSession {
     }
   }
 
+  /**
+   * Add a suggestions that are not present yet.
+   * @param items - The suggestions to add.
+   */
   private addUnique(items: Suggestion[]) {
-    for (const s of items) {
-      if (!this.suggestionsMap.has(s.id)) {
-        this.suggestionsMap.set(s.id, s);
+    for (const suggestion of items) {
+      if (!this.suggestionsMap.has(suggestion.id)) {
+        this.suggestionsMap.set(suggestion.id, suggestion);
       }
     }
   }

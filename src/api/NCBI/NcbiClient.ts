@@ -16,6 +16,9 @@ import * as NCBI from "./Ncbi";
  * The exported `getLinksFromTaxonId` function, is the function, that the Service layer calls to get the links for a given taxon ID.
  * It takes the same argument as the base request function, the taxon ID, and returns a promise that resolves to an array of `Link` objects, which is a type we defined in our Application types.
  * As the NCBI Taxonomy API returns the Links in a different format from our own `Link` type, we need to map the response to our own type.
+ *
+ * @param taxonId The ID of the taxon to fetch links for.
+ * @returns A promise that resolves to an array of Link objects.
  */
 export async function getLinksFromTaxonId(taxonId: number): Promise<Link[]> {
   const response = await NCBI.linksRequest(taxonId);

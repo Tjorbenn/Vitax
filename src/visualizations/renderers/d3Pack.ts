@@ -1,15 +1,13 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access,
-  @typescript-eslint/no-unsafe-call,
-  @typescript-eslint/no-unsafe-argument,
-  @typescript-eslint/no-unsafe-return,
-  @typescript-eslint/no-unnecessary-condition */
 import * as d3 from "d3";
 import { VisualizationType } from "../../types/Application";
 import type { LeanTaxon } from "../../types/Taxonomy";
 import { LongPressDetector } from "../../utility/TouchGestures";
 import { D3Visualization, type D3VisualizationExtents } from "../d3Visualization";
 
+/**
+ * Circle Packing Visualization Renderer.
+ * Displays taxanomy as nested circles, with size based on genome count.
+ */
 export class D3Pack extends D3Visualization {
   public readonly type = VisualizationType.Pack;
   private gNodes: d3.Selection<SVGGElement, unknown, null, undefined>;
@@ -29,6 +27,10 @@ export class D3Pack extends D3Visualization {
 
   private longPress = new LongPressDetector(500);
 
+  /**
+   * Creates a new D3Pack instance.
+   * @param layer - The SVG group element for rendering.
+   */
   constructor(layer: SVGGElement) {
     super(layer);
 
@@ -43,21 +45,28 @@ export class D3Pack extends D3Visualization {
     });
 
     this.layer.on("click", (event) => {
-      const e = event as MouseEvent;
-      if (e.shiftKey && this.focus?.parent) {
-        this.zoom(e, this.focus.parent as d3.HierarchyCircularNode<LeanTaxon>);
+      const mouseEvent = event as MouseEvent;
+      if (mouseEvent.shiftKey && this.focus?.parent) {
+        this.zoom(mouseEvent, this.focus.parent as d3.HierarchyCircularNode<LeanTaxon>);
         return;
       }
-      if (this.packedRoot) this.zoom(e, this.packedRoot);
+      if (this.packedRoot) {
+        this.zoom(mouseEvent, this.packedRoot);
+      }
     });
 
-    this.keydownHandler = (e: KeyboardEvent) => {
-      const ae = document.activeElement as HTMLElement | null;
-      if (ae && (ae.tagName === "INPUT" || ae.tagName === "TEXTAREA" || ae.isContentEditable)) {
+    this.keydownHandler = (event: KeyboardEvent) => {
+      const activeElement = document.activeElement as HTMLElement | null;
+      if (
+        activeElement &&
+        (activeElement.tagName === "INPUT" ||
+          activeElement.tagName === "TEXTAREA" ||
+          activeElement.isContentEditable)
+      ) {
         return;
       }
-      if ((e.key === "Escape" || e.key === "Backspace") && this.focus?.parent) {
-        const fakeEvent = this.syntheticPointer(e);
+      if ((event.key === "Escape" || event.key === "Backspace") && this.focus?.parent) {
+        const fakeEvent = this.syntheticPointer(event);
         this.zoom(fakeEvent, this.focus.parent as d3.HierarchyCircularNode<LeanTaxon>);
       }
     };
@@ -66,23 +75,41 @@ export class D3Pack extends D3Visualization {
     this.activateStateSubscription();
   }
 
+  /**
+   * Clears the circle packing content.
+   */
   protected clearContent(): void {
     this.gNodes.selectAll("*").remove();
     this.gLabels.selectAll("*").remove();
   }
 
+  /**
+   * Renders the circle pack and returns its extents.
+   * @returns A promise resolving to the visualization extents.
+   */
   public async render(): Promise<D3VisualizationExtents | undefined> {
-    if (!this.root) return undefined;
+    if (!this.root) {
+      return undefined;
+    }
     await this.update();
     return this.getExtents();
   }
 
+  /**
+   * Updates the circle pack with new data and handles layout computation.
+   * @param _event - The mouse event (unused).
+   * @param _source - The source node for the update (unused).
+   * @param _duration - The update duration (unused).
+   * @returns A promise that resolves when the update is complete.
+   */
   public async update(
     _event?: MouseEvent,
     _source?: d3.HierarchyNode<LeanTaxon>,
     _duration = 250,
   ): Promise<void> {
-    if (!this.root) return;
+    if (!this.root) {
+      return;
+    }
 
     const size = Math.min(this.width, this.height);
     this.packLayout.size([size, size]);
@@ -96,76 +123,82 @@ export class D3Pack extends D3Visualization {
 
     const newRoot = this.packLayout(
       filteredRoot
-        .sum((d) => this.getGenomeTotal(d))
-        .sort((a, b) => (b.value ?? 0) - (a.value ?? 0)),
+        .sum((node) => this.getGenomeTotal(node))
+        .sort((nodeA, nodeB) => (nodeB.value ?? 0) - (nodeA.value ?? 0)),
     );
 
-    const prevFocusId = this.focus?.data?.id;
+    const prevFocusId = this.focus?.data.id;
     const descendants = newRoot.descendants();
-    const restoredFocus = descendants.find((n) => n.data?.id === prevFocusId);
+    const restoredFocus = descendants.find((node) => node.data.id === prevFocusId);
     this.packedRoot = newRoot;
     this.focus = (restoredFocus ?? newRoot) as d3.HierarchyCircularNode<LeanTaxon>;
 
     const nodeSel = this.gNodes
       .selectAll<SVGGElement, d3.HierarchyCircularNode<LeanTaxon>>("g.vitax-pack-node")
-      .data(descendants, (d: any) => d.data.id);
+      .data(descendants, (node) => node.data.id);
 
     const nodeEnter = nodeSel
       .enter()
       .append("g")
       .attr("class", "vitax-pack-node")
-      .attr("data-id", (d) => String(d.data.id))
-      .attr("data-name", (d) => d.data.name)
+      .attr("data-id", (node) => String(node.data.id))
+      .attr("data-name", (node) => node.data.name)
       .style("cursor", "default")
       .style("pointer-events", "none")
       .attr("opacity", 0)
-      .on("click", (event, d) => {
+      .on("click", (event: MouseEvent, node) => {
         event.stopPropagation();
-        if (!this.focus) return;
-        if (d === this.focus) return;
-        if (this.focus.parent && d === this.focus.parent) {
-          this.zoom(event as MouseEvent, this.focus.parent as d3.HierarchyCircularNode<LeanTaxon>);
+        if (!this.focus) {
           return;
         }
-        let target: d3.HierarchyCircularNode<LeanTaxon> | undefined = d;
+        if (node === this.focus) {
+          return;
+        }
+        if (this.focus.parent && node === this.focus.parent) {
+          this.zoom(event, this.focus.parent as d3.HierarchyCircularNode<LeanTaxon>);
+          return;
+        }
+        let target: d3.HierarchyCircularNode<LeanTaxon> | undefined = node;
         while (target && target.parent !== this.focus) {
           target = target.parent as d3.HierarchyCircularNode<LeanTaxon> | undefined;
         }
         if (target && target.parent === this.focus) {
-          this.zoom(event as MouseEvent, target);
+          this.zoom(event, target);
         }
       })
-      .on("contextmenu", (event, d) => {
+      .on("contextmenu", (event: MouseEvent, node) => {
         event.preventDefault();
         event.stopPropagation();
-        this.setActiveTaxon(d.data.id);
+        this.setActiveTaxon(node.data.id);
         const el = event.currentTarget as SVGGElement;
         const circle = el.querySelector("circle");
         const bbox = (circle ?? el).getBoundingClientRect();
         this.handlers?.onHover?.({
-          id: d.data.id,
-          name: d.data.name,
-          parent: d.parent ? { id: d.parent.data.id, name: d.parent.data.name } : undefined,
-          childrenCount: d.children?.length ?? 0,
-          x: bbox.x + bbox.width / 2,
-          y: bbox.y + bbox.height / 2,
-          node: d,
+          id: node.data.id,
+          name: node.data.name,
+          parent: node.parent
+            ? { id: node.parent.data.id, name: node.parent.data.name }
+            : undefined,
+          childrenCount: node.children?.length ?? 0,
+          xCoord: bbox.x + bbox.width / 2,
+          yCoord: bbox.y + bbox.height / 2,
+          node: node,
         });
       });
 
-    this.longPress.attachTo(nodeEnter, (_event, d, target: Element) => {
-      this.setActiveTaxon(d.data.id);
+    this.longPress.attachTo(nodeEnter, (_event, node, target: Element) => {
+      this.setActiveTaxon(node.data.id);
       const el = target as SVGGElement;
       const circle = el.querySelector("circle");
       const bbox = (circle ?? el).getBoundingClientRect();
       this.handlers?.onHover?.({
-        id: d.data.id,
-        name: d.data.name,
-        parent: d.parent ? { id: d.parent.data.id, name: d.parent.data.name } : undefined,
-        childrenCount: d.children?.length ?? 0,
-        x: bbox.x + bbox.width / 2,
-        y: bbox.y + bbox.height / 2,
-        node: d,
+        id: node.data.id,
+        name: node.data.name,
+        parent: node.parent ? { id: node.parent.data.id, name: node.parent.data.name } : undefined,
+        childrenCount: node.children?.length ?? 0,
+        xCoord: bbox.x + bbox.width / 2,
+        yCoord: bbox.y + bbox.height / 2,
+        node: node,
       });
     });
 
@@ -177,15 +210,15 @@ export class D3Pack extends D3Visualization {
     nodeEnter
       .append("circle")
       .attr("r", 0)
-      .attr("fill", (d) => {
-        const fill = this.getNodeFill(d);
+      .attr("fill", (node) => {
+        const fill = this.getNodeFill(node);
         return fill;
       })
-      .attr("data-base-fill", (d) => this.getNodeFill(d))
+      .attr("data-base-fill", (node) => this.getNodeFill(node))
       .attr("stroke", theme.text)
       .attr("stroke-opacity", 0.6)
-      .attr("stroke-width", (d) => {
-        return strokeWidthScale(this.getGenomeTotal(d.data));
+      .attr("stroke-width", (node) => {
+        return strokeWidthScale(this.getGenomeTotal(node.data));
       })
       .on("mouseover", function () {
         d3.select(this as unknown as SVGCircleElement).attr("stroke-opacity", 0.95);
@@ -196,10 +229,10 @@ export class D3Pack extends D3Visualization {
 
     // Add title tooltip for annotated nodes
     nodeEnter
-      .filter((d: d3.HierarchyCircularNode<LeanTaxon>) => d.data.annotation !== undefined)
+      .filter((node: d3.HierarchyCircularNode<LeanTaxon>) => node.data.annotation !== undefined)
       .append("title")
-      .text((d: d3.HierarchyCircularNode<LeanTaxon>) =>
-        d.data.annotation ? `${d.data.name} (${d.data.annotation.text})` : d.data.name,
+      .text((node: d3.HierarchyCircularNode<LeanTaxon>) =>
+        node.data.annotation ? `${node.data.name} (${node.data.annotation.text})` : node.data.name,
       );
 
     nodeSel
@@ -217,30 +250,25 @@ export class D3Pack extends D3Visualization {
         nodeSel.exit().remove();
       });
 
-    const nodeMerge = (nodeEnter as unknown as any).merge(nodeSel as any) as d3.Selection<
-      SVGGElement,
-      d3.HierarchyCircularNode<LeanTaxon>,
-      SVGGElement,
-      unknown
-    >;
+    const nodeMerge = nodeEnter.merge(nodeSel);
 
     nodeEnter
       .transition()
       .duration(400)
       .attr("opacity", 1)
       .select("circle")
-      .attr("r", (d) => d.r);
+      .attr("r", (node) => node.r);
 
     nodeMerge
       .select<SVGCircleElement>("circle")
-      .attr("fill", (d) => this.getNodeFill(d))
-      .attr("stroke-width", (d) => {
-        return strokeWidthScale(this.getGenomeTotal(d.data));
+      .attr("fill", (node) => this.getNodeFill(node))
+      .attr("stroke-width", (node) => {
+        return strokeWidthScale(this.getGenomeTotal(node.data));
       });
 
     const labelSel = this.gLabels
       .selectAll<SVGTextElement, d3.HierarchyCircularNode<LeanTaxon>>("text")
-      .data(descendants, (d: any) => d.data.id);
+      .data(descendants, (node) => (node as d3.HierarchyCircularNode<LeanTaxon>).data.id);
 
     const labelEnter = labelSel
       .enter()
@@ -259,7 +287,7 @@ export class D3Pack extends D3Visualization {
       .attr("paint-order", "stroke")
       .style("fill-opacity", 0)
       .style("display", "none")
-      .text((d) => d.data.name);
+      .text((node) => node.data.name);
 
     // Exit: Labels mit Fade-out entfernen
     labelSel
@@ -275,20 +303,15 @@ export class D3Pack extends D3Visualization {
         labelSel.exit().remove();
       });
 
-    const labelMerge = (labelEnter as unknown as any).merge(labelSel as any) as d3.Selection<
-      SVGTextElement,
-      d3.HierarchyCircularNode<LeanTaxon>,
-      SVGGElement,
-      unknown
-    >;
+    const labelMerge = labelEnter.merge(labelSel);
 
     this.zoomTo([this.focus.x, this.focus.y, this.focus.r * 2], nodeMerge, labelMerge, size);
 
     this.updateInteractivity(nodeMerge);
 
     labelMerge
-      .style("fill-opacity", (d) => (d.parent === this.focus ? 1 : 0))
-      .style("display", (d) => (d.parent === this.focus ? "inline" : "none"));
+      .style("fill-opacity", (node) => (node.parent === this.focus ? 1 : 0))
+      .style("display", (node) => (node.parent === this.focus ? "inline" : "none"));
 
     if (this.activeTaxonId !== undefined) {
       const activeId = this.activeTaxonId;
@@ -300,44 +323,58 @@ export class D3Pack extends D3Visualization {
     return;
   }
 
+  /**
+   * Zoom the view to a specific target.
+   * @param viewTarget The view target [x, y, diameter].
+   * @param nodeSel The selection of nodes to transform.
+   * @param labelSel The selection of labels to transform.
+   * @param size The size of the viewport.
+   */
   private zoomTo(
-    v: [number, number, number],
-    nodeSel: d3.Selection<SVGGElement, any, any, any>,
-    labelSel: d3.Selection<SVGTextElement, any, any, any>,
+    viewTarget: [number, number, number],
+    nodeSel: d3.Selection<SVGGElement, d3.HierarchyCircularNode<LeanTaxon>, SVGGElement, unknown>,
+    labelSel: d3.Selection<
+      SVGTextElement,
+      d3.HierarchyCircularNode<LeanTaxon>,
+      SVGGElement,
+      unknown
+    >,
     size: number,
   ): void {
-    const k = size / v[2];
-    this.view = v;
+    const kScale = size / viewTarget[2];
+    this.view = viewTarget;
 
-    const v0 = v[0];
-    const v1 = v[1];
+    const targetX = viewTarget[0];
+    const targetY = viewTarget[1];
 
     nodeSel.attr(
       "transform",
-      (d) =>
+      (node) =>
         "translate(" +
-        String((d.x - v0) * k + this.width / 2) +
+        String((node.x - targetX) * kScale + this.width / 2) +
         "," +
-        String((d.y - v1) * k + this.height / 2) +
+        String((node.y - targetY) * kScale + this.height / 2) +
         ")",
     );
-    nodeSel.select<SVGCircleElement>("circle").attr("r", (d) => d.r * k);
+    nodeSel.select<SVGCircleElement>("circle").attr("r", (node) => node.r * kScale);
 
     labelSel.attr(
       "transform",
-      (d) =>
+      (node) =>
         "translate(" +
-        String((d.x - v0) * k + this.width / 2) +
+        String((node.x - targetX) * kScale + this.width / 2) +
         "," +
-        String((d.y - v1) * k + this.height / 2) +
+        String((node.y - targetY) * kScale + this.height / 2) +
         ")",
     );
 
-    labelSel.each((d: d3.HierarchyCircularNode<LeanTaxon>, i, nodes) => {
-      const raw = nodes[i];
-      if (!raw) return;
+    labelSel.each((nodeData, index, nodes) => {
+      const raw = nodes[index];
+      if (!raw) {
+        return;
+      }
       const node = raw as SVGTextElement;
-      const radiusPx = d.r * k;
+      const radiusPx = nodeData.r * kScale;
       const availableWidth = Math.max(0, 2 * radiusPx * 0.9);
       const fontPx = this.clamp(this.fontPxMin, this.fontPxMax, radiusPx * 0.5);
 
@@ -345,7 +382,7 @@ export class D3Pack extends D3Visualization {
       const stroke = this.clamp(1, 3, fontPx * 0.22);
       node.setAttribute("stroke-width", stroke.toFixed(2));
 
-      const name = d.data?.name ?? "";
+      const name = nodeData.data.name;
       let text = "";
       if (radiusPx >= this.labelMinPxRadius && availableWidth > 0 && name.length > 0) {
         const avgCharWidth = fontPx * 0.55;
@@ -354,16 +391,33 @@ export class D3Pack extends D3Visualization {
           text = this.ellipsis(name, maxChars);
         }
       }
-      if (node.textContent !== text) node.textContent = text;
+      if (node.textContent !== text) {
+        node.textContent = text;
+      }
     });
   }
 
-  private clamp(min: number, max: number, v: number): number {
-    return Math.max(min, Math.min(max, v));
+  /**
+   * Clamp a value between a minimum and maximum.
+   * @param min The minimum value.
+   * @param max The maximum value.
+   * @param value The value to clamp.
+   * @returns The clamped value.
+   */
+  private clamp(min: number, max: number, value: number): number {
+    return Math.max(min, Math.min(max, value));
   }
 
+  /**
+   * Truncate text with an ellipsis if it exceeds the character limit.
+   * @param text The text to truncate.
+   * @param maxChars The maximum number of characters.
+   * @returns The truncated string.
+   */
   private ellipsis(text: string, maxChars: number): string {
-    if (text.length <= maxChars) return text;
+    if (text.length <= maxChars) {
+      return text;
+    }
     if (maxChars <= 1) {
       return "";
     }
@@ -373,54 +427,71 @@ export class D3Pack extends D3Visualization {
     return text.slice(0, Math.max(0, maxChars - 1)) + "\u2026";
   }
 
-  private zoom(event: MouseEvent, d: d3.HierarchyCircularNode<LeanTaxon>) {
-    if (!this.packedRoot || !this.view) return;
+  /**
+   * Perform a zoom transition to a specific node.
+   * @param event The mouse event triggering the zoom.
+   * @param targetNode The target node to zoom into.
+   */
+  private zoom(event: MouseEvent, targetNode: d3.HierarchyCircularNode<LeanTaxon>) {
+    if (!this.packedRoot || !this.view) {
+      return;
+    }
     const size = Math.min(this.width, this.height);
-    const nodeSel = this.gNodes.selectAll("g.vitax-pack-node") as unknown as d3.Selection<
+    const nodeSel = this.gNodes.selectAll("g.vitax-pack-node") as d3.Selection<
       SVGGElement,
       d3.HierarchyCircularNode<LeanTaxon>,
       SVGGElement,
       unknown
     >;
-    const labelSel = this.gLabels.selectAll("text") as unknown as d3.Selection<
+    const labelSel = this.gLabels.selectAll("text") as d3.Selection<
       SVGTextElement,
       d3.HierarchyCircularNode<LeanTaxon>,
       SVGGElement,
       unknown
     >;
-    this.focus = d;
+    this.focus = targetNode;
 
-    const t = (this.layer as unknown as d3.Selection<SVGGElement, unknown, null, undefined>)
+    const transition = (this.layer as d3.Selection<SVGGElement, unknown, null, undefined>)
       .transition()
       .duration(event.altKey ? 7500 : 750)
       .tween("zoom", () => {
         const view = this.view;
-        if (!view) return () => undefined;
-        const target: [number, number, number] = [d.x, d.y, d.r * 2];
-        const i = d3.interpolateZoom(view, target);
+        if (!view) {
+          return () => undefined;
+        }
+        const target: [number, number, number] = [targetNode.x, targetNode.y, targetNode.r * 2];
+        const interpolator = d3.interpolateZoom(view, target);
         return (tt) => {
-          this.zoomTo(i(tt) as [number, number, number], nodeSel as any, labelSel as any, size);
+          this.zoomTo(interpolator(tt) as [number, number, number], nodeSel, labelSel, size);
         };
       });
 
     labelSel
-      .filter(function (this: SVGTextElement, n) {
-        return n.parent === d || this.style.display === "inline";
+      .filter(function (this: SVGTextElement, node) {
+        return node.parent === targetNode || this.style.display === "inline";
       })
-      .transition(t as any)
-      .style("fill-opacity", (n) => (n.parent === d ? 1 : 0))
-      .on("start", function (n) {
-        if (n.parent === d) (this as SVGTextElement).style.display = "inline";
+      .transition(transition as unknown as d3.Transition<d3.BaseType, unknown, null, undefined>)
+      .style("fill-opacity", (node) => (node.parent === targetNode ? 1 : 0))
+      .on("start", function (node) {
+        if (node.parent === targetNode) {
+          (this as SVGTextElement).style.display = "inline";
+        }
       })
-      .on("end", function (n) {
-        if (n.parent !== d) (this as SVGTextElement).style.display = "none";
+      .on("end", function (node) {
+        if (node.parent !== targetNode) {
+          (this as SVGTextElement).style.display = "none";
+        }
       });
 
     this.updateInteractivity(nodeSel);
   }
 
+  /**
+   * Update interactivity styles based on the current focus.
+   * @param nodeSel The selection of nodes to update.
+   */
   private updateInteractivity(
-    nodeSel: d3.Selection<SVGGElement, d3.HierarchyCircularNode<LeanTaxon>, any, any>,
+    nodeSel: d3.Selection<SVGGElement, d3.HierarchyCircularNode<LeanTaxon>, SVGGElement, unknown>,
   ): void {
     const focus = this.focus;
     const theme = this.getThemeColors();
@@ -428,15 +499,20 @@ export class D3Pack extends D3Visualization {
     const getGenomeTotal = this.getGenomeTotal.bind(this);
 
     nodeSel
-      .style("pointer-events", (n) => (n.parent === focus || n === focus?.parent ? "all" : "none"))
-      .style("cursor", (n) => (n.parent === focus || n === focus?.parent ? "pointer" : "default"));
+      .style("pointer-events", (node) =>
+        node.parent === focus || node === focus?.parent ? "all" : "none",
+      )
+      .style("cursor", (node) =>
+        node.parent === focus || node === focus?.parent ? "pointer" : "default",
+      );
 
-    nodeSel.select<SVGCircleElement>("circle").each(function (d) {
+    nodeSel.select<SVGCircleElement>("circle").each(function (datum) {
       const circle = d3.select(this);
-      if (d === focus) {
+      const circleNode = circle.node();
+      if (datum === focus) {
         // Focused node
-        const baseFill = circle.attr("data-base-fill") ?? "#cccccc";
-        const baseWidth = strokeWidthScale(getGenomeTotal(d.data));
+        const baseFill = circleNode?.getAttribute("data-base-fill") ?? "#cccccc";
+        const baseWidth = strokeWidthScale(getGenomeTotal(datum.data));
         const focusWidth = Math.max(baseWidth, 3); // Ensure minimum width for visibility
         circle
           .attr("fill", baseFill)
@@ -448,12 +524,12 @@ export class D3Pack extends D3Visualization {
           .style("filter", null);
       } else {
         // Not focused
-        const baseFill = circle.attr("data-base-fill") ?? "#cccccc";
+        const baseFill = circleNode?.getAttribute("data-base-fill") ?? "#cccccc";
         circle
           .attr("fill", baseFill)
           .attr("fill-opacity", 1)
           .attr("stroke", theme.text)
-          .attr("stroke-width", strokeWidthScale(getGenomeTotal(d.data)))
+          .attr("stroke-width", strokeWidthScale(getGenomeTotal(datum.data)))
           .attr("stroke-opacity", 0.6)
           .attr("stroke-dasharray", null)
           .style("filter", null);
@@ -461,12 +537,21 @@ export class D3Pack extends D3Visualization {
     });
   }
 
+  /**
+   * Computes the bounding box of the packed circles.
+   * @returns The visualization extents.
+   */
   public override getExtents(): D3VisualizationExtents | undefined {
-    if (!this.root) return undefined;
+    if (!this.root) {
+      return undefined;
+    }
     const size = Math.min(this.width, this.height);
     return { minX: -size / 2, maxX: size / 2, minY: -size / 2, maxY: size / 2 };
   }
 
+  /**
+   * Zoom up one level in the hierarchy.
+   */
   public zoomUpOne(): void {
     if (this.focus?.parent) {
       const evt = this.syntheticPointer();
@@ -474,10 +559,21 @@ export class D3Pack extends D3Visualization {
     }
   }
 
+  /**
+   * Check if it is possible to zoom up (i.e., we are not at the root).
+   * @returns True if parent exists.
+   */
   public canZoomUp(): boolean {
     return Boolean(this.focus?.parent);
   }
 
+  /**
+   * Create a synthetic mouse event for programmatic interactions.
+   * @param baseEvent - Optional base event to copy modifier keys from.
+   * @param baseEvent.altKey - Whether the alt key is pressed.
+   * @param baseEvent.shiftKey - Whether the shift key is pressed.
+   * @returns A new MouseEvent.
+   */
   private syntheticPointer(baseEvent?: { altKey?: boolean; shiftKey?: boolean }): MouseEvent {
     return new MouseEvent("click", {
       bubbles: true,
@@ -487,9 +583,12 @@ export class D3Pack extends D3Visualization {
     });
   }
 
+  /**
+   * Disposes of the visualization and removes event listeners.
+   */
   public override dispose(): void {
     if (this.keydownHandler) {
-      window.removeEventListener("keydown", this.keydownHandler, { capture: false } as any);
+      window.removeEventListener("keydown", this.keydownHandler, { capture: false });
       this.keydownHandler = undefined;
     }
     this.layer.on("click", null);
@@ -497,15 +596,21 @@ export class D3Pack extends D3Visualization {
     super.dispose();
   }
 
+  /**
+   * Highlight the active taxon in the visualization.
+   * @param taxonId The ID of the taxon to highlight.
+   */
   private setActiveTaxon(taxonId: number): void {
     this.clearActiveTaxon();
     this.activeTaxonId = taxonId;
 
     const nodeSelection = this.gNodes
       .selectAll<SVGGElement, d3.HierarchyCircularNode<LeanTaxon>>("g.vitax-pack-node")
-      .filter((d) => d.data.id === taxonId);
+      .filter((node) => node.data.id === taxonId);
 
-    if (nodeSelection.empty()) return;
+    if (nodeSelection.empty()) {
+      return;
+    }
 
     const theme = this.getThemeColors();
     const strokeWidthScale = this.createGenomeStrokeScale([0.5, 6]);
@@ -514,19 +619,24 @@ export class D3Pack extends D3Visualization {
       .select<SVGCircleElement>("circle")
       .attr("data-active", "true")
       .attr("stroke", theme.accent)
-      .attr("stroke-width", (d) => {
-        return Math.max(3, strokeWidthScale(this.getGenomeTotal(d.data)) * 1.5);
+      .attr("stroke-width", (node) => {
+        return Math.max(3, strokeWidthScale(this.getGenomeTotal(node.data)) * 1.5);
       })
       .attr("stroke-opacity", 1)
       .style("filter", `drop-shadow(0 0 6px ${theme.accent})`);
   }
 
+  /**
+   * Clears the highlighting of the active taxon.
+   */
   public clearActiveTaxon(): void {
-    if (this.activeTaxonId === undefined) return;
+    if (this.activeTaxonId === undefined) {
+      return;
+    }
 
     const nodeSelection = this.gNodes
       .selectAll<SVGGElement, d3.HierarchyCircularNode<LeanTaxon>>("g.vitax-pack-node")
-      .filter((d) => d.data.id === this.activeTaxonId);
+      .filter((node) => node.data.id === this.activeTaxonId);
 
     const theme = this.getThemeColors();
     const strokeWidthScale = this.createGenomeStrokeScale([0.5, 6]);
@@ -535,8 +645,8 @@ export class D3Pack extends D3Visualization {
       .select<SVGCircleElement>("circle")
       .attr("data-active", null)
       .attr("stroke", theme.text)
-      .attr("stroke-width", (d) => {
-        return strokeWidthScale(this.getGenomeTotal(d.data));
+      .attr("stroke-width", (node) => {
+        return strokeWidthScale(this.getGenomeTotal(node.data));
       })
       .attr("stroke-opacity", 0.3)
       .style("filter", null);
