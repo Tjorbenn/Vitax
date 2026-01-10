@@ -213,9 +213,8 @@ export class D3Tree extends D3Visualization {
         continue;
       }
       const tn = node as TreeNode;
-      const hasChildren = tn.children && tn.children.length > 0;
-      const isLeaf = !hasChildren;
-      const placeRight = isLeaf || tn.collapsed;
+      const hasVisibleChildren = tn.children && tn.children.length > 0;
+      const placeRight = !hasVisibleChildren;
       const full = tn._fullLabel ?? tn.data.name;
       const truncated = truncateLocal(
         full,
@@ -436,9 +435,8 @@ export class D3Tree extends D3Visualization {
       .style("font-size", "11px")
       .attr("fill", "var(--color-base-content)")
       .each(function (this: d3.BaseType, node: TreeNode) {
-        const hasChildren = node.children && node.children.length > 0;
-        const isLeaf = !hasChildren;
-        const placeRight = isLeaf || node.collapsed;
+        const hasVisibleChildren = node.children && node.children.length > 0;
+        const placeRight = !hasVisibleChildren;
         const fullName = node.data.name;
         const truncated = truncateEnter(
           fullName,
@@ -465,9 +463,8 @@ export class D3Tree extends D3Visualization {
       if (node.data.id === 0) {
         return;
       }
-      const hasChildren = node.children && node.children.length > 0;
-      const isLeaf = !hasChildren;
-      const placeRight = isLeaf || node.collapsed;
+      const hasVisibleChildren = node.children && node.children.length > 0;
+      const placeRight = !hasVisibleChildren;
 
       node._placeRight = placeRight;
       const textElement = d3.select(this);

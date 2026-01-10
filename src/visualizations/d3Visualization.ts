@@ -320,6 +320,7 @@ export abstract class D3Visualization {
 
   /**
    * Determine the fill color for a node based on state and properties.
+   * Uses isLeaf from API to show if node has children in taxonomy.
    * @param node - The hierarchy node to get color for.
    * @returns CSS color string.
    */
@@ -334,9 +335,9 @@ export abstract class D3Visualization {
       return this.getColorFromTheme(node.data.annotation.color);
     }
 
-    const hasHierarchyChildren = node.children && node.children.length > 0;
-    const hasDataChildren = node.data.children.length > 0;
-    return hasHierarchyChildren || hasDataChildren ? themeVars.base200 : themeVars.neutral;
+    // isLeaf from API indicates if node has children in taxonomy
+    const isLeaf = node.data.isLeaf === true;
+    return isLeaf ? themeVars.neutral : themeVars.base200;
   }
 
   /**

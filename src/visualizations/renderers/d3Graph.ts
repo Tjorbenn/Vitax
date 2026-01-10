@@ -523,12 +523,12 @@ export class D3Graph extends D3Visualization {
   }
 
   /**
-   * Check if a node is a leaf (no children).
+   * Check if a node is a leaf (no children in the taxonomy).
    * @param node - The node to check.
    * @returns True if it is a leaf.
    */
   private isLeaf(node: GraphHierarchyNode): boolean {
-    return (node._metrics?.childrenCount ?? 0) === 0;
+    return node.data.isLeaf === true;
   }
 
   /**

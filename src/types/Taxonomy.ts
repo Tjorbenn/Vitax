@@ -353,6 +353,7 @@ export class Taxon {
     return {
       id: this.id,
       name: this.name,
+      isLeaf: this.isLeaf,
       // Filter out self-references (e.g. root taxon that has itself as a child)
       children: this.children
         .filter((child) => child.id !== this.id)
@@ -371,7 +372,10 @@ export class Taxon {
  * An optional `hasSelfReference` property is also included to indicate if the taxon has a self-reference, which can be useful for visualization purposes.
  */
 
-export type LeanTaxon = Pick<Taxon, "id" | "name" | "annotation" | "genomeCountRecursive"> & {
+export type LeanTaxon = Pick<
+  Taxon,
+  "id" | "name" | "annotation" | "genomeCountRecursive" | "isLeaf"
+> & {
   children: LeanTaxon[];
   hasSelfReference?: boolean;
 };
