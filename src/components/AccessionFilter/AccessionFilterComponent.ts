@@ -1,3 +1,4 @@
+import * as Routing from "../../core/Routing";
 import * as State from "../../core/State";
 import type { TaxonomyTree } from "../../types/Taxonomy";
 import { requireElement } from "../../utility/Dom";
@@ -44,6 +45,7 @@ export class AccessionFilterComponent extends BaseComponent {
    */
   private handleToggle(): void {
     State.setOnlyGenomic(this.toggle.checked);
+    Routing.updateUrl();
   }
 
   /**

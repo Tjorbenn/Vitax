@@ -101,6 +101,7 @@ export type StateSpore = {
   taxonIds: number[];
   taxonomyType: TaxonomyType;
   displayType: VisualizationType;
+  onlyGenomic?: boolean;
 };
 
 /**
@@ -117,6 +118,7 @@ export function sporulate(): StateSpore {
     taxonIds: _query.value.map((taxon) => taxon.id),
     displayType: _displayType.value,
     taxonomyType: _taxonomyType.value,
+    onlyGenomic: _onlyGenomic.value,
   };
 }
 
@@ -136,6 +138,7 @@ import * as NeverApi from "../api/Never/NeverClient";
 export async function hydrate(spore: StateSpore): Promise<void> {
   _taxonomyType.value = spore.taxonomyType;
   _displayType.value = spore.displayType;
+  _onlyGenomic.value = spore.onlyGenomic ?? false;
 
   const query = await NeverApi.getFullTaxaByIds(spore.taxonIds);
   _query.value = query;

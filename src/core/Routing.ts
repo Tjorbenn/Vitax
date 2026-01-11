@@ -116,12 +116,18 @@ function visualizeRoute(route?: string) {
     .map((id) => Number(id));
   const taxonomy = params.get("type");
   const visualization = params.get("visualization");
+  const accessionFilter = params.get("accessionFilter") === "true";
 
   if (!taxonIds || taxonIds.length === 0) {
     console.warn("No taxon IDs provided in the route");
     return;
   }
-  const spore = createStateSpore(taxonIds, taxonomy ?? "descendants", visualization ?? "tree");
+  const spore = createStateSpore(
+    taxonIds,
+    taxonomy ?? "descendants",
+    visualization ?? "tree",
+    accessionFilter,
+  );
   void hydrate(spore);
 }
 
@@ -138,9 +144,15 @@ function demoRoute() {
  * @param taxonIds - The list of taxon IDs.
  * @param type - The taxonomy type string.
  * @param visualization - The visualization type string.
+ * @param onlyGenomic - Whether to show only taxa with genomes.
  * @returns A state spore object.
  */
-function createStateSpore(taxonIds: number[], type: string, visualization: string): StateSpore {
+function createStateSpore(
+  taxonIds: number[],
+  type: string,
+  visualization: string,
+  onlyGenomic = false,
+): StateSpore {
   return {
     taxonIds: taxonIds,
     taxonomyType: Object.values(TaxonomyType).includes(type as TaxonomyType)
@@ -149,6 +161,7 @@ function createStateSpore(taxonIds: number[], type: string, visualization: strin
     displayType: Object.values(VisualizationType).includes(visualization as VisualizationType)
       ? (visualization as VisualizationType)
       : VisualizationType.Tree,
+    onlyGenomic: onlyGenomic,
   } as StateSpore;
 }
 
@@ -189,5 +202,6 @@ export function sporeToUrl(spore: StateSpore): string {
   const taxa = spore.taxonIds.join(",");
   const type = spore.taxonomyType;
   const visualization = spore.displayType;
-  return `${root}#/visualize?taxa=${taxa}&type=${type}&visualization=${visualization}`;
+  const accessionFilter = spore.onlyGenomic ? "true" : "false";
+  return `${root}#/visualize?taxa=${taxa}&type=${type}&visualization=${visualization}&accessionFilter=${accessionFilter}`;
 }

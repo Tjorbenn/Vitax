@@ -13,6 +13,7 @@ export class ListComponent extends BaseComponent {
   private listContent!: HTMLUListElement;
   private drawerToggle!: HTMLInputElement;
   private drawerIcon!: HTMLSpanElement;
+  private onlyGenomic = false;
 
   /**
    * Creates a new ListComponent instance.
@@ -34,6 +35,13 @@ export class ListComponent extends BaseComponent {
     this.listContent.classList.add("pl-0", "list-none");
     this.addEvent(this.drawerToggle, "change", this.updateDrawerIcon.bind(this));
     this.addSubscription(State.subscribeToTree(this.onTreeChange.bind(this)));
+    this.addSubscription(
+      State.subscribeToOnlyGenomic((val) => {
+        this.onlyGenomic = val;
+        this.onTreeChange(State.getTree());
+      }),
+    );
+    this.onlyGenomic = State.getOnlyGenomic();
   }
 
   /**
@@ -86,7 +94,10 @@ export class ListComponent extends BaseComponent {
 
     this.listContent.innerHTML = "";
     this.listContent.appendChild(this.createListHeader());
-    this.listContent.appendChild(this.recursiveTaxonToList(tree.root));
+    const rootItem = this.recursiveTaxonToList(tree.root);
+    if (rootItem) {
+      this.listContent.appendChild(rootItem);
+    }
     this.expandFirstDropdown();
     this.drawerButton.classList.remove("hidden");
   }
@@ -121,9 +132,13 @@ export class ListComponent extends BaseComponent {
   /**
    * Create a HTML list item from a Taxon recursively.
    * @param taxon The Taxon to convert.
-   * @returns The HTML list item representing the Taxon.
+   * @returns The HTML list item representing the Taxon, or null if filtered out.
    */
-  private recursiveTaxonToList(taxon: Taxon): HTMLLIElement {
+  private recursiveTaxonToList(taxon: Taxon): HTMLLIElement | null {
+    if (this.onlyGenomic && !taxon.hasRecursiveGenomes) {
+      return null;
+    }
+
     const listItem = document.createElement("li");
     listItem.classList.add("w-full");
 
@@ -153,7 +168,12 @@ export class ListComponent extends BaseComponent {
     listItem.appendChild(childList);
 
     this.addDropdownEvents(toggle, childList);
-    taxon.children.forEach((child) => childList.appendChild(this.recursiveTaxonToList(child)));
+    taxon.children.forEach((child) => {
+      const childItem = this.recursiveTaxonToList(child);
+      if (childItem) {
+        childList.appendChild(childItem);
+      }
+    });
   }
 
   /**
