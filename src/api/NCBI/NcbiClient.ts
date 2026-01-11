@@ -38,3 +38,8 @@ export async function getLinksFromTaxonId(taxonId: number): Promise<Link[]> {
 
   return links;
 }
+
+/**
+ * Re-export the genome download URL generator from the base module.
+ */
+export { getGenomeDownloadUrl } from "./Ncbi";

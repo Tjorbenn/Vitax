@@ -1,3 +1,4 @@
+import { getGenomeDownloadUrl } from "../../../api/NCBI/NcbiClient";
 import { downloadObjectsAsCsv, downloadObjectsAsTsv } from "../../../features/Download";
 import * as TaxonomyService from "../../../services/TaxonomyService";
 import type { Accession, GenomeLevel, Taxon } from "../../../types/Taxonomy";
@@ -13,11 +14,20 @@ import HTMLtemplate from "./GenomesTemplate.html?raw";
 export class GenomesComponent extends BaseComponent {
   private taxon?: Taxon;
   private tbody!: HTMLTableSectionElement;
-  private filetypeToggle!: HTMLInputElement;
+  private filetypeSelect!: HTMLSelectElement;
   private directBtn!: HTMLButtonElement;
   private recursiveBtn!: HTMLButtonElement;
   private totalDirectBadge?: HTMLSpanElement;
   private totalRecursiveBadge?: HTMLSpanElement;
+
+  // Dialog elements
+  private dialog!: HTMLDialogElement;
+  private dialogCountBadge!: HTMLSpanElement;
+  private accessionListBtn!: HTMLButtonElement;
+  private genomeSequencesBtn!: HTMLButtonElement;
+
+  // State for pending download
+  private pendingAccessions: Accession[] = [];
 
   /**
    * Creates a new GenomesComponent instance.
@@ -32,7 +42,7 @@ export class GenomesComponent extends BaseComponent {
    */
   initialize(): void {
     this.tbody = requireElement<HTMLTableSectionElement>(this, "#genomes-body");
-    this.filetypeToggle = requireElement<HTMLInputElement>(this, "#accessions-filetype");
+    this.filetypeSelect = requireElement<HTMLSelectElement>(this, "#filetype-select");
     this.directBtn = requireElement<HTMLButtonElement>(this, "#accessions-download-direct");
     this.recursiveBtn = requireElement<HTMLButtonElement>(this, "#accessions-download-recursive");
     this.totalDirectBadge = optionalElement<HTMLSpanElement>(this, "#accessions-total-direct");
@@ -41,8 +51,24 @@ export class GenomesComponent extends BaseComponent {
       "#accessions-total-recursive",
     );
 
-    this.addEvent(this.directBtn, "click", () => void this.downloadDirect());
-    this.addEvent(this.recursiveBtn, "click", () => void this.downloadRecursive());
+    // Dialog elements
+    this.dialog = requireElement<HTMLDialogElement>(this, "#download-dialog");
+    this.dialogCountBadge = requireElement<HTMLSpanElement>(this, "#download-dialog-count");
+    this.accessionListBtn = requireElement<HTMLButtonElement>(this, "#download-accession-list");
+    this.genomeSequencesBtn = requireElement<HTMLButtonElement>(this, "#download-genome-sequences");
+
+    // Bind download buttons to open dialog
+    this.addEvent(this.directBtn, "click", () => void this.openDialogForDirect());
+    this.addEvent(this.recursiveBtn, "click", () => void this.openDialogForRecursive());
+
+    // Bind dialog action buttons
+    this.addEvent(this.accessionListBtn, "click", () => {
+      this.downloadAccessionList();
+    });
+    this.addEvent(this.genomeSequencesBtn, "click", () => {
+      this.downloadGenomeSequences();
+    });
+
     const divider = optionalElement<HTMLElement>(document, "#divider-genomes");
     if (divider) {
       divider.style.display = "";
@@ -72,9 +98,16 @@ export class GenomesComponent extends BaseComponent {
     const genomeCount = taxon.genomeCount;
     const genomeCountRecursive = taxon.genomeCountRecursive;
     if (genomeCount || genomeCountRecursive) {
-      for (const level of Object.values(GenomeLevelEnum)) {
-        const count = genomeCount?.[level as GenomeLevel];
-        const recursive = genomeCountRecursive?.[level as GenomeLevel];
+      // Ordered from highest to lowest quality
+      const orderedLevels: GenomeLevel[] = [
+        GenomeLevelEnum.Complete,
+        GenomeLevelEnum.Chromosome,
+        GenomeLevelEnum.Scaffold,
+        GenomeLevelEnum.Contig,
+      ];
+      for (const level of orderedLevels) {
+        const count = genomeCount?.[level];
+        const recursive = genomeCountRecursive?.[level];
         if (count !== undefined || recursive !== undefined) {
           const row = document.createElement("tr");
           row.classList.add("animated", "hover:bg-base-200");
@@ -118,9 +151,9 @@ export class GenomesComponent extends BaseComponent {
   }
 
   /**
-   * Download the direct accessions of the taxon.
+   * Open the download dialog for direct accessions.
    */
-  private async downloadDirect(): Promise<void> {
+  private async openDialogForDirect(): Promise<void> {
     const taxon = this.taxon;
     if (!taxon) {
       throw new Error("No taxon found");
@@ -129,13 +162,13 @@ export class GenomesComponent extends BaseComponent {
     if (accessions.length === 0) {
       throw new Error("No direct accessions found");
     }
-    this.download(accessions);
+    this.openDialog(accessions);
   }
 
   /**
-   * Download the recursive accessions of the taxon.
+   * Open the download dialog for recursive accessions.
    */
-  private async downloadRecursive(): Promise<void> {
+  private async openDialogForRecursive(): Promise<void> {
     const taxon = this.taxon;
     if (!taxon) {
       throw new Error("No taxon found");
@@ -144,25 +177,67 @@ export class GenomesComponent extends BaseComponent {
     if (accessions.length === 0) {
       throw new Error("No recursive accessions found");
     }
-    this.download(accessions);
+    this.openDialog(accessions);
   }
 
   /**
-   * Download the accessions of the taxon.
+   * Open the download dialog with the given accessions.
    * @param accessions The accessions to download.
    */
-  private download(accessions: Accession[]): void {
+  private openDialog(accessions: Accession[]): void {
+    this.pendingAccessions = accessions;
+    this.dialogCountBadge.textContent = String(accessions.length);
+    this.dialog.showModal();
+  }
+
+  /**
+   * Get the filename for downloads based on taxon.
+   * Format: taxid_taxonName.
+   * @returns The filename as a string.
+   */
+  private getFilename(): string {
     const taxon = this.taxon;
     if (!taxon) {
-      throw new Error("No taxon found");
+      return "accessions";
+    }
+    return `${taxon.id.toString()}_${taxon.name}`;
+  }
+
+  /**
+   * Download the pending accessions as a text file (TSV or CSV).
+   */
+  private downloadAccessionList(): void {
+    const taxon = this.taxon;
+    if (!taxon || this.pendingAccessions.length === 0) {
+      return;
     }
 
-    const filename = `accessions_${taxon.id.toString()}-${taxon.name}`;
-    if (this.filetypeToggle.checked) {
-      downloadObjectsAsCsv(accessions, filename);
+    const filename = this.getFilename();
+    const filetype = this.filetypeSelect.value;
+    if (filetype === "csv") {
+      downloadObjectsAsCsv(this.pendingAccessions, filename);
+    } else if (filetype === "tsv") {
+      downloadObjectsAsTsv(this.pendingAccessions, filename);
     } else {
-      downloadObjectsAsTsv(accessions, filename);
+      throw new Error("Unknown filetype selected");
     }
+    this.dialog.close();
+  }
+
+  /**
+   * Download genome sequences via NCBI Datasets API.
+   * Opens the download URL in a new tab to trigger browser download.
+   */
+  private downloadGenomeSequences(): void {
+    if (this.pendingAccessions.length === 0) {
+      return;
+    }
+
+    const accessionIds = this.pendingAccessions.map((acc) => acc.accession);
+    const filename = this.getFilename();
+    const downloadUrl = getGenomeDownloadUrl(accessionIds, filename);
+    window.open(downloadUrl, "_blank");
+    this.dialog.close();
   }
 }
 

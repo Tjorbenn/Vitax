@@ -36,17 +36,7 @@
     </tbody>
     <tfoot>
       <tr>
-        <td class="text-start">
-          <label
-            title="Switch file type"
-            class="swap swap-rotate text-accent tooltip tooltip-right drop-shadow"
-            data-tip="Switch file type (TSV/CSV)"
-          >
-            <input id="accessions-filetype" type="checkbox" class="swap-toggle" />
-            <span class="swap-off badge badge-sm badge-accent">TSV</span>
-            <span class="swap-on badge badge-sm badge-accent">CSV</span>
-          </label>
-        </td>
+        <td></td>
         <td class="text-center">
           <div class="inline-flex items-center justify-center gap-2">
             <span id="accessions-total-direct" class="badge badge-outline" title="Summe Direkt"
@@ -83,3 +73,45 @@
     </tfoot>
   </table>
 </div>
+
+<dialog
+  id="download-dialog"
+  class="modal modal-bottom sm:modal-middle"
+  aria-labelledby="download-dialog-title"
+>
+  <div class="modal-box" role="document">
+    <h3
+      id="download-dialog-title"
+      class="mb-6 flex items-center justify-between gap-2 font-sans text-lg font-bold"
+    >
+      Download Accessions
+      <span id="download-dialog-count" class="badge badge-primary badge-sm shadow-md"></span>
+    </h3>
+    <div class="flex flex-col gap-3">
+      <div class="join join-horizontal w-full items-stretch">
+        <button id="download-accession-list" class="btn btn-primary join-item w-5/6">
+          <span
+            class="icon-[material-symbols--description-outline]"
+            style="width: 1.25em; height: 1.25em"
+          ></span>
+          Accession List
+        </button>
+        <select id="filetype-select" class="select select-bordered join-item w-1/6">
+          <option value="tsv" selected>TSV</option>
+          <option value="csv">CSV</option>
+        </select>
+      </div>
+      <div class="divider my-0">or</div>
+      <button id="download-genome-sequences" class="btn btn-primary btn-block">
+        <span
+          class="icon-[material-symbols--genetics]"
+          style="width: 1.25em; height: 1.25em"
+        ></span>
+        Genome Sequences (FASTA)
+      </button>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop">
+    <button aria-label="Close dialog"></button>
+  </form>
+</dialog>

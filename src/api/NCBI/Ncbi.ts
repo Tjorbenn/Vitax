@@ -13,6 +13,29 @@
 const taxonomyBaseUrl = "https://api.ncbi.nlm.nih.gov/datasets/v2/taxonomy/";
 
 /**
+ * The NCBI Datasets Genome API is used to download genome data packages.
+ */
+const genomeBaseUrl = "https://api.ncbi.nlm.nih.gov/datasets/v2/genome/accession/";
+
+/**
+ * Generates the download URL for genome data packages from NCBI Datasets API.
+ * This URL can be used to trigger a browser download of the genome ZIP file.
+ *
+ * @param accessions - Array of genome assembly accessions (e.g., ["GCF_000001405.40"]).
+ * @param filename - Optional custom filename for the download (without extension).
+ * @returns The URL to download the genome package.
+ */
+export function getGenomeDownloadUrl(accessions: string[], filename?: string): string {
+  const accessionPath = accessions.join(",");
+  const url = new URL(`${accessionPath}/download`, genomeBaseUrl);
+  url.searchParams.set("include_annotation_type", "GENOME_FASTA");
+  if (filename) {
+    url.searchParams.set("filename", `${filename}.zip`);
+  }
+  return url.toString();
+}
+
+/**
  * To handle the responses from the NCBI Taxonomy API in a type-safe manner, we define a `LinkResponse` type.
  * The `LinkResponse` type represents the structure of the response from the NCBI Taxonomy API for a given taxon ID.
  */

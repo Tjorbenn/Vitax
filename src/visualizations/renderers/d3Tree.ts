@@ -102,6 +102,17 @@ export class D3Tree extends D3Visualization {
       return;
     }
 
+    // Preserve collapsed states from the old hierarchy before recreating
+    const collapsedStates = new Map<number, boolean>();
+    if (this.root) {
+      this.root.descendants().forEach((node) => {
+        const treeNode = node as TreeNode;
+        if (treeNode.collapsed) {
+          collapsedStates.set(node.data.id, true);
+        }
+      });
+    }
+
     this.persistedMaxLeft = [];
     this.persistedMaxRight = [];
 
@@ -115,6 +126,16 @@ export class D3Tree extends D3Visualization {
         children: [currentRoot.lean],
       };
       this.root = d3.hierarchy<LeanTaxon>(virtualRootData);
+    }
+
+    // Restore collapsed states to the new hierarchy
+    if (collapsedStates.size > 0) {
+      this.root.descendants().forEach((node) => {
+        const treeNode = node as TreeNode;
+        if (collapsedStates.has(node.data.id)) {
+          treeNode.collapsed = true;
+        }
+      });
     }
 
     this.safeUpdate();
