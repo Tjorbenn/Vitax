@@ -28,6 +28,7 @@ export class GenomesComponent extends BaseComponent {
 
   // State for pending download
   private pendingAccessions: Accession[] = [];
+  private pendingLevel?: GenomeLevel;
 
   /**
    * Creates a new GenomesComponent instance.
@@ -111,13 +112,53 @@ export class GenomesComponent extends BaseComponent {
         if (count !== undefined || recursive !== undefined) {
           const row = document.createElement("tr");
           row.classList.add("animated", "hover:bg-base-200");
-          row.innerHTML = `
-            <th>
-              <span class="uppercase tracking-wide text-xs sm:text-sm font-medium text-base-content/80">${level.toUpperCase()}</span>
-            </th>
-            <td class="text-center tabular-nums text-xl text-primary font-light">${String(count ?? 0)}</td>
-            <td class="text-center tabular-nums text-xl text-primary font-light">${String(recursive ?? 0)}</td>
-          `;
+
+          const th = document.createElement("th");
+          th.innerHTML = `<span class="uppercase tracking-wide text-xs sm:text-sm font-medium text-base-content/80">${level.toUpperCase()}</span>`;
+          row.appendChild(th);
+
+          const tdDirect = document.createElement("td");
+          tdDirect.className = "text-center tabular-nums text-xl text-primary font-light";
+          if (count && count > 0) {
+            const container = document.createElement("div");
+            container.className = "inline-flex items-center justify-center gap-2";
+            const span = document.createElement("span");
+            span.textContent = String(count);
+            container.appendChild(span);
+
+            const btn = document.createElement("button");
+            btn.className = "btn btn-xs btn-ghost btn-circle text-primary";
+            btn.title = `Download ${level} (Direct)`;
+            btn.innerHTML = `<span class="icon-[material-symbols--download-rounded]" style="width: 1.25em; height: 1.25em"></span>`;
+            btn.onclick = () => void this.openDialogForLevel(level, false);
+            container.appendChild(btn);
+            tdDirect.appendChild(container);
+          } else {
+            tdDirect.textContent = String(count ?? 0);
+          }
+          row.appendChild(tdDirect);
+
+          const tdRecursive = document.createElement("td");
+          tdRecursive.className = "text-center tabular-nums text-xl text-primary font-light";
+          if (recursive && recursive > 0) {
+            const container = document.createElement("div");
+            container.className = "inline-flex items-center justify-center gap-2";
+            const span = document.createElement("span");
+            span.textContent = String(recursive);
+            container.appendChild(span);
+
+            const btn = document.createElement("button");
+            btn.className = "btn btn-xs btn-ghost btn-circle text-secondary";
+            btn.title = `Download ${level} (Recursive)`;
+            btn.innerHTML = `<span class="icon-[material-symbols--download-rounded]" style="width: 1.25em; height: 1.25em"></span>`;
+            btn.onclick = () => void this.openDialogForLevel(level, true);
+            container.appendChild(btn);
+            tdRecursive.appendChild(container);
+          } else {
+            tdRecursive.textContent = String(recursive ?? 0);
+          }
+          row.appendChild(tdRecursive);
+
           this.tbody.appendChild(row);
         }
       }
@@ -151,6 +192,33 @@ export class GenomesComponent extends BaseComponent {
   }
 
   /**
+   * Open the download dialog for specific level accessions.
+   * @param level The genome level to filter by.
+   * @param recursive Whether to include recursive accessions.
+   */
+  private async openDialogForLevel(level: GenomeLevel, recursive: boolean): Promise<void> {
+    const taxon = this.taxon;
+    if (!taxon) {
+      throw new Error("No taxon found");
+    }
+
+    let accessions: Accession[];
+    if (recursive) {
+      accessions = await TaxonomyService.getRecursiveAccessions(taxon);
+    } else {
+      accessions = await TaxonomyService.getDirectAccessions(taxon);
+    }
+
+    const filtered = accessions.filter((acc) => acc.level === level);
+    if (filtered.length === 0) {
+      throw new Error(`No ${level} accessions found`);
+    }
+
+    this.pendingLevel = level;
+    this.openDialog(filtered);
+  }
+
+  /**
    * Open the download dialog for direct accessions.
    */
   private async openDialogForDirect(): Promise<void> {
@@ -162,6 +230,7 @@ export class GenomesComponent extends BaseComponent {
     if (accessions.length === 0) {
       throw new Error("No direct accessions found");
     }
+    this.pendingLevel = undefined;
     this.openDialog(accessions);
   }
 
@@ -177,6 +246,7 @@ export class GenomesComponent extends BaseComponent {
     if (accessions.length === 0) {
       throw new Error("No recursive accessions found");
     }
+    this.pendingLevel = undefined;
     this.openDialog(accessions);
   }
 
@@ -191,8 +261,8 @@ export class GenomesComponent extends BaseComponent {
   }
 
   /**
-   * Get the filename for downloads based on taxon.
-   * Format: taxid_taxonName.
+   * Get the filename for downloads based on taxon and optional level.
+   * Format: taxid_taxonName or taxid_taxonName_level.
    * @returns The filename as a string.
    */
   private getFilename(): string {
@@ -200,7 +270,11 @@ export class GenomesComponent extends BaseComponent {
     if (!taxon) {
       return "accessions";
     }
-    return `${taxon.id.toString()}_${taxon.name}`;
+    const baseName = `${taxon.id.toString()}_${taxon.name}`;
+    if (this.pendingLevel) {
+      return `${baseName}_${this.pendingLevel}`;
+    }
+    return baseName;
   }
 
   /**
@@ -225,18 +299,52 @@ export class GenomesComponent extends BaseComponent {
   }
 
   /**
+   * Helper to trigger download via hidden iframe to avoid popup blockers.
+   * @param url The URL to download.
+   */
+  private triggerDownload(url: string): void {
+    const iframe = document.createElement("iframe");
+    iframe.style.display = "none";
+    iframe.src = url;
+    document.body.appendChild(iframe);
+    setTimeout(() => {
+      iframe.remove();
+    }, 60000);
+  }
+
+  /**
    * Download genome sequences via NCBI Datasets API.
-   * Opens the download URL in a new tab to trigger browser download.
+   * Uses hidden iframes to trigger downloads, splitting into multiple requests if needed.
    */
   private downloadGenomeSequences(): void {
     if (this.pendingAccessions.length === 0) {
       return;
     }
 
-    const accessionIds = this.pendingAccessions.map((acc) => acc.accession);
-    const filename = this.getFilename();
-    const downloadUrl = getGenomeDownloadUrl(accessionIds, filename);
-    window.open(downloadUrl, "_blank");
+    const allAccessionIds = this.pendingAccessions.map((acc) => acc.accession);
+    const baseFilename = this.getFilename();
+    const CHUNK_SIZE = 100;
+
+    if (allAccessionIds.length <= CHUNK_SIZE) {
+      const downloadUrl = getGenomeDownloadUrl(allAccessionIds, baseFilename);
+      this.triggerDownload(downloadUrl);
+    } else {
+      for (let index = 0; index < allAccessionIds.length; index += CHUNK_SIZE) {
+        const chunk = allAccessionIds.slice(index, index + CHUNK_SIZE);
+        const partNum = Math.floor(index / CHUNK_SIZE) + 1;
+        const filename = `${baseFilename}_part_${partNum.toString()}`;
+        const downloadUrl = getGenomeDownloadUrl(chunk, filename);
+
+        // Stagger downloads to be gentle on browser and API
+        setTimeout(
+          () => {
+            this.triggerDownload(downloadUrl);
+          },
+          (index / CHUNK_SIZE) * 1000,
+        );
+      }
+    }
+
     this.dialog.close();
   }
 }

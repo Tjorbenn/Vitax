@@ -23,8 +23,51 @@ export default defineConfig({
     // PWA
     VitePWA({
       registerType: "autoUpdate",
+      selfDestroying: false,
       devOptions: {
         enabled: true,
+      },
+      workbox: {
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
+        globPatterns: [],
+        navigateFallback: null,
+        runtimeCaching: [
+          {
+            urlPattern: /\.html$/,
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "html-cache",
+              expiration: {
+                maxAgeSeconds: 0,
+              },
+            },
+          },
+          {
+            urlPattern: /assets\/.*\.(js|css)$/,
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "assets-cache",
+              networkTimeoutSeconds: 10,
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 * 7, // 7 days fallback only
+              },
+            },
+          },
+          {
+            urlPattern: /\.(png|jpg|jpeg|svg|gif|webp|ico)$/,
+            handler: "StaleWhileRevalidate",
+            options: {
+              cacheName: "image-cache",
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+              },
+            },
+          },
+        ],
       },
       includeAssets: [
         "images/favicon.ico",
@@ -161,6 +204,8 @@ export default defineConfig({
       "X-Content-Type-Options": "nosniff",
       "X-Frame-Options": "SAMEORIGIN",
       "Referrer-Policy": "strict-origin-when-cross-origin",
+
+      "Cache-Control": "no-cache",
 
       "Content-Security-Policy": [
         "default-src 'self'",

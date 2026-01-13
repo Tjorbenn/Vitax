@@ -162,7 +162,7 @@ export class D3Pack extends D3Visualization {
         while (target && target.parent !== this.focus) {
           target = target.parent as d3.HierarchyCircularNode<LeanTaxon> | undefined;
         }
-        if (target && target.parent === this.focus) {
+        if (target?.parent === this.focus) {
           this.zoom(event, target);
         }
       })
