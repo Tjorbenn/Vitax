@@ -1,7 +1,8 @@
 import { getGenomeDownloadUrl } from "../../../api/NCBI/NcbiClient";
+import { getTree } from "../../../core/State";
 import { downloadObjectsAsCsv, downloadObjectsAsTsv } from "../../../features/Download";
 import * as TaxonomyService from "../../../services/TaxonomyService";
-import type { Accession, GenomeLevel, Taxon } from "../../../types/Taxonomy";
+import type { Accession, GenomeLevel, Taxon, TaxonomyTree } from "../../../types/Taxonomy";
 import { GenomeLevel as GenomeLevelEnum } from "../../../types/Taxonomy";
 import { optionalElement, requireElement } from "../../../utility/Dom";
 import { BaseComponent } from "../../BaseComponent";
@@ -286,16 +287,41 @@ export class GenomesComponent extends BaseComponent {
       return;
     }
 
+    const tree = getTree();
+    if (!tree) {
+      throw new Error("State missing taxonomy tree");
+    }
+    const exportData = this.pendingAccessions.map((acc) => {
+      const type = this.resolveType(tree, acc.taxid);
+      return type
+        ? { taxid: acc.taxid, accession: acc.accession, level: acc.level, type }
+        : { taxid: acc.taxid, accession: acc.accession, level: acc.level };
+    });
+
     const filename = this.getFilename();
     const filetype = this.filetypeSelect.value;
     if (filetype === "csv") {
-      downloadObjectsAsCsv(this.pendingAccessions, filename);
+      downloadObjectsAsCsv(exportData, filename);
     } else if (filetype === "tsv") {
-      downloadObjectsAsTsv(this.pendingAccessions, filename);
+      downloadObjectsAsTsv(exportData, filename);
     } else {
       throw new Error("Unknown filetype selected");
     }
     this.dialog.close();
+  }
+
+  /**
+   * Resolve the type (Target/Neighbor) for a taxon in the current tree.
+   * "Query" annotations are mapped to "Target".
+   * @param tree The current taxonomy tree, if available.
+   * @param taxid The taxon ID to look up.
+   * @returns The type string, or undefined if not determinable.
+   */
+  private resolveType(tree: TaxonomyTree, taxid: number): string | undefined {
+    const annotation = tree.findTaxonById(taxid)?.annotation;
+    if (!annotation) return undefined;
+    const annotationText = annotation.text === "Query" ? "Target" : annotation.text;
+    return annotationText;
   }
 
   /**
