@@ -31,34 +31,31 @@ export default defineConfig({
         skipWaiting: true,
         clientsClaim: true,
         cleanupOutdatedCaches: true,
+        navigationPreload: true,
         globPatterns: [],
         navigateFallback: null,
         runtimeCaching: [
           {
-            urlPattern: /\.html$/,
-            handler: "NetworkFirst",
+            urlPattern: ({ request }) => request.mode === "navigate",
+            handler: "NetworkOnly",
             options: {
               cacheName: "html-cache",
-              expiration: {
-                maxAgeSeconds: 0,
-              },
             },
           },
           {
             urlPattern: /assets\/.*\.(js|css)$/,
-            handler: "NetworkFirst",
+            handler: "CacheFirst",
             options: {
               cacheName: "assets-cache",
-              networkTimeoutSeconds: 10,
               expiration: {
                 maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 * 7, // 7 days fallback only
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
               },
             },
           },
           {
             urlPattern: /\.(png|jpg|jpeg|svg|gif|webp|ico)$/,
-            handler: "StaleWhileRevalidate",
+            handler: "CacheFirst",
             options: {
               cacheName: "image-cache",
               expiration: {
