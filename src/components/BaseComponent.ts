@@ -16,6 +16,8 @@ export abstract class BaseComponent extends HTMLElement {
   protected template: HTMLTemplateElement = document.createElement("template");
   protected readonly events = new EventManager();
   protected readonly subscriptions: (() => void)[] = [];
+  protected templateLoaded = false;
+  private isLifecycleInitialized = false;
 
   /**
    * On construction, we optionally accept a `#gls("html")`{=typst} template literal string to initialize the `template` property.
@@ -29,6 +31,21 @@ export abstract class BaseComponent extends HTMLElement {
     super();
     if (templateHTML) {
       this.template.innerHTML = templateHTML;
+    }
+  }
+
+  /**
+   * Native DOM element lifecycle callback.
+   * Called when the element is connected to the DOM.
+   * Handles first-time template loading and re-initialization on reconnect.
+   */
+  connectedCallback(): void {
+    if (!this.templateLoaded) {
+      this.loadTemplate();
+      this.templateLoaded = true;
+    } else if (!this.isLifecycleInitialized) {
+      this.initialize();
+      this.isLifecycleInitialized = true;
     }
   }
 
@@ -77,6 +94,7 @@ export abstract class BaseComponent extends HTMLElement {
   protected loadTemplate() {
     this.appendChild(this.template.content.cloneNode(true));
     this.initialize();
+    this.isLifecycleInitialized = true;
   }
 
   /**
@@ -120,5 +138,16 @@ export abstract class BaseComponent extends HTMLElement {
     this.subscriptions.forEach((unsub) => {
       unsub();
     });
+    this.subscriptions.length = 0;
+    this.isLifecycleInitialized = false;
+  }
+
+  /**
+   * Native DOM element lifecycle callback.
+   * Called when the component is removed from the DOM.
+   * Automatically calls destroy() to clean up resources.
+   */
+  disconnectedCallback(): void {
+    this.destroy();
   }
 }

@@ -3,6 +3,8 @@ import { VisualizationType } from "../../types/Application";
 import type { LeanTaxon } from "../../types/Taxonomy";
 import { LongPressDetector } from "../../utility/TouchGestures";
 import { D3Visualization, type D3VisualizationExtents } from "../d3Visualization";
+import * as VisualizationStyle from "../VisualizationStyle";
+import { optionalElement } from "../../utility/Dom";
 
 type GraphHierarchyNode = d3.HierarchyNode<LeanTaxon> & {
   _metrics?: {
@@ -142,6 +144,9 @@ export class D3Graph extends D3Visualization {
         .on("end", dragended);
     };
 
+    this.addStyleRule(VisualizationStyle.createGenomeSizeRule([4, 40]));
+    this.addStyleRule(VisualizationStyle.createGenomeStrokeRule([0.3, 5]));
+
     this.activateStateSubscription();
 
     this.onVisibilityChangeBound = () => {
@@ -211,8 +216,6 @@ export class D3Graph extends D3Visualization {
 
     this.computeNodeMetrics(visibleNodes);
 
-    const linkStrokeScale = this.createGenomeStrokeScale([0.3, 5]);
-
     const linkSel = this.gLink
       .selectAll<SVGLineElement, d3.HierarchyLink<LeanTaxon>>("line")
       .data(visibleLinks as d3.HierarchyLink<LeanTaxon>[], (link) => link.target.data.id);
@@ -220,15 +223,18 @@ export class D3Graph extends D3Visualization {
     const linkEnter = linkSel
       .enter()
       .append("line")
+      .attr("data-target-id", (link) => (link.target as GraphHierarchyNode).data.id)
       .attr("stroke-width", (link) => {
-        return linkStrokeScale(this.getGenomeTotal(link.target.data));
+        const style = this.resolveNodeStyle(link.target);
+        return typeof style.strokeWidth === "number" ? style.strokeWidth : 1;
       });
     linkSel.exit().remove();
 
     const linkMerge = linkEnter.merge(linkSel);
 
     linkMerge.attr("stroke-width", (link) => {
-      return linkStrokeScale(this.getGenomeTotal(link.target.data));
+      const style = this.resolveNodeStyle(link.target);
+      return typeof style.strokeWidth === "number" ? style.strokeWidth : 1;
     });
 
     const nodeSel = this.gNode
@@ -244,7 +250,7 @@ export class D3Graph extends D3Visualization {
         event.preventDefault();
         event.stopPropagation();
         const el = event.currentTarget as SVGGElement;
-        const circle = el.querySelector("circle");
+        const circle = optionalElement(el, "circle");
         const bbox = (circle ?? el).getBoundingClientRect();
         this.handlers?.onHover?.({
           id: node.data.id,
@@ -264,7 +270,7 @@ export class D3Graph extends D3Visualization {
       nodeEnter,
       (_event: TouchEvent, node: GraphHierarchyNode, target: Element) => {
         const el = target as SVGGElement;
-        const circle = el.querySelector("circle");
+        const circle = optionalElement(el, "circle");
         const bbox = (circle ?? el).getBoundingClientRect();
         this.handlers?.onHover?.({
           id: node.data.id,
@@ -315,13 +321,6 @@ export class D3Graph extends D3Visualization {
       .attr("stroke-width", 3)
       .attr("paint-order", "stroke");
 
-    nodeEnter.selectAll<SVGTextElement, GraphHierarchyNode>("text").style("display", (node) => {
-      if (node.depth > this.labelDepthLimit) {
-        return "none";
-      }
-      return (node._metrics?.childrenCount ?? 0) === 0 ? "none" : "block";
-    });
-
     nodeSel.exit().remove();
 
     const mergedNodes = nodeEnter.merge(
@@ -334,20 +333,24 @@ export class D3Graph extends D3Visualization {
 
     mergedNodes
       .selectAll<SVGCircleElement, GraphHierarchyNode>("circle")
-      .attr("fill", (node) => this.getNodeFill(node));
-
-    mergedNodes
-      .selectAll<SVGCircleElement, GraphHierarchyNode>("circle")
+      .attr("fill", (node) => this.getNodeFill(node))
       .attr("stroke", theme.text)
       .attr("stroke-opacity", 0.6);
+
+    const maxDepth = (d3.max(visibleNodes, (node) => node.depth) ?? 1) as number;
+    this.labelDepthLimit = Math.max(1, Math.ceil(maxDepth * 0.7));
+
     mergedNodes
       .selectAll<SVGTextElement, GraphHierarchyNode>("text")
       .attr("x", (node) => (node._metrics?.radius ?? 6) + 3)
-      .style("display", (node) =>
-        (node._metrics?.childrenCount ?? 0) === 0 || (node._metrics?.radius ?? 6) < 7
-          ? "none"
-          : "block",
-      );
+      .style("display", (node) => {
+        const radius = node._metrics?.radius ?? 6;
+        const isLeaf = (node._metrics?.childrenCount ?? 0) === 0;
+        if (node.depth > this.labelDepthLimit && isLeaf) {
+          return "none";
+        }
+        return radius < 6 ? "none" : "block";
+      });
 
     const linkForce = this.simulation.force("link") as unknown as d3.ForceLink<
       d3.HierarchyNode<LeanTaxon>,
@@ -362,8 +365,6 @@ export class D3Graph extends D3Visualization {
     );
     this.nodeCountForForces = visibleNodes.length;
 
-    const maxDepth = (d3.max(visibleNodes, (node) => node.depth) ?? 1) as number;
-    this.labelDepthLimit = Math.max(1, Math.ceil(maxDepth * 0.5));
     const chargeForce = this.simulation.force("charge") as unknown as d3.ForceManyBody<
       d3.HierarchyNode<LeanTaxon>
     >;
@@ -474,6 +475,7 @@ export class D3Graph extends D3Visualization {
    * Disposes of the graph and stops the simulation.
    */
   public override dispose(): void {
+    this.longPress.cleanup();
     this.disposed = true;
 
     this.simulation.stop();
@@ -499,12 +501,12 @@ export class D3Graph extends D3Visualization {
     if (!nodes.length) {
       return;
     }
-    const nodeSizeScale = this.createGenomeSizeScale([4, 40]);
     nodes.forEach((node) => {
       const childrenCount = node.children?.length ?? 0;
       const degree = childrenCount + (node.parent ? 1 : 0);
       const gTotal = this.getGenomeTotal(node.data);
-      const radius = nodeSizeScale(gTotal);
+      const style = this.resolveNodeStyle(node);
+      const radius = typeof style.radius === "number" ? style.radius : 6;
 
       node._metrics = { radius, degree, gTotal, childrenCount };
 

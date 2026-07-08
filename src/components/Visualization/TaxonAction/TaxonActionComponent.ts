@@ -30,7 +30,6 @@ export class TaxonActionComponent extends BaseComponent {
    */
   constructor() {
     super(HTMLtemplate);
-    this.loadTemplate();
   }
 
   /**
@@ -98,7 +97,9 @@ export class TaxonActionComponent extends BaseComponent {
    * @param node - The hierarchy node to set action context for.
    */
   public setNode(node: d3.HierarchyNode<Taxon> & { collapsed?: boolean }): void {
-    this.node = node as unknown as d3.HierarchyNode<LeanTaxon> & { collapsed?: boolean };
+    this.node = node as unknown as d3.HierarchyNode<LeanTaxon> & {
+      collapsed?: boolean;
+    };
   }
 
   /**
@@ -150,8 +151,23 @@ export class TaxonActionComponent extends BaseComponent {
    * @param viewportY - The Y coordinate in viewport space.
    */
   public positionAt(canvasRect: DOMRect, viewportX: number, viewportY: number): void {
-    const left = viewportX - canvasRect.left;
-    const top = viewportY - canvasRect.top;
+    const rawLeft = viewportX - canvasRect.left;
+    const rawTop = viewportY - canvasRect.top;
+
+    const margin = 8;
+    const halfW = (this.offsetWidth || 64) / 2;
+    const halfH = (this.offsetHeight || 64) / 2;
+
+    const minLeft = halfW + margin;
+    const maxLeft = canvasRect.width - halfW - margin;
+    const minTop = halfH + margin;
+    const maxTop = canvasRect.height - halfH - margin;
+
+    const left =
+      maxLeft < minLeft ? (minLeft + maxLeft) / 2 : Math.min(Math.max(rawLeft, minLeft), maxLeft);
+    const top =
+      maxTop < minTop ? (minTop + maxTop) / 2 : Math.min(Math.max(rawTop, minTop), maxTop);
+
     this.style.left = `${String(left)}px`;
     this.style.top = `${String(top)}px`;
     this.style.transform = "translate(-50%, -50%)";
@@ -186,6 +202,17 @@ export class TaxonActionComponent extends BaseComponent {
       this.classList.add("hidden");
       this.hideTimer = undefined;
     }, this.animDuration + 25);
+  }
+
+  /**
+   * Clean up timers when disconnected.
+   */
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+    if (this.hideTimer) {
+      window.clearTimeout(this.hideTimer);
+      this.hideTimer = undefined;
+    }
   }
 }
 

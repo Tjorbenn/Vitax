@@ -1,117 +1,90 @@
-<div class="border-base-300/50 overflow-x-auto rounded-xl border">
-  <table id="genomes-table" class="table-sm table align-middle">
-    <thead class="bg-primary text-primary-content sticky top-0 z-10">
-      <tr class="border-primary/40 border-b">
-        <th
-          scope="col"
-          class="text-primary-content py-2 text-left text-xs font-semibold tracking-wide uppercase sm:text-sm"
-        >
-          Level
-        </th>
-        <th
-          scope="col"
-          class="text-primary-content py-2 text-center text-xs font-semibold tracking-wide uppercase sm:text-sm"
-        >
-          Direct
-        </th>
-        <th
-          scope="col"
-          class="text-primary-content py-2 text-center text-xs font-semibold tracking-wide uppercase sm:text-sm"
-        >
-          Recursive
-        </th>
-      </tr>
-    </thead>
-    <tbody id="genomes-body">
-      <tr>
-        <th class="capitalize"><div class="skeleton h-4 w-20"></div></th>
-        <td class="text-center"><div class="skeleton mx-auto h-4 w-10"></div></td>
-        <td class="text-center"><div class="skeleton mx-auto h-4 w-10"></div></td>
-      </tr>
-      <tr>
-        <th class="capitalize"><div class="skeleton h-4 w-24"></div></th>
-        <td class="text-center"><div class="skeleton mx-auto h-4 w-10"></div></td>
-        <td class="text-center"><div class="skeleton mx-auto h-4 w-10"></div></td>
-      </tr>
-    </tbody>
-    <tfoot>
-      <tr>
-        <td></td>
-        <td class="text-center">
-          <div class="inline-flex items-center justify-center gap-2">
-            <span id="accessions-total-direct" class="badge badge-outline" title="Summe Direkt"
-              >-</span
-            >
-            <button
-              class="btn btn-sm btn-outline btn-primary animated bounce"
-              id="accessions-download-direct"
+<div class="border-base-300 bg-base-100 overflow-hidden rounded-2xl border shadow-sm">
+  <div class="overflow-x-auto">
+    <table id="genomes-table" class="table-zebra table-sm table w-full align-middle">
+      <thead class="text-base-content/80">
+        <tr>
+          <th
+            scope="col"
+            class="bg-base-200/50 py-3 pl-4 text-left text-xs font-semibold tracking-wider uppercase"
+          >
+            Level
+          </th>
+          <th scope="col" class="bg-base-200/50 py-3 text-center">
+            <div
+              class="flex items-center justify-center gap-1.5 text-xs font-semibold tracking-wider uppercase"
             >
               <span
-                class="icon-[material-symbols--download-rounded]"
-                style="width: 1.25em; height: 1.25em"
+                class="icon-[material-symbols--square-dot-rounded] text-base-content/50 text-base"
               ></span>
-            </button>
-          </div>
-        </td>
-        <td class="text-center">
-          <div class="inline-flex items-center justify-center gap-2">
-            <span id="accessions-total-recursive" class="badge badge-outline" title="Summe Rekursiv"
-              >-</span
-            >
-            <button
-              class="btn btn-sm btn-outline btn-secondary animated bounce"
-              id="accessions-download-recursive"
+              Direct
+            </div>
+          </th>
+          <th scope="col" class="bg-base-200/50 py-3 pr-4 text-center">
+            <div
+              class="flex items-center justify-center gap-1.5 text-xs font-semibold tracking-wider uppercase"
             >
               <span
-                class="icon-[material-symbols--download-rounded]"
-                style="width: 1.25em; height: 1.25em"
+                class="icon-[material-symbols--diagonal-line] text-base-content/50 text-base"
               ></span>
-            </button>
-          </div>
-        </td>
-      </tr>
-    </tfoot>
-  </table>
+              Recursive
+            </div>
+          </th>
+        </tr>
+      </thead>
+      <tbody id="genomes-body">
+        <tr>
+          <th class="bg-base-200/50 py-3 pl-4">
+            <div class="skeleton bg-base-300 h-4 w-20"></div>
+          </th>
+          <td class="py-3 text-center">
+            <div class="skeleton bg-base-300 mx-auto h-4 w-10"></div>
+          </td>
+          <td class="py-3 pr-4 text-center">
+            <div class="skeleton bg-base-300 mx-auto h-4 w-10"></div>
+          </td>
+        </tr>
+      </tbody>
+      <tfoot class="border-base-300 bg-base-200/50 border-t">
+        <tr>
+          <td class="text-base-content/70 py-3 pl-4 font-semibold">Total</td>
+          <td class="py-3 text-center">
+            <div class="inline-flex items-center justify-center gap-2">
+              <span
+                id="accessions-total-direct"
+                class="text-primary text-lg font-bold tabular-nums"
+                title="Total Direct"
+                >-</span
+              >
+              <button
+                class="btn btn-sm btn-circle btn-primary btn-soft shadow-xs"
+                id="accessions-download-direct"
+                title="Download all direct accessions"
+              >
+                <span class="icon-[material-symbols--download-rounded] text-lg"></span>
+              </button>
+            </div>
+          </td>
+          <td class="py-3 pr-4 text-center">
+            <div class="inline-flex items-center justify-center gap-2">
+              <span
+                id="accessions-total-recursive"
+                class="text-secondary text-lg font-bold tabular-nums"
+                title="Total Recursive"
+                >-</span
+              >
+              <button
+                class="btn btn-sm btn-circle btn-secondary btn-soft shadow-xs"
+                id="accessions-download-recursive"
+                title="Download all recursive accessions"
+              >
+                <span class="icon-[material-symbols--download-rounded] text-lg"></span>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
 </div>
 
-<dialog
-  id="download-dialog"
-  class="modal modal-bottom sm:modal-middle"
-  aria-labelledby="download-dialog-title"
->
-  <div class="modal-box" role="document">
-    <h3
-      id="download-dialog-title"
-      class="mb-6 flex items-center justify-between gap-2 font-sans text-lg font-bold"
-    >
-      Download Accessions
-      <span id="download-dialog-count" class="badge badge-primary badge-sm shadow-md"></span>
-    </h3>
-    <div class="flex flex-col gap-3">
-      <div class="join join-horizontal w-full items-stretch">
-        <button id="download-accession-list" class="btn btn-primary join-item w-5/6">
-          <span
-            class="icon-[material-symbols--description-outline]"
-            style="width: 1.25em; height: 1.25em"
-          ></span>
-          Accession List
-        </button>
-        <select id="filetype-select" class="select select-bordered join-item w-1/6">
-          <option value="tsv" selected>TSV</option>
-          <option value="csv">CSV</option>
-        </select>
-      </div>
-      <div class="divider my-0">or</div>
-      <button id="download-genome-sequences" class="btn btn-primary btn-block">
-        <span
-          class="icon-[material-symbols--genetics]"
-          style="width: 1.25em; height: 1.25em"
-        ></span>
-        Genome Sequences (FASTA)
-      </button>
-    </div>
-  </div>
-  <form method="dialog" class="modal-backdrop">
-    <button aria-label="Close dialog"></button>
-  </form>
-</dialog>
+<vitax-data-genomes-download></vitax-data-genomes-download>

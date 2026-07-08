@@ -1,0 +1,66 @@
+<dialog
+  id="download-dialog"
+  class="modal modal-bottom sm:modal-middle"
+  aria-labelledby="download-dialog-title"
+>
+  <div
+    class="modal-box bg-base-100 relative flex max-h-[calc(100vh-5em)] flex-col overflow-hidden p-0 shadow-xl"
+    role="document"
+  >
+    <div class="bg-base-200/50 border-base-300 relative shrink-0 border-b px-6 py-5">
+      <form method="dialog">
+        <button
+          class="btn btn-sm btn-circle btn-ghost absolute top-4 right-4"
+          aria-label="Close dialog"
+        >
+          <span class="icon-[material-symbols--close-rounded] text-xl"></span>
+        </button>
+      </form>
+      <div class="pr-8">
+        <h3
+          id="download-dialog-title"
+          class="text-base-content flex items-center gap-3 font-sans text-xl font-bold"
+        >
+          Downloading
+          <span id="download-dialog-count" class="text-secondary text-sm"></span>
+          Accessions
+        </h3>
+      </div>
+    </div>
+
+    <div
+      class="hide-scrollbar flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain p-6"
+    >
+      <div class="join join-vertical sm:join-horizontal w-full">
+        <button
+          id="download-accession-list"
+          class="join-item btn btn-primary w-full shadow-sm sm:flex-1"
+        >
+          <span class="icon-[material-symbols--description-outline] text-xl"></span>
+          List
+        </button>
+        <select
+          id="filetype-select"
+          class="join-item select select-bordered bg-base-100 focus:outline-primary w-full shadow-sm sm:w-28"
+        >
+          <option value="tsv" selected>TSV</option>
+          <option value="csv">CSV</option>
+        </select>
+      </div>
+
+      <div class="divider text-base-content/50 m-0 text-sm font-medium">OR</div>
+
+      <button id="download-genome-sequences" class="btn btn-primary w-full shadow-sm">
+        <span class="icon-[material-symbols--genetics] text-xl"></span>
+        Genome Sequences
+      </button>
+    </div>
+  </div>
+  <form
+    id="download-dialog-close-form"
+    method="dialog"
+    class="modal-backdrop bg-neutral-900/40 backdrop-blur-xs"
+  >
+    <button aria-label="Close dialog">close</button>
+  </form>
+</dialog>

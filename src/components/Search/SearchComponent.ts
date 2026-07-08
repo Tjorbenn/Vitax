@@ -1,3 +1,4 @@
+import { optionalElement, requireElement } from "../../utility/Dom";
 import { BaseComponent } from "../BaseComponent";
 import HTMLtemplate from "./SearchTemplate.html?raw";
 
@@ -37,7 +38,6 @@ export class SearchComponent extends BaseComponent {
    */
   constructor() {
     super(HTMLtemplate);
-    this.loadTemplate();
   }
 
   /**
@@ -62,6 +62,8 @@ export class SearchComponent extends BaseComponent {
       "vitax:selectSuggestion",
       this.onSelectSuggestion.bind(this),
     );
+
+    this.suggestionsComp.classList.add("overscroll-none");
 
     this.section.appendChild(this.selectionComp);
     this.section.appendChild(this.suggestionsComp);
@@ -175,13 +177,12 @@ export class SearchComponent extends BaseComponent {
   public onStatusChange(status: Status): void {
     if (status === Status.Loading) {
       this.button.innerHTML = '<span class="loading loading-spinner"></span>';
-    } else if (this.button.querySelector(".loading")) {
+    } else if (optionalElement(this.button, ".loading")) {
       this.button.innerHTML = `
         <span id="visualize-text" class="hidden md:inline">Visualize</span>
         <span
           id="visualize-icon"
-          class="icon-[material-symbols--account-tree-rounded] md:hidden"
-          style="width: 1.5em; height: 1.5em"
+          class="icon-[material-symbols--account-tree-rounded] md:hidden w-[1.5em] h-[1.5em]"
         ></span>
       `;
     }
@@ -223,6 +224,7 @@ export class SearchComponent extends BaseComponent {
    * Callback for when the component is disconnected from the DOM.
    */
   disconnectedCallback(): void {
+    super.disconnectedCallback();
     if (this.debounceTimer) {
       clearTimeout(this.debounceTimer);
     }

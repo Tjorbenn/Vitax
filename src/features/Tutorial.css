@@ -1,0 +1,77 @@
+.driver-popover {
+  background-color: var(--color-base-100) !important;
+  color: var(--color-base-content) !important;
+  border: var(--border, 1px) solid var(--color-base-300) !important;
+  border-radius: var(--radius-box, 0.5rem) !important;
+  box-shadow: 0 4px 16px oklch(0% 0 0 / 0.25) !important;
+
+  font-family: inherit;
+
+  max-width: min(300px, calc(100vw - 24px)) !important;
+}
+
+.driver-popover * {
+  font-family: inherit;
+}
+
+.driver-popover-title {
+  color: var(--color-base-content);
+}
+
+.driver-popover-description {
+  color: color-mix(in oklch, var(--color-base-content) 85%, transparent);
+  overflow-wrap: anywhere;
+}
+
+.driver-popover-close-btn {
+  color: color-mix(in oklch, var(--color-base-content) 45%, transparent) !important;
+}
+
+.driver-popover-close-btn:hover,
+.driver-popover-close-btn:focus {
+  color: var(--color-base-content) !important;
+}
+
+.driver-popover-progress-text {
+  color: color-mix(in oklch, var(--color-base-content) 60%, transparent) !important;
+}
+
+.driver-popover-footer-btn {
+  background-color: var(--color-base-200) !important;
+  color: var(--color-base-content) !important;
+  border: var(--border, 1px) solid var(--color-base-300) !important;
+  border-radius: var(--radius-field, 0.5rem) !important;
+}
+
+.driver-popover-footer-btn:hover,
+.driver-popover-footer-btn:focus {
+  background-color: var(--color-base-300) !important;
+}
+
+.driver-popover-next-btn {
+  background-color: var(--color-primary) !important;
+  color: var(--color-primary-content) !important;
+  border-color: var(--color-primary) !important;
+}
+
+.driver-popover-next-btn:hover,
+.driver-popover-next-btn:focus {
+  background-color: color-mix(in oklch, var(--color-primary) 88%, black) !important;
+  border-color: color-mix(in oklch, var(--color-primary) 88%, black) !important;
+}
+
+.driver-popover-arrow-side-left {
+  border-left-color: var(--color-base-100) !important;
+}
+
+.driver-popover-arrow-side-right {
+  border-right-color: var(--color-base-100) !important;
+}
+
+.driver-popover-arrow-side-top {
+  border-top-color: var(--color-base-100) !important;
+}
+
+.driver-popover-arrow-side-bottom {
+  border-bottom-color: var(--color-base-100) !important;
+}

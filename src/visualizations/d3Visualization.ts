@@ -4,7 +4,13 @@ import * as State from "../core/State";
 import * as TaxonomyService from "../services/TaxonomyService";
 import { VisualizationType } from "../types/Application";
 import { Taxon, TaxonomyTree, type LeanTaxon } from "../types/Taxonomy";
-import { getThemeColors, resolveThemeColor, ThemeColor } from "../utility/Theme";
+import {
+  getThemeColors,
+  resolveThemeColor,
+  subscribeToThemeColors,
+  ThemeColor,
+} from "../utility/Theme";
+import * as VisualizationStyle from "./VisualizationStyle";
 //#endregion
 
 /**
@@ -56,6 +62,7 @@ export abstract class D3Visualization {
   protected themeSubscription?: () => void;
   protected filterSubscription?: () => void;
   private currentTree?: TaxonomyTree;
+  protected styleRuleIds: string[] = [];
 
   /**
    * On construction, we initialize the SVG layer, set up subscriptions to state changes and determine the dimensions of the visualization area.
@@ -72,13 +79,26 @@ export abstract class D3Visualization {
     this.width = bbox.width || 800;
     this.height = bbox.height || 600;
 
-    this.themeSubscription = State.subscribeToTheme(() => {
-      this.safeUpdate();
-    });
+    VisualizationStyle.init();
 
     this.filterSubscription = State.subscribeToOnlyGenomic(() => {
       this.safeUpdate();
     });
+
+    this.themeSubscription = subscribeToThemeColors(() => {
+      this.safeUpdate();
+    });
+  }
+
+  /**
+   * Add a style rule and track it for later removal upon disposal.
+   * @param rule - The style rule to add.
+   */
+  protected addStyleRule(rule: VisualizationStyle.StyleRule): void {
+    VisualizationStyle.addRule(rule);
+    if (!this.styleRuleIds.includes(rule.id)) {
+      this.styleRuleIds.push(rule.id);
+    }
   }
 
   /**
@@ -125,6 +145,7 @@ export abstract class D3Visualization {
     const leanRoot: LeanTaxon = tree.root.lean;
     this.root = d3.hierarchy<LeanTaxon>(leanRoot);
     this.genomeSumCache.clear();
+    this.initializeGenomeScale();
     this.safeUpdate();
   }
 
@@ -282,7 +303,9 @@ export abstract class D3Visualization {
           .filter((child): child is d3.HierarchyNode<LeanTaxon> => child !== undefined);
 
         if (filteredChildren.length !== node.children.length) {
-          const nodeWithHidden = node as typeof node & { _children?: typeof node.children };
+          const nodeWithHidden = node as typeof node & {
+            _children?: typeof node.children;
+          };
           nodeWithHidden._children = node.children;
           node.children = filteredChildren.length > 0 ? filteredChildren : undefined;
         }
@@ -300,7 +323,9 @@ export abstract class D3Visualization {
         .filter((child): child is d3.HierarchyNode<LeanTaxon> => child !== undefined);
 
       // Update in place (maintains object reference)
-      const nodeWithHidden = node as typeof node & { _children?: typeof node.children };
+      const nodeWithHidden = node as typeof node & {
+        _children?: typeof node.children;
+      };
       if (filteredChildren.length !== node.children.length) {
         nodeWithHidden._children = node.children;
         node.children = filteredChildren.length > 0 ? filteredChildren : undefined;
@@ -325,6 +350,11 @@ export abstract class D3Visualization {
    * @returns CSS color string.
    */
   protected getNodeFill(node: d3.HierarchyNode<LeanTaxon>): string {
+    const style = this.resolveNodeStyle(node);
+    if (typeof style.fill === "string") {
+      return style.fill;
+    }
+
     const themeVars = getThemeColors();
 
     if (node.data.id === 0) {
@@ -335,9 +365,17 @@ export abstract class D3Visualization {
       return this.getColorFromTheme(node.data.annotation.color);
     }
 
-    // isLeaf from API indicates if node has children in taxonomy
     const isLeaf = node.data.isLeaf === true;
     return isLeaf ? themeVars.neutral : themeVars.base200;
+  }
+
+  /**
+   * Resolve all style properties for a given node using the active style rules.
+   * @param node - The hierarchy node to resolve styles for.
+   * @returns A record of style properties to their resolved values.
+   */
+  protected resolveNodeStyle(node: d3.HierarchyNode<LeanTaxon>): Record<string, string | number> {
+    return VisualizationStyle.getNodeStyle(node);
   }
 
   /**
@@ -533,6 +571,10 @@ export abstract class D3Visualization {
    * Must be called when the visualization is no longer needed to prevent memory leaks.
    */
   public dispose(): void {
+    for (const ruleId of this.styleRuleIds) {
+      VisualizationStyle.removeRule(ruleId);
+    }
+    this.styleRuleIds = [];
     if (this.treeSubscription) {
       this.treeSubscription();
       this.treeSubscription = undefined;

@@ -36,6 +36,7 @@ export class Icon extends HTMLSpanElement {
 
   /**
    * Sets the icon class and re-initializes.
+   * @param iconClass - The CSS class for the icon.
    */
   public set iconClass(iconClass: IconClass) {
     this.class = iconClass;
@@ -44,6 +45,7 @@ export class Icon extends HTMLSpanElement {
 
   /**
    * Sets the icon size and re-initializes.
+   * @param size - The size of the icon (e.g. "2em").
    */
   public set iconSize(size: string) {
     this.size = size;
@@ -51,7 +53,22 @@ export class Icon extends HTMLSpanElement {
   }
 }
 
-export const RankIcons: Record<Rank, IconClass> = {
+export const FLOATING_CARD_CLASSES = [
+  "card",
+  "card-xs",
+  "card-border",
+  "bg-base-100/40",
+  "bounce",
+  "animated",
+  "backdrop-blur-sm",
+  "flex",
+  "items-center",
+  "justify-center",
+  "size-10",
+  "shadow-lg",
+];
+
+export const RANK_ICONS: Record<Rank, IconClass> = {
   [Rank.None]: "icon-[material-symbols--question-mark-rounded]",
   [Rank.Unknown]: "icon-[material-symbols--question-mark-rounded]",
   [Rank.Domain]: "icon-[material-symbols--domain-rounded]",
@@ -81,7 +98,7 @@ export const RankIcons: Record<Rank, IconClass> = {
   [Rank.Section]: "icon-[material-symbols--area-chart-rounded]",
 };
 
-export const LinkSourceIcons: Record<LinkSource, IconClass> = {
+export const LINK_SOURCE_ICONS: Record<LinkSource, IconClass> = {
   [LinkSource.Wikipedia]: "icon-[simple-icons--wikipedia]",
   [LinkSource.GBIF]: "icon-[material-symbols--nest-eco-leaf-rounded]",
   [LinkSource.ViralZone]: "icon-[material-symbols--coronavirus]",
@@ -107,11 +124,11 @@ export function getRankIcon(rank?: string | Rank, size = "2em"): Icon {
   }
 
   if (!rank) {
-    return createIcon(RankIcons[Rank.Unknown]);
+    return createIcon(RANK_ICONS[Rank.Unknown]);
   }
 
   const input = (typeof rank === "string" ? rank : String(rank)).toLowerCase();
-  // Lookup-Map: value->Rank und key->Rank jeweils lowercase
+  // Lookup-Map: value->Rank and key->Rank lowercase
   const valueToRank: Record<string, Rank> = {};
   const keyToRank: Record<string, Rank> = {};
   (Object.keys(Rank) as (keyof typeof Rank)[]).forEach((key) => {
@@ -120,7 +137,7 @@ export function getRankIcon(rank?: string | Rank, size = "2em"): Icon {
     valueToRank[(value as unknown as string).toLowerCase()] = value as unknown as Rank;
   });
   const hit = valueToRank[input] ?? keyToRank[input] ?? Rank.Unknown;
-  return createIcon(RankIcons[hit]);
+  return createIcon(RANK_ICONS[hit]);
 }
 
 /**

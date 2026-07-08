@@ -1,45 +1,53 @@
-<div class="drawer size-fit">
-  <input id="list-drawer" type="checkbox" class="drawer-toggle" aria-hidden="true" />
-  <div class="drawer-content">
-    <label
-      id="drawer-button"
-      for="list-drawer"
-      data-tip="Show Taxon List"
-      class="btn btn-primary btn-square drawer-button animated bounce tooltip tooltip-right hidden drop-shadow-lg starting:opacity-0"
-      aria-label="Show taxon list"
-      aria-controls="list-content"
-    >
-      <span
-        id="drawer-icon"
-        class="icon-[material-symbols--left-panel-open-rounded] animated text-xl"
-        aria-hidden="true"
-      ></span>
-    </label>
-  </div>
-  <div class="drawer-side z-10 flex items-center justify-start" role="complementary">
-    <label for="list-drawer" class="drawer-overlay pointer-events-none" aria-hidden="true"></label>
+<div class="drawer drawer-start h-full w-0 overflow-visible">
+  <input id="list-drawer" type="checkbox" class="drawer-toggle peer" aria-hidden="true" />
+
+  <div class="drawer-side z-50 h-full" role="complementary">
+    <label for="list-drawer" class="drawer-overlay" aria-hidden="true"></label>
     <div
-      class="card card-border animated bg-base-300/60 hide-scrollbar relative z-20 m-4 h-fit max-h-[calc(100vh-2rem)] w-fit max-w-full overflow-auto rounded-2xl p-4 shadow-2xl backdrop-blur-sm"
+      class="bg-base-100/95 border-base-300 hide-scrollbar flex h-full w-max max-w-[80vw] min-w-80 flex-col overflow-hidden overscroll-none border-r shadow-2xl backdrop-blur-xl transition-transform duration-300 ease-in-out"
       role="dialog"
       aria-labelledby="list-title"
     >
-      <label
-        for="list-drawer"
-        aria-label="Close sidebar"
-        class="btn btn-sm btn-circle btn-ghost absolute top-2 right-2 z-10"
+      <div
+        class="bg-base-200/50 border-base-300 flex items-center justify-between border-b px-6 py-5"
       >
-        <span
-          class="icon-[material-symbols--left-panel-close-rounded]"
-          style="width: 1.5em; height: 1.5em"
-          aria-hidden="true"
-        ></span>
-      </label>
-      <ul
-        id="list-content"
-        class="menu card-body rounded-lg p-0"
-        role="list"
-        aria-label="Taxa in current view"
-      ></ul>
+        <h2
+          id="list-title"
+          class="text-base-content/90 m-0 flex items-center gap-3 font-sans text-xl font-bold"
+        >
+          <div class="bg-primary/10 flex h-10 w-10 items-center justify-center rounded-xl">
+            <span class="icon-[material-symbols--lists-rounded] text-primary text-2xl"></span>
+          </div>
+          Taxon List
+        </h2>
+        <label for="list-drawer" aria-label="Close sidebar" class="btn btn-sm btn-circle btn-ghost">
+          <span class="icon-[material-symbols--close-rounded] text-xl" aria-hidden="true"></span>
+        </label>
+      </div>
+      <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4">
+        <ul
+          id="list-content"
+          class="menu menu-md w-full gap-1 p-0"
+          role="list"
+          aria-label="Taxa in current view"
+        ></ul>
+      </div>
     </div>
   </div>
+  <label
+    id="drawer-button"
+    for="list-drawer"
+    class="btn btn-primary btn-md fixed top-1/2 left-0 z-60 h-32 w-8 -translate-y-1/2 cursor-pointer rounded-l-none rounded-r-2xl p-0 shadow-lg transition-all duration-300 ease-in-out peer-checked:translate-x-[var(--drawer-width,20rem)] hover:w-10 hover:pr-2 starting:opacity-0 peer-checked:[&_#drawer-icon]:rotate-180"
+    aria-label="Toggle taxon list"
+    aria-controls="list-content"
+  >
+    <div class="flex h-full w-full flex-col items-center justify-center gap-4">
+      <span
+        id="drawer-icon"
+        class="icon-[material-symbols--list-alt-rounded] rotate-90 text-2xl transition-transform duration-500"
+        aria-hidden="true"
+      ></span>
+      <span class="font-sans text-xs font-bold [writing-mode:vertical-lr]">Taxa</span>
+    </div>
+  </label>
 </div>

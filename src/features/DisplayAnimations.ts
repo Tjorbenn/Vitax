@@ -1,9 +1,50 @@
+type AnimationState = {
+  hideTimer?: number;
+  hideResolve?: () => void;
+  hidePromise?: Promise<void>;
+  onEndListener?: (e: Event) => void;
+};
+
+const activeAnimations = new WeakMap<HTMLElement, AnimationState>();
+
+/**
+ * Retrieve the active animation state for a given element.
+ * @param element - The HTML element.
+ * @returns The animation state object.
+ */
+function getAnimationState(element: HTMLElement): AnimationState {
+  let state = activeAnimations.get(element);
+  if (!state) {
+    state = {};
+    activeAnimations.set(element, state);
+  }
+  return state;
+}
+
 /**
  * Animate an element entering the DOM.
  * @param element The element to animate.
  */
 export function enter(element: HTMLElement): void {
-  element.classList.remove("hidden", "opacity-0");
+  const state = activeAnimations.get(element);
+  if (state) {
+    if (state.hideTimer !== undefined) {
+      clearTimeout(state.hideTimer);
+    }
+    if (state.onEndListener) {
+      element.removeEventListener("transitionend", state.onEndListener, true);
+      element.removeEventListener("animationend", state.onEndListener, true);
+    }
+    const resolve = state.hideResolve;
+    activeAnimations.delete(element);
+
+    element.classList.remove("hidden", "opacity-0");
+    if (resolve) {
+      resolve();
+    }
+  } else {
+    element.classList.remove("hidden", "opacity-0");
+  }
 }
 
 /**
@@ -18,13 +59,33 @@ export function hide(
   exitClasses: string[] = ["opacity-0"],
   timeout = 300,
 ): Promise<void> {
-  return new Promise<void>((resolve) => {
+  const state = getAnimationState(element);
+
+  if (state.hidePromise) {
+    return state.hidePromise;
+  }
+
+  if (element.classList.contains("hidden")) {
+    return Promise.resolve();
+  }
+
+  state.hidePromise = new Promise<void>((resolve) => {
     if (!element.isConnected) {
+      const currentState = activeAnimations.get(element);
+      if (currentState) {
+        currentState.hidePromise = undefined;
+      }
       resolve();
       return;
     }
 
     requestAnimationFrame(() => {
+      const currentState = activeAnimations.get(element);
+      if (currentState?.hidePromise === undefined) {
+        resolve();
+        return;
+      }
+
       element.classList.add(...exitClasses);
 
       let done = false;
@@ -37,11 +98,21 @@ export function hide(
           return;
         }
         done = true;
-        clearTimeout(fallbackTimer);
-        element.removeEventListener("transitionend", onEnd, true);
-        element.removeEventListener("animationend", onEnd, true);
-        if (element.isConnected) {
-          element.classList.add("hidden");
+
+        const latestState = activeAnimations.get(element);
+        if (latestState) {
+          if (latestState.hideTimer !== undefined) {
+            clearTimeout(latestState.hideTimer);
+          }
+          if (latestState.onEndListener) {
+            element.removeEventListener("transitionend", latestState.onEndListener, true);
+            element.removeEventListener("animationend", latestState.onEndListener, true);
+          }
+          activeAnimations.delete(element);
+
+          if (element.isConnected) {
+            element.classList.add("hidden");
+          }
         }
         resolve();
       }
@@ -57,6 +128,7 @@ export function hide(
         finish();
       }
 
+      currentState.onEndListener = onEnd;
       element.addEventListener("transitionend", onEnd, {
         capture: true,
         once: true,
@@ -70,9 +142,12 @@ export function hide(
       if (!timeoutMs) {
         timeoutMs = timeout;
       }
-      const fallbackTimer = setTimeout(finish, timeoutMs + 50);
+      currentState.hideResolve = finish;
+      currentState.hideTimer = window.setTimeout(finish, timeoutMs + 50);
     });
   });
+
+  return state.hidePromise;
 }
 
 /**

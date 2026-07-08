@@ -1,3 +1,5 @@
+import { optionalElement } from "../utility/Dom";
+
 /**
  * Handle global keyboard shortcuts.
  * @param event - The keyboard event.
@@ -15,7 +17,7 @@ function handleCtrlK(event: KeyboardEvent): void {
   if (event.ctrlKey && event.key === "k") {
     event.preventDefault();
 
-    const input = document.querySelector<HTMLInputElement>("#search-input");
+    const input = optionalElement<HTMLInputElement>(document, "#search-input");
     if (!input) {
       return;
     }
@@ -30,7 +32,7 @@ function handleCtrlK(event: KeyboardEvent): void {
  */
 function handleEscape(event: KeyboardEvent): void {
   if (event.key === "Escape") {
-    const input = document.querySelector<HTMLInputElement>("#search-input");
+    const input = optionalElement<HTMLInputElement>(document, "#search-input");
     if (input) {
       input.value = "";
       input.dispatchEvent(new Event("input"));

@@ -3,6 +3,8 @@ import { VisualizationType } from "../../types/Application";
 import type { LeanTaxon } from "../../types/Taxonomy";
 import { LongPressDetector } from "../../utility/TouchGestures";
 import { D3Visualization, type D3VisualizationExtents } from "../d3Visualization";
+import * as VisualizationStyle from "../VisualizationStyle";
+import { optionalElement } from "../../utility/Dom";
 
 /**
  * Circle Packing Visualization Renderer.
@@ -71,6 +73,8 @@ export class D3Pack extends D3Visualization {
       }
     };
     window.addEventListener("keydown", this.keydownHandler, { capture: false });
+
+    this.addStyleRule(VisualizationStyle.createGenomeStrokeRule([0.5, 6], "Node outline"));
 
     this.activateStateSubscription();
   }
@@ -171,7 +175,7 @@ export class D3Pack extends D3Visualization {
         event.stopPropagation();
         this.setActiveTaxon(node.data.id);
         const el = event.currentTarget as SVGGElement;
-        const circle = el.querySelector("circle");
+        const circle = optionalElement(el, "circle");
         const bbox = (circle ?? el).getBoundingClientRect();
         this.handlers?.onHover?.({
           id: node.data.id,
@@ -189,7 +193,7 @@ export class D3Pack extends D3Visualization {
     this.longPress.attachTo(nodeEnter, (_event, node, target: Element) => {
       this.setActiveTaxon(node.data.id);
       const el = target as SVGGElement;
-      const circle = el.querySelector("circle");
+      const circle = optionalElement(el, "circle");
       const bbox = (circle ?? el).getBoundingClientRect();
       this.handlers?.onHover?.({
         id: node.data.id,
@@ -204,9 +208,6 @@ export class D3Pack extends D3Visualization {
 
     const theme = this.getThemeColors();
 
-    // Create stroke width scale based on genome counts
-    const strokeWidthScale = this.createGenomeStrokeScale([0.5, 6]);
-
     nodeEnter
       .append("circle")
       .attr("r", 0)
@@ -218,7 +219,8 @@ export class D3Pack extends D3Visualization {
       .attr("stroke", theme.text)
       .attr("stroke-opacity", 0.6)
       .attr("stroke-width", (node) => {
-        return strokeWidthScale(this.getGenomeTotal(node.data));
+        const style = this.resolveNodeStyle(node);
+        return typeof style.strokeWidth === "number" ? style.strokeWidth : 1;
       })
       .on("mouseover", function () {
         d3.select(this as unknown as SVGCircleElement).attr("stroke-opacity", 0.95);
@@ -263,7 +265,8 @@ export class D3Pack extends D3Visualization {
       .select<SVGCircleElement>("circle")
       .attr("fill", (node) => this.getNodeFill(node))
       .attr("stroke-width", (node) => {
-        return strokeWidthScale(this.getGenomeTotal(node.data));
+        const style = this.resolveNodeStyle(node);
+        return typeof style.strokeWidth === "number" ? style.strokeWidth : 1;
       });
 
     const labelSel = this.gLabels
@@ -495,8 +498,7 @@ export class D3Pack extends D3Visualization {
   ): void {
     const focus = this.focus;
     const theme = this.getThemeColors();
-    const strokeWidthScale = this.createGenomeStrokeScale([0.5, 6]);
-    const getGenomeTotal = this.getGenomeTotal.bind(this);
+    const resolveStyle = this.resolveNodeStyle.bind(this);
 
     nodeSel
       .style("pointer-events", (node) =>
@@ -509,10 +511,12 @@ export class D3Pack extends D3Visualization {
     nodeSel.select<SVGCircleElement>("circle").each(function (datum) {
       const circle = d3.select(this);
       const circleNode = circle.node();
+      const style = resolveStyle(datum);
+      const baseWidth = typeof style.strokeWidth === "number" ? style.strokeWidth : 1;
+
       if (datum === focus) {
         // Focused node
         const baseFill = circleNode?.getAttribute("data-base-fill") ?? "#cccccc";
-        const baseWidth = strokeWidthScale(getGenomeTotal(datum.data));
         const focusWidth = Math.max(baseWidth, 3); // Ensure minimum width for visibility
         circle
           .attr("fill", baseFill)
@@ -529,7 +533,7 @@ export class D3Pack extends D3Visualization {
           .attr("fill", baseFill)
           .attr("fill-opacity", 1)
           .attr("stroke", theme.text)
-          .attr("stroke-width", strokeWidthScale(getGenomeTotal(datum.data)))
+          .attr("stroke-width", baseWidth)
           .attr("stroke-opacity", 0.6)
           .attr("stroke-dasharray", null)
           .style("filter", null);
@@ -587,6 +591,7 @@ export class D3Pack extends D3Visualization {
    * Disposes of the visualization and removes event listeners.
    */
   public override dispose(): void {
+    this.longPress.cleanup();
     if (this.keydownHandler) {
       window.removeEventListener("keydown", this.keydownHandler, { capture: false });
       this.keydownHandler = undefined;
@@ -613,14 +618,15 @@ export class D3Pack extends D3Visualization {
     }
 
     const theme = this.getThemeColors();
-    const strokeWidthScale = this.createGenomeStrokeScale([0.5, 6]);
 
     nodeSelection
       .select<SVGCircleElement>("circle")
       .attr("data-active", "true")
       .attr("stroke", theme.accent)
       .attr("stroke-width", (node) => {
-        return Math.max(3, strokeWidthScale(this.getGenomeTotal(node.data)) * 1.5);
+        const style = this.resolveNodeStyle(node);
+        const baseWidth = typeof style.strokeWidth === "number" ? style.strokeWidth : 1;
+        return Math.max(3, baseWidth * 1.5);
       })
       .attr("stroke-opacity", 1)
       .style("filter", `drop-shadow(0 0 6px ${theme.accent})`);
@@ -639,14 +645,14 @@ export class D3Pack extends D3Visualization {
       .filter((node) => node.data.id === this.activeTaxonId);
 
     const theme = this.getThemeColors();
-    const strokeWidthScale = this.createGenomeStrokeScale([0.5, 6]);
 
     nodeSelection
       .select<SVGCircleElement>("circle")
       .attr("data-active", null)
       .attr("stroke", theme.text)
       .attr("stroke-width", (node) => {
-        return strokeWidthScale(this.getGenomeTotal(node.data));
+        const style = this.resolveNodeStyle(node);
+        return typeof style.strokeWidth === "number" ? style.strokeWidth : 1;
       })
       .attr("stroke-opacity", 0.3)
       .style("filter", null);

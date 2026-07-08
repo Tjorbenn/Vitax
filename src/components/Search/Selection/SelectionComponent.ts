@@ -35,41 +35,47 @@ export class SelectionComponent extends BaseComponent {
    */
   constructor() {
     super(HTMLtemplate);
-
-    this.classList.add(
-      "pointer-events-auto",
-      "hidden",
-      "h-fit",
-      "min-h-8",
-      "w-8/12",
-      "animated",
-      "card",
-      "card-border",
-      "card-xs",
-      "bg-base-100/40",
-      "backdrop-blur-sm",
-      "shadow-lg",
-    );
-
-    this.loadTemplate();
   }
 
   /**
    * Sets up component elements and subscriptions.
    */
   initialize(): void {
+    this.classList.add(
+      "flex",
+      "items-center",
+      "pointer-events-auto",
+      "hidden",
+      "h-fit",
+      "min-h-10",
+      "w-full",
+      "animated",
+      "rounded-xl",
+      "bg-base-100/40",
+      "backdrop-blur-sm",
+      "border",
+      "border-base-300",
+      "shadow-lg",
+      "px-3",
+      "py-1.5",
+    );
     this.container = requireElement<HTMLDivElement>(this, "#selection-container");
-    this.addSubscription(State.subscribeToQuery((query) => void this.onChange(query)));
+    this.addSubscription(
+      State.subscribeToQuery((query) => {
+        this.onChange(query);
+      }),
+    );
   }
 
   /**
    * Handler for query changes.
    * Updates visibility and badges.
+   * Badges are painted synchronously so that the most recent query change always wins.
    * @param query The current list of selected taxa.
    */
-  public async onChange(query: Taxon[]) {
-    await this.setVisibility();
+  public onChange(query: Taxon[]): void {
     this.updateBadges(query);
+    void this.setVisibility();
   }
 
   /**
@@ -119,30 +125,50 @@ export class SelectionComponent extends BaseComponent {
    * @param suggestion The suggestion to create a badge for.
    */
   private createBadge(suggestion: Suggestion): void {
-    const badge = document.createElement("span");
-    const nameSpan = document.createElement("span");
-    const idSpan = document.createElement("span");
-
+    const badge = document.createElement("div");
     badge.classList.add(
-      "animated",
       "badge",
+      "badge-sm",
       "badge-primary",
-      "shadow-md",
-      "h-fit",
+      "badge-soft",
+      "h-auto",
+      "py-0.5",
+      "px-2",
+      "gap-1",
       "cursor-pointer",
-      "hover:badge-dash",
+      "animated",
+      "bounce",
+      "group",
+      "hover:shadow-md",
+      "border-primary/20",
+      "flex",
+      "items-center",
     );
     badge.dataset.name = suggestion.name;
     badge.dataset.id = suggestion.id.toString();
 
+    const nameSpan = document.createElement("span");
     nameSpan.textContent = suggestion.name;
-    nameSpan.classList.add("pointer-events-none");
+    nameSpan.classList.add("font-semibold", "text-xs", "pointer-events-none");
+
+    const idSpan = document.createElement("span");
     idSpan.textContent = suggestion.id.toString();
-    idSpan.classList.add("pointer-events-none");
+    idSpan.classList.add("font-mono", "text-[10px]", "opacity-50", "pointer-events-none");
+
+    const closeIcon = document.createElement("span");
+    closeIcon.classList.add(
+      "icon-[material-symbols--close-rounded]",
+      "w-3",
+      "h-3",
+      "text-primary/50",
+      "group-hover:text-primary",
+      "transition-colors",
+      "pointer-events-none",
+    );
 
     badge.appendChild(nameSpan);
-    badge.appendChild(document.createTextNode("|"));
     badge.appendChild(idSpan);
+    badge.appendChild(closeIcon);
 
     badge.addEventListener("click", this.onClickSelection.bind(this));
 
@@ -155,16 +181,16 @@ export class SelectionComponent extends BaseComponent {
    * @param event - The mouse event triggered by clicking the badge.
    */
   private onClickSelection(event: MouseEvent): void {
-    const target = event.target as HTMLElement;
-    const name = target.dataset.name;
-    const id = target.dataset.id;
+    const badge = event.currentTarget as HTMLElement;
+    const name = badge.dataset.name;
+    const id = badge.dataset.id;
 
     if (!name || !id) {
       throw new Error("Selection is missing name or id");
     }
 
     const taxon = State.getQuery().find((selectedTaxon) => {
-      return selectedTaxon.name === name && selectedTaxon.id === parseInt(id);
+      return selectedTaxon.name === name && selectedTaxon.id === Number(id);
     });
     if (taxon) {
       this.removeSelection(taxon);

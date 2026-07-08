@@ -3,19 +3,14 @@
     class="card card-border animated bounce bounce-within join flex w-full max-w-full flex-row shadow-lg"
     aria-label="Taxonomy search"
   >
-    <vitax-taxonomy-type
-      class="join-item"
-      role="group"
-      aria-label="Select taxonomy type"
-    ></vitax-taxonomy-type>
+    <vitax-taxonomy-type></vitax-taxonomy-type>
     <label
       id="search-input-label"
       class="input join-item bg-base-100/40 grow border-none !shadow-none backdrop-blur-sm focus-within:outline-none"
       for="search-input"
     >
       <span
-        class="icon-[material-symbols--search-rounded]"
-        style="width: 1.5em; height: 1.5em"
+        class="icon-[material-symbols--search-rounded] h-[1.5em] w-[1.5em]"
         aria-hidden="true"
       ></span>
       <input
@@ -26,10 +21,10 @@
         aria-autocomplete="list"
         aria-controls="suggestions-body"
       />
-      <div class="hidden md:flex" aria-label="Keyboard shortcut Control K">
-        <kbd class="kbd kbd-sm bg-accent text-accent-content">CTRL</kbd>
-        +
-        <kbd class="kbd kbd-sm bg-accent text-accent-content">K</kbd>
+      <div class="hidden items-center gap-1 md:flex" aria-label="Keyboard shortcut Control K">
+        <kbd class="kbd kbd-sm bg-neutral text-neutral-content">CTRL</kbd>
+        <span>+</span>
+        <kbd class="kbd kbd-sm bg-neutral text-neutral-content">K</kbd>
       </div>
     </label>
     <button
@@ -41,8 +36,7 @@
       <span id="visualize-text" class="hidden md:inline">Visualize</span>
       <span
         id="visualize-icon"
-        class="icon-[material-symbols--account-tree-rounded] md:hidden"
-        style="width: 1.5em; height: 1.5em"
+        class="icon-[material-symbols--account-tree-rounded] h-[1.5em] w-[1.5em] md:hidden"
         aria-hidden="true"
       ></span>
     </button>

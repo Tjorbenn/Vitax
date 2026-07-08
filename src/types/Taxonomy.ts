@@ -273,6 +273,7 @@ export class Taxon {
 
   /**
    * Sets the accessions for this taxon.
+   * @param accessions - The array of Accession objects to set.
    */
   public set accessions(accessions: Accession[]) {
     this._accessions = accessions;
@@ -606,7 +607,7 @@ export function TaxaToTree(taxa: Taxon[]): TaxonomyTree {
   for (const taxon of taxa) {
     taxon.addChildren(
       taxa.filter((child) => {
-        return child.parentId === taxon.id;
+        return child.parentId === taxon.id && child.id !== taxon.id;
       }),
     );
   }

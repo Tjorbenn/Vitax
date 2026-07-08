@@ -1,0 +1,159 @@
+<dialog class="modal modal-bottom sm:modal-middle">
+  <div
+    class="modal-box flex max-h-[calc(100vh-5em)] max-w-md flex-col overflow-hidden p-0 shadow-2xl"
+  >
+    <div
+      class="border-base-300 bg-base-200/50 flex shrink-0 items-center justify-between border-b px-6 pt-6 pb-4"
+    >
+      <h3 class="m-0 flex items-center gap-2.5">
+        <span class="icon-[material-symbols--settings-rounded] text-primary text-2xl"></span>
+        <span class="text-primary font-sans text-xl font-bold">Settings</span>
+      </h3>
+      <form method="dialog">
+        <button
+          id="settings-modal-close"
+          class="btn btn-ghost btn-sm btn-circle"
+          aria-label="Close settings"
+        >
+          <span class="icon-[material-symbols--close-rounded] text-lg opacity-60"></span>
+        </button>
+      </form>
+    </div>
+
+    <div
+      class="hide-scrollbar min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-contain px-6 pt-6 pb-6"
+    >
+      <section>
+        <span class="mb-2 ml-1 block text-xs font-semibold opacity-40">Appearance</span>
+        <ul class="list bg-base-200 card card-border">
+          <li class="list-row animated hover:bg-base-300 items-center gap-4 px-4 py-3">
+            <span
+              class="icon-[material-symbols--style] text-primary h-[1.5em] w-[1.5em]"
+              aria-hidden="true"
+            ></span>
+            <div class="flex min-w-0 grow flex-col">
+              <span class="text-sm font-semibold">Theme</span>
+            </div>
+            <label class="btn btn-primary btn-circle btn-sm swap swap-rotate">
+              <input id="theme-toggle" type="checkbox" />
+              <span class="swap-off icon-[material-symbols--light-mode-rounded] text-lg"></span>
+              <span class="swap-on icon-[material-symbols--dark-mode-rounded] text-lg"></span>
+            </label>
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <span class="mb-2 ml-1 block text-xs font-semibold opacity-40">Actions</span>
+        <ul class="list bg-base-200 card card-border">
+          <li class="list-row animated hover:bg-base-300 items-center gap-4 px-4 py-3">
+            <span
+              class="icon-[material-symbols--interactive-space-rounded] text-accent h-[1.5em] w-[1.5em]"
+              aria-hidden="true"
+            ></span>
+            <div class="flex min-w-0 grow flex-col">
+              <span class="text-sm font-semibold">Run Tutorial</span>
+            </div>
+            <button id="start-tutorial-btn" class="btn btn-accent btn-xs">Start</button>
+          </li>
+          <li class="list-row animated hover:bg-base-300 items-center gap-4 px-4 py-3">
+            <span
+              class="icon-[material-symbols--reset-wrench-rounded] text-error h-[1.5em] w-[1.5em]"
+              aria-hidden="true"
+            ></span>
+            <div class="flex min-w-0 grow flex-col">
+              <span class="text-sm font-semibold">Factory Reset</span>
+            </div>
+            <button id="reset-app-btn" class="btn btn-error btn-xs">Reset</button>
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <span class="mb-2 ml-1 block text-xs font-semibold opacity-40">About</span>
+        <ul class="list bg-base-200 card card-border">
+          <li class="list-row animated hover:bg-base-300 w-full items-center px-4 py-3">
+            <div class="flex flex-1 items-center gap-4">
+              <span
+                class="icon-[material-symbols--numbers-rounded] h-[1.5em] w-[1.5em]"
+                aria-hidden="true"
+              ></span>
+              <span class="font-mono text-sm font-semibold" id="vitax-version-text"
+                >Loading...</span
+              >
+            </div>
+            <div class="flex flex-1 items-center justify-end gap-4">
+              <span
+                class="icon-[material-symbols--graph-8] h-[1.5em] w-[1.5em]"
+                aria-hidden="true"
+              ></span>
+              <span class="font-mono text-sm font-semibold" id="vitax-commit-text">Loading...</span>
+            </div>
+          </li>
+          <li class="list-row animated hover:bg-base-300 items-center gap-4 px-4 py-3">
+            <span
+              class="icon-[material-symbols--id-card-rounded] h-[1.5em] w-[1.5em]"
+              aria-hidden="true"
+            ></span>
+            <div class="flex min-w-0 grow flex-col">
+              <span class="text-sm font-semibold">Created by Tjorben Nawroth</span>
+            </div>
+          </li>
+          <li class="list-row animated hover:bg-base-300 items-center gap-4 px-4 py-3">
+            <span class="icon-[mdi--github] h-[1.5em] w-[1.5em]" aria-hidden="true"></span>
+            <div class="flex min-w-0 grow flex-col">
+              <span class="text-sm font-semibold">GitHub</span>
+            </div>
+            <a
+              href="https://github.com/Tjorbenn/Vitax"
+              target="_blank"
+              rel="noopener"
+              class="btn btn-ghost btn-sm btn-circle"
+            >
+              <span class="icon-[material-symbols--open-in-new-rounded] text-lg opacity-60"></span>
+            </a>
+          </li>
+          <li class="list-row animated hover:bg-base-300 items-center gap-4 px-4 py-3">
+            <span
+              class="icon-[material-symbols--groups-rounded] h-[1.5em] w-[1.5em]"
+              aria-hidden="true"
+            ></span>
+            <div class="flex min-w-0 grow flex-col">
+              <span class="text-sm font-semibold">Research Group Bioinformatics</span>
+            </div>
+            <a
+              href="https://evolbioinf.github.io/"
+              target="_blank"
+              rel="noopener"
+              class="btn btn-ghost btn-sm btn-circle"
+            >
+              <span class="icon-[material-symbols--open-in-new-rounded] text-lg opacity-60"></span>
+            </a>
+          </li>
+          <li class="list-row animated hover:bg-base-300 items-center gap-4 px-4 py-3">
+            <span
+              class="icon-[material-symbols--location-city-rounded] h-[1.5em] w-[1.5em]"
+              aria-hidden="true"
+            ></span>
+            <div class="flex min-w-0 grow flex-col">
+              <span class="text-sm font-semibold"
+                >Max-Planck-Institute for Evolutionary Biology</span
+              >
+            </div>
+            <a
+              href="https://www.evolbio.mpg.de/"
+              target="_blank"
+              rel="noopener"
+              class="btn btn-ghost btn-sm btn-circle"
+            >
+              <span class="icon-[material-symbols--open-in-new-rounded] text-lg opacity-60"></span>
+            </a>
+          </li>
+        </ul>
+      </section>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop bg-neutral-900/40 backdrop-blur-xs">
+    <button>close</button>
+  </form>
+</dialog>

@@ -1,11 +1,12 @@
 import * as d3 from "d3";
 import { Taxon } from "../../../types/Taxonomy";
+import { getRankIcon } from "../../../types/UI";
 import { optionalElement, requireElement } from "../../../utility/Dom";
 import { BaseComponent } from "../../BaseComponent";
 import { GenomesComponent } from "../Genomes/GenomesComponent";
 import { LinksComponent } from "../Links/LinksComponent";
 import { PublicationsComponent } from "../Publications/PublicationsComponent";
-import { RanksComponent } from "../Ranks/RanksComponent";
+import { ImageComponent } from "../Image/ImageComponent";
 import HTMLtemplate from "./MetadataModalTemplate.html?raw";
 
 /**
@@ -25,7 +26,9 @@ export class TaxonModalComponent extends BaseComponent {
 
   private nameElement!: HTMLHeadingElement;
   private idElement!: HTMLSpanElement;
-  private ranksComponent?: RanksComponent;
+  private rankIconContainer!: HTMLSpanElement;
+  private rankValueElement!: HTMLSpanElement;
+  private imageComponent?: ImageComponent;
   private genomesComponent?: GenomesComponent;
   private linksComponent?: LinksComponent;
   private publicationsComponent?: PublicationsComponent;
@@ -35,7 +38,6 @@ export class TaxonModalComponent extends BaseComponent {
    */
   constructor() {
     super(HTMLtemplate);
-    this.loadTemplate();
   }
 
   /**
@@ -53,7 +55,9 @@ export class TaxonModalComponent extends BaseComponent {
   initialize(): void {
     this.nameElement = requireElement<HTMLHeadingElement>(this, "#taxon-name");
     this.idElement = requireElement<HTMLSpanElement>(this, "#taxon-id");
-    this.ranksComponent = optionalElement<RanksComponent>(this, "vitax-data-ranks");
+    this.rankIconContainer = requireElement<HTMLSpanElement>(this, "#taxon-rank-icon");
+    this.rankValueElement = requireElement<HTMLSpanElement>(this, "#taxon-rank-value");
+    this.imageComponent = optionalElement<ImageComponent>(this, "vitax-data-image");
     this.genomesComponent = optionalElement<GenomesComponent>(this, "vitax-data-genomes");
     this.linksComponent = optionalElement<LinksComponent>(this, "vitax-data-links");
     this.publicationsComponent = optionalElement<PublicationsComponent>(
@@ -79,7 +83,16 @@ export class TaxonModalComponent extends BaseComponent {
     this.nameElement.textContent = taxon.name;
     this.idElement.textContent = String(taxon.id);
 
-    this.ranksComponent?.setTaxon(taxon);
+    const rankRaw = taxon.rank;
+    const rankStr: string = rankRaw ?? "";
+    const rankDisplay = rankStr && rankStr.toLowerCase() !== "no rank" ? rankStr : "Unknown";
+    this.rankValueElement.textContent = rankDisplay;
+
+    this.rankIconContainer.innerHTML = "";
+    const icon = getRankIcon(taxon.rank, "1.2em");
+    this.rankIconContainer.appendChild(icon);
+
+    this.imageComponent?.setTaxon(taxon);
     this.genomesComponent?.setTaxon(taxon);
     if (this.linksComponent) {
       void this.linksComponent.setTaxon(taxon);
@@ -93,7 +106,7 @@ export class TaxonModalComponent extends BaseComponent {
    * Displays the modal dialog.
    */
   public show(): void {
-    const dialog = this.querySelector("dialog.modal") as HTMLDialogElement | null;
+    const dialog = optionalElement<HTMLDialogElement>(this, "dialog.modal");
     if (dialog && !dialog.open) {
       dialog.showModal();
     }
@@ -103,7 +116,7 @@ export class TaxonModalComponent extends BaseComponent {
    * Closes the modal dialog.
    */
   public hide(): void {
-    const dialog = this.querySelector("dialog.modal") as HTMLDialogElement | null;
+    const dialog = optionalElement<HTMLDialogElement>(this, "dialog.modal");
     if (dialog?.open) {
       dialog.close();
     }

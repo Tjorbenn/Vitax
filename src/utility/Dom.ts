@@ -1,3 +1,4 @@
+/* oxlint-disable no-restricted-properties */
 /**
  * Query a single element from the DOM or a parent element.
  * @param selector The CSS selector to query.

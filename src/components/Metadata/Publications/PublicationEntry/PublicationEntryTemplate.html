@@ -1,0 +1,79 @@
+<div
+  class="collapse-arrow bg-base-100 border-base-300 group collapse mb-2 rounded-xl border shadow-sm"
+>
+  <input type="radio" id="pub-accordion-input" />
+  <div
+    class="collapse-title group-hover:bg-base-200/30 flex items-center gap-3 text-base font-semibold transition-colors"
+  >
+    <div class="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
+      <span id="pub-title" class="block"></span>
+      <div
+        id="pub-journal-container"
+        class="text-base-content/60 hidden items-center gap-1.5 text-xs font-normal"
+      >
+        <span class="icon-[material-symbols--book-4-rounded] text-sm"></span>
+        <span id="pub-journal-name" class="block truncate"></span>
+      </div>
+    </div>
+    <span
+      id="pub-year"
+      class="badge badge-neutral badge-soft badge-sm hidden shrink-0 whitespace-nowrap"
+    ></span>
+    <span
+      id="pub-citations"
+      class="badge badge-secondary badge-soft badge-sm hidden shrink-0 whitespace-nowrap"
+    ></span>
+  </div>
+  <div class="collapse-content flex flex-col gap-3 text-sm">
+    <div id="pub-header-row" class="mt-4 flex hidden flex-wrap items-start justify-between gap-3">
+      <div id="pub-authors" class="text-base-content/90 flex hidden flex-wrap gap-2"></div>
+      <div id="pub-fields" class="flex hidden flex-wrap items-center gap-2"></div>
+    </div>
+
+    <div
+      id="pub-abstract-container"
+      class="bg-base-200/30 border-base-200 mt-2 hidden rounded-xl border p-4"
+    >
+      <p id="pub-abstract-label" class="text-base-content/90 mt-0 mb-1 font-semibold"></p>
+      <p id="pub-abstract-text" class="text-base-content/80 mt-0 mb-0 leading-relaxed"></p>
+    </div>
+
+    <div class="border-base-300 my-2 border-t"></div>
+
+    <div id="pub-link-bar" class="flex flex-wrap items-center gap-2">
+      <a
+        id="pub-main-link"
+        class="btn btn-sm btn-primary btn-soft rounded-full"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <span class="icon-[material-symbols--link] text-lg"></span> Publication
+      </a>
+      <a
+        id="pub-pdf-link"
+        class="btn btn-sm btn-outline hidden rounded-full"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <span class="icon-[material-symbols--download-rounded] text-lg"></span> PDF
+      </a>
+    </div>
+
+    <div
+      id="pub-bibtex-collapse"
+      class="collapse-plus bg-base-200/50 border-base-300 collapse mt-2 hidden rounded-xl border"
+    >
+      <input type="checkbox" />
+      <div class="collapse-title text-sm font-medium">BibTeX</div>
+      <div class="collapse-content flex flex-col gap-3">
+        <pre
+          id="pub-bibtex-pre"
+          class="bg-base-300/30 border-base-300 overflow-x-auto rounded-lg border p-3 text-xs whitespace-pre-wrap"
+        ></pre>
+        <button id="pub-bibtex-copy" type="button" class="btn btn-sm btn-outline w-fit">
+          <span class="icon-[material-symbols--content-copy-rounded] text-lg"></span> Cite this
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

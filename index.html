@@ -40,7 +40,7 @@
     />
   </head>
 
-  <body id="app" class="h-full w-full">
+  <body id="app" class="h-full w-full overflow-hidden">
     <main class="relative h-full w-full" role="main" aria-label="Taxonomy visualization interface">
       <div
         id="menu-overlay"
@@ -50,63 +50,95 @@
       >
         <header
           id="menu-header"
-          class="relative flex h-fit w-full flex-col items-center gap-2 md:grid md:grid-cols-[1fr_minmax(0,2fr)_1fr] md:gap-4"
+          class="relative flex h-fit w-full flex-col gap-2 md:grid md:grid-cols-[1fr_minmax(0,2fr)_1fr] md:items-center md:gap-4"
           role="banner"
         >
-          <vitax-title
-            class="card card-xs card-border bg-base-100/40 bounce animated pointer-events-auto hidden cursor-pointer justify-self-start shadow-lg backdrop-blur-sm md:block"
-            role="link"
-            aria-label="Vitax home"
-          ></vitax-title>
+          <div class="relative z-50 hidden justify-self-start md:block">
+            <vitax-title
+              class="card card-xs card-border bg-base-100/40 bounce animated pointer-events-auto block cursor-pointer shadow-lg backdrop-blur-sm"
+              role="link"
+              aria-label="Vitax home"
+            ></vitax-title>
+          </div>
+
           <vitax-search
-            class="pointer-events-auto w-full justify-self-center"
+            class="pointer-events-auto w-full justify-self-center md:col-start-2"
             role="search"
           ></vitax-search>
-          <vitax-theme
-            class="btn btn-square bounce animated tooltip tooltip-left pointer-events-auto hidden shadow-lg md:block md:justify-self-end"
-            data-tip="Toggle Light/Dark Theme"
-          ></vitax-theme>
+          <div
+            class="pointer-events-none hidden items-center justify-end gap-2 md:col-start-3 md:flex md:justify-self-end"
+          >
+            <vitax-image-button
+              class="tooltip tooltip-left pointer-events-auto"
+              data-tip="Image"
+            ></vitax-image-button>
+            <vitax-settings-button
+              class="tooltip tooltip-left pointer-events-auto"
+              data-tip="Settings"
+            ></vitax-settings-button>
+          </div>
         </header>
         <div
           id="menu-middle"
-          class="flex h-full w-full flex-row items-start justify-between"
+          class="flex w-full flex-1 flex-row items-start justify-between"
           role="complementary"
           aria-label="Visualization controls"
         >
           <div class="flex h-full flex-col items-start justify-between">
             <vitax-list
-              class="pointer-events-auto hidden size-fit md:block"
+              class="pointer-events-auto block h-full"
               role="navigation"
               aria-label="Taxon list"
             ></vitax-list>
-            <vitax-accession-filter
-              class="btn btn-square bounce animated tooltip tooltip-right pointer-events-auto hidden shadow-lg md:block"
-            ></vitax-accession-filter>
           </div>
-          <vitax-tutorial
-            class="hover:text-primary-content tooltip tooltip-left animated bounce hover:btn-primary btn btn-square btn-ghost pointer-events-auto hidden cursor-pointer self-start bg-none drop-shadow-lg md:flex"
-            data-tip="Tutorial"
-          ></vitax-tutorial>
+          <div class="relative flex h-full flex-col items-end"></div>
         </div>
         <footer
           id="menu-footer"
           class="relative flex w-full items-center justify-center md:grid md:grid-cols-[1fr_auto_1fr] md:gap-4"
           role="contentinfo"
         >
-          <vitax-attribution
-            class="card card-xs card-border bg-base-100/40 bounce animated pointer-events-auto hidden justify-self-start shadow-lg backdrop-blur-sm md:block"
-            role="contentinfo"
-            aria-label="Project attribution"
-          ></vitax-attribution>
+          <div class="hidden justify-self-start md:col-start-1 md:block">
+            <vitax-accession-filter
+              class="tooltip tooltip-right pointer-events-auto"
+            ></vitax-accession-filter>
+          </div>
           <vitax-visualization-type
-            class="card card-xs card-border bg-base-100/40 bounce animated tooltip pointer-events-auto w-full justify-self-center p-0 shadow-lg backdrop-blur-sm md:w-auto"
-            data-tip="Display Type"
+            class="card card-xs card-border bg-base-100/40 bounce animated tooltip pointer-events-auto w-full justify-self-center p-0 shadow-lg backdrop-blur-sm md:col-start-2 md:w-auto"
+            data-tip="Visualization Type"
             role="group"
             aria-label="Visualization type selector"
           ></vitax-visualization-type>
-          <vitax-github
-            class="card card-xs card-border bg-base-100/40 bounce animated pointer-events-auto hidden justify-self-end shadow-lg backdrop-blur-sm md:block"
-          ></vitax-github>
+          <vitax-legend
+            class="pointer-events-auto hidden justify-self-end md:relative md:col-start-3 md:block md:w-48"
+            role="complementary"
+            aria-label="Visualization legend"
+          ></vitax-legend>
+
+          <div
+            id="mobile-controls-column"
+            class="pointer-events-none fixed right-3 bottom-20 z-40 flex flex-col items-end gap-2.5 md:hidden"
+          >
+            <vitax-settings-button class="pointer-events-auto"></vitax-settings-button>
+
+            <vitax-image-button class="pointer-events-auto"></vitax-image-button>
+
+            <vitax-legend class="pointer-events-auto relative mb-6 block"></vitax-legend>
+
+            <vitax-accession-filter class="pointer-events-auto"></vitax-accession-filter>
+
+            <label
+              id="drawer-button-mobile"
+              for="list-drawer"
+              class="card card-xs card-border bg-primary border-primary text-primary-content bounce animated pointer-events-auto flex size-10 cursor-pointer items-center justify-center rounded-xl shadow-lg"
+              aria-label="Toggle taxon list"
+            >
+              <span
+                class="icon-[material-symbols--list-alt-rounded] text-2xl"
+                aria-hidden="true"
+              ></span>
+            </label>
+          </div>
         </footer>
       </div>
       <vitax-canvas
@@ -119,7 +151,6 @@
           role="toolbar"
           aria-label="Taxon actions"
         ></vitax-taxon-action>
-        <taxon-modal class="hidden" role="dialog" aria-label="Taxon metadata"></taxon-modal>
       </vitax-canvas>
     </main>
     <vitax-welcome role="dialog" aria-label="Welcome message"></vitax-welcome>

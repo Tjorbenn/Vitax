@@ -6,117 +6,53 @@ import HTMLtemplate from "./TaxonomyTypeTemplate.html?raw";
 
 /**
  * Component to toggle the Taxonomy Type (e.g. Descendants, MRCA).
- * Displays as a dropdown/popover.
  */
 export class TaxonomyTypeComponent extends BaseComponent {
-  private button!: HTMLButtonElement;
-  private label!: HTMLSpanElement;
-  private list!: HTMLUListElement;
+  private select!: HTMLSelectElement;
 
   /**
    * Creates a new TaxonomyTypeComponent instance.
    */
   constructor() {
     super(HTMLtemplate);
-    this.loadTemplate();
-
-    this.addSubscription(State.subscribeToTaxonomyType(this.onChange.bind(this)));
   }
 
   /**
    * Initialize elements and populate options.
    */
   initialize(): void {
-    this.list = requireElement<HTMLUListElement>(this, "#taxonomy-type-popover");
-    this.button = requireElement<HTMLButtonElement>(this, "#taxonomy-type-button");
-    this.label = requireElement<HTMLSpanElement>(this, "#taxonomy-type-label");
+    this.style.display = "contents";
+    this.select = requireElement<HTMLSelectElement>(this, "#taxonomy-type-select");
+    this.select.innerHTML = "";
 
     const currentType = State.getTaxonomyType();
 
     Object.values(TaxonomyType).forEach((type) => {
-      const item = document.createElement("li");
-      const button = document.createElement("button");
-      button.type = "button";
-      button.dataset.type = type;
-      button.classList.add("cursor-pointer", "animated");
+      const option = document.createElement("option");
+      option.value = type;
 
       if (type === TaxonomyType.MRCA) {
-        button.classList.add("uppercase");
+        option.textContent = type.toUpperCase();
       } else {
-        button.classList.add("capitalize");
+        option.textContent = type.charAt(0).toUpperCase() + type.slice(1);
       }
 
       if (type === currentType) {
-        this.addStatus(button);
+        option.selected = true;
       }
 
-      button.textContent = type;
-
-      button.addEventListener("click", this.onClick.bind(this));
-
-      item.appendChild(button);
-      this.list.appendChild(item);
+      this.select.appendChild(option);
     });
-  }
 
-  /**
-   * Open the dropdown.
-   */
-  public open() {
-    this.list.classList.remove("hidden");
-    this.list.setAttribute("data-open", "true");
-    this.list.setAttribute("aria-hidden", "false");
-    this.button.setAttribute("aria-expanded", "true");
-  }
-
-  /**
-   * Close the dropdown.
-   */
-  public close() {
-    this.list.classList.add("hidden");
-    this.list.removeAttribute("data-open");
-    this.list.setAttribute("aria-hidden", "true");
-    this.button.setAttribute("aria-expanded", "false");
-  }
-
-  /**
-   * Toggle dropdown visibility.
-   */
-  public toggle() {
-    if (this.list.classList.contains("hidden")) {
-      this.open();
-    } else {
-      this.close();
-    }
-  }
-
-  /**
-   * Add status dot to a taxonomy type option.
-   * @param anchor - The button element to add the status indicator to.
-   */
-  private addStatus(anchor: HTMLElement): void {
-    // Remove existing status if present to avoid duplicates
-    this.removeStatus(anchor as HTMLAnchorElement);
-
-    const status = document.createElement("span");
-    status.classList.add("status", "status-success", "pointer-events-none");
-    anchor.appendChild(status);
-  }
-
-  /**
-   * Remove status dot from a taxonomy type option.
-   * @param element The element to remove the dot from.
-   */
-  private removeStatus(element: HTMLElement): void {
-    const status = element.querySelector(".status");
-    if (status) {
-      status.remove();
-    }
+    this.addEvent(this.select, "change", () => {
+      this.onSelectChange();
+    });
+    this.addSubscription(State.subscribeToTaxonomyType(this.onChange.bind(this)));
   }
 
   /**
    * Handle changes to the taxonomy type.
-   * Updates visual state of options.
+   * Updates visual state of the select.
    * @param type The new TaxonomyType.
    */
   public onChange(type?: TaxonomyType) {
@@ -124,32 +60,17 @@ export class TaxonomyTypeComponent extends BaseComponent {
       throw new Error("Taxonomy type not found");
     }
 
-    if (type === TaxonomyType.MRCA) {
-      this.label.textContent = type.toUpperCase();
-    } else {
-      this.label.textContent = type;
+    if (this.select.value !== (type as string)) {
+      this.select.value = type;
     }
-    const items = this.list.querySelectorAll("li button") as NodeListOf<HTMLButtonElement>;
-    items.forEach((item) => {
-      if ((item.dataset.type as TaxonomyType) === type) {
-        item.classList.add("selected");
-        this.addStatus(item);
-      } else {
-        item.classList.remove("selected");
-        this.removeStatus(item);
-      }
-    });
   }
 
   /**
-   * Handle click event of a taxonomy type option.
-   * Set the taxonomy type and closes the dropdown.
-   * @param event - The mouse click event.
+   * Handle change event of the select.
+   * Set the taxonomy type in the global state.
    */
-  private onClick(event: MouseEvent) {
-    const item = event.target as HTMLLIElement;
-    State.setTaxonomyType(item.dataset.type as TaxonomyType);
-    this.list.hidePopover();
+  private onSelectChange() {
+    State.setTaxonomyType(this.select.value as TaxonomyType);
   }
 }
 

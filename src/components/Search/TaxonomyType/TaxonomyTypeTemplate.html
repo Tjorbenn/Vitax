@@ -1,22 +1,5 @@
-<button
-  class="btn btn-neutral animated join-item border-none capitalize focus:outline-none"
-  id="taxonomy-type-button"
-  popovertarget="taxonomy-type-popover"
-  aria-haspopup="menu"
-  aria-expanded="false"
+<select
+  id="taxonomy-type-select"
+  class="select bg-neutral text-neutral-content join-item animated [&::picker(select)]:bg-base-100/20 [&::picker(select)]:text-base-content w-32 min-w-fit pr-8 pl-3 font-semibold capitalize shadow-lg outline-hidden backdrop-blur-sm [&::picker(select)]:backdrop-blur-sm"
   aria-label="Select taxonomy type"
->
-  <span id="taxonomy-type-label"></span>
-  <span class="icon-[material-symbols--arrow-drop-down-rounded]" aria-hidden="true"></span>
-</button>
-<ul
-  class="dropdown card card-border bg-base-100/40 menu animated shadow-lg backdrop-blur-sm"
-  popover="auto"
-  id="taxonomy-type-popover"
-  anchor="taxonomy-type-button"
-  style="left: anchor(-25%); top: anchor(120%)"
-  role="menu"
-  aria-label="Taxonomy type options"
->
-  <li class="menu-title" role="presentation">Taxonomy Type</li>
-</ul>
+></select>

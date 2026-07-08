@@ -1,5 +1,4 @@
 import type { Taxon } from "../../../types/Taxonomy";
-import { getRankIcon } from "../../../types/UI";
 import { requireElement } from "../../../utility/Dom";
 import { DataComponent } from "../DataComponent";
 import HTMLtemplate from "./ImageTemplate.html?raw";
@@ -13,7 +12,6 @@ export class ImageComponent extends DataComponent {
    */
   constructor() {
     super(HTMLtemplate);
-    this.loadTemplate();
   }
 
   /**
@@ -32,33 +30,35 @@ export class ImageComponent extends DataComponent {
     if (!this.taxon) {
       throw new Error("Taxon not set");
     }
-    const mask = requireElement<HTMLElement>(this, ".mask");
+
+    const container = requireElement<HTMLElement>(this, ".w-24");
+    container.innerHTML = "";
+
     const image = this.taxon.randomImage;
     if (!image) {
-      mask.innerHTML = "";
-      mask.classList.add("flex", "items-center", "justify-center");
-      const icon = getRankIcon(this.taxon.rank, "5rem");
-      mask.appendChild(icon);
+      this.style.display = "none";
       return;
     }
 
-    mask.innerHTML = "";
+    this.style.display = "";
+
     const anchor = document.createElement("a");
     anchor.href = image.url.toString();
     anchor.target = "_blank";
     anchor.rel = "noopener noreferrer";
-    mask.appendChild(anchor);
+    anchor.className = "w-full h-full block";
+
     const imageEl = document.createElement("img");
     imageEl.src = image.url.toString();
     imageEl.alt = this.taxon.name;
-    const rank = this.taxon.rank;
+    imageEl.className = "w-full h-full object-cover";
+
     imageEl.onerror = () => {
-      mask.innerHTML = "";
-      mask.classList.add("flex", "items-center", "justify-center");
-      const icon = getRankIcon(rank, "5rem");
-      mask.appendChild(icon);
+      this.style.display = "none";
     };
+
     anchor.appendChild(imageEl);
+    container.appendChild(anchor);
   }
 }
 

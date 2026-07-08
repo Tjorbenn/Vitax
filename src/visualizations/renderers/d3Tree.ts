@@ -3,6 +3,8 @@ import { VisualizationType } from "../../types/Application";
 import { type LeanTaxon, type TaxonomyTree } from "../../types/Taxonomy";
 import { LongPressDetector } from "../../utility/TouchGestures";
 import { D3Visualization, type D3VisualizationExtents } from "../d3Visualization";
+import * as VisualizationStyle from "../VisualizationStyle";
+import { optionalElement } from "../../utility/Dom";
 
 type TreeNode = d3.HierarchyPointNode<LeanTaxon> & {
   _children?: TreeNode[];
@@ -86,6 +88,10 @@ export class D3Tree extends D3Visualization {
         const sizeBoost = aSize + bSize > 14 ? 0.35 : aSize + bSize > 6 ? 0.15 : 0;
         return siblingBoost + sizeBoost;
       });
+
+    this.addStyleRule(VisualizationStyle.createGenomeSizeRule([3, 12]));
+    this.addStyleRule(VisualizationStyle.createGenomeStrokeRule([0.5, 6]));
+    this.addStyleRule(VisualizationStyle.createLabelPositionRule());
 
     this.activateStateSubscription();
   }
@@ -186,7 +192,7 @@ export class D3Tree extends D3Visualization {
       x0?: number;
       y0?: number;
     };
-    if (!source || source.x0 === undefined) {
+    if (source?.x0 === undefined) {
       source = this.root;
       source.x0 = this.height / 2;
       source.y0 = 0;
@@ -195,9 +201,7 @@ export class D3Tree extends D3Visualization {
     src.x = src.x ?? src.x0 ?? this.height / 2;
     src.y = src.y ?? src.y0 ?? 0;
 
-    const currentDuration = event?.altKey ? 2500 : duration;
-    const useTransition = currentDuration > 0;
-    const transitionName = `d3tree-update-${Date.now().toString()}`;
+    let currentDuration = event?.altKey ? 2500 : duration;
 
     const filteredRoot = this.filterHierarchy(this.root);
     if (!filteredRoot) {
@@ -234,8 +238,9 @@ export class D3Tree extends D3Visualization {
         continue;
       }
       const tn = node as TreeNode;
-      const hasVisibleChildren = tn.children && tn.children.length > 0;
-      const placeRight = !hasVisibleChildren;
+      const style = this.resolveNodeStyle(tn);
+      const placeRight = style.labelPosition !== "left";
+
       const full = tn._fullLabel ?? tn.data.name;
       const truncated = truncateLocal(
         full,
@@ -295,10 +300,12 @@ export class D3Tree extends D3Visualization {
     }
 
     if (visibleNodesAll.length > 1800) {
-      duration = 0;
+      currentDuration = 0;
     } else if (visibleNodesAll.length > 900) {
-      duration = Math.min(duration, 120);
+      currentDuration = Math.min(currentDuration, 120);
     }
+    const useTransition = currentDuration > 0;
+    const transitionName = `d3tree-update-${Date.now().toString()}`;
 
     const nodes = visibleNodesAll.reverse();
     const links = filteredRoot.links().filter((link) => {
@@ -336,7 +343,7 @@ export class D3Tree extends D3Visualization {
           return;
         }
         const el = event.currentTarget as SVGGElement;
-        const circle = el.querySelector("circle");
+        const circle = optionalElement(el, "circle");
         const bbox = (circle ?? el).getBoundingClientRect();
         const childrenCount = node.children?.length ?? 0;
         this.handlers?.onHover?.({
@@ -357,7 +364,7 @@ export class D3Tree extends D3Visualization {
       nodeEnter.filter((node: TreeNode) => node.data.id !== 0),
       (_event: TouchEvent, node: TreeNode, target: Element) => {
         const el = target as SVGGElement;
-        const circle = el.querySelector("circle");
+        const circle = optionalElement(el, "circle");
         const bbox = (circle ?? el).getBoundingClientRect();
         const childrenCount = node.children?.length ?? 0;
         this.handlers?.onHover?.({
@@ -377,16 +384,14 @@ export class D3Tree extends D3Visualization {
 
     const themeColors = this.getThemeColors();
 
-    const nodeSizeScale = this.createGenomeSizeScale([3, 12]);
-    const strokeWidthScale = this.createGenomeStrokeScale([0.5, 6]);
-
     nodeEnter
       .append("circle")
       .attr("r", (node: TreeNode) => {
         if (node.data.id === 0) {
           return 6;
         }
-        return nodeSizeScale(this.getGenomeTotal(node.data));
+        const style = this.resolveNodeStyle(node);
+        return typeof style.radius === "number" ? style.radius : 6;
       })
       .attr("fill", (node: TreeNode) =>
         node.data.id === 0 ? themeColors.accent : this.getNodeFill(node),
@@ -456,8 +461,9 @@ export class D3Tree extends D3Visualization {
       .style("font-size", "11px")
       .attr("fill", "var(--color-base-content)")
       .each(function (this: d3.BaseType, node: TreeNode) {
-        const hasVisibleChildren = node.children && node.children.length > 0;
-        const placeRight = !hasVisibleChildren;
+        const style = VisualizationStyle.getNodeStyle(node);
+        const placeRight = style.labelPosition !== "left";
+
         const fullName = node.data.name;
         const truncated = truncateEnter(
           fullName,
@@ -484,8 +490,8 @@ export class D3Tree extends D3Visualization {
       if (node.data.id === 0) {
         return;
       }
-      const hasVisibleChildren = node.children && node.children.length > 0;
-      const placeRight = !hasVisibleChildren;
+      const style = VisualizationStyle.getNodeStyle(node);
+      const placeRight = style.labelPosition !== "left";
 
       node._placeRight = placeRight;
       const textElement = d3.select(this);
@@ -508,11 +514,15 @@ export class D3Tree extends D3Visualization {
         if (node.data.id === 0) {
           return 6;
         }
-        return nodeSizeScale(this.getGenomeTotal(node.data));
+        const style = this.resolveNodeStyle(node);
+        return typeof style.radius === "number" ? style.radius : 6;
       })
       .attr("fill", (node: TreeNode) =>
         node.data.id === 0 ? themeColors.accent : this.getNodeFill(node),
-      );
+      )
+      .attr("stroke-width", 1)
+      .attr("stroke", "var(--color-base-content)")
+      .attr("stroke-opacity", 0.6);
 
     if (useTransition) {
       nodeMerge
@@ -545,12 +555,14 @@ export class D3Tree extends D3Visualization {
     const linkEnter = linkSel
       .enter()
       .append("path")
+      .attr("data-target-id", (link: d3.HierarchyLink<LeanTaxon>) => link.target.data.id)
       .attr("d", () => {
         const origin = { x: src.x0, y: src.y0 } as d3.HierarchyPointNode<LeanTaxon>;
         return this.diagonal({ source: origin, target: origin });
       })
       .attr("stroke-width", (link: d3.HierarchyLink<LeanTaxon>) => {
-        return strokeWidthScale(this.getGenomeTotal(link.target.data));
+        const style = this.resolveNodeStyle(link.target);
+        return typeof style.strokeWidth === "number" ? style.strokeWidth : 1;
       });
 
     const linkMerged = (
@@ -575,13 +587,15 @@ export class D3Tree extends D3Visualization {
         .duration(currentDuration)
         .attr("d", (link: d3.HierarchyPointLink<LeanTaxon>) => this.diagonal(link))
         .attr("stroke-width", (link: d3.HierarchyPointLink<LeanTaxon>) => {
-          return strokeWidthScale(this.getGenomeTotal(link.target.data));
+          const style = this.resolveNodeStyle(link.target);
+          return typeof style.strokeWidth === "number" ? style.strokeWidth : 1;
         });
     } else {
       linkMerged
         .attr("d", (link: d3.HierarchyPointLink<LeanTaxon>) => this.diagonal(link))
         .attr("stroke-width", (link: d3.HierarchyPointLink<LeanTaxon>) => {
-          return strokeWidthScale(this.getGenomeTotal(link.target.data));
+          const style = this.resolveNodeStyle(link.target);
+          return typeof style.strokeWidth === "number" ? style.strokeWidth : 1;
         });
     }
 
@@ -634,5 +648,13 @@ export class D3Tree extends D3Visualization {
       pulse();
     }
     return Promise.resolve();
+  }
+
+  /**
+   * Disposes of the visualization and cleans up timers.
+   */
+  public override dispose(): void {
+    this.longPress.cleanup();
+    super.dispose();
   }
 }

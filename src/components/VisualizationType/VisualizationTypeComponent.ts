@@ -1,7 +1,7 @@
 import * as Routing from "../../core/Routing";
 import * as State from "../../core/State";
 import { VisualizationType } from "../../types/Application";
-import { requireElement } from "../../utility/Dom";
+import { requireElement, optionalElement, queryElements } from "../../utility/Dom";
 import { BaseComponent } from "../BaseComponent";
 import HTMLtemplate from "./VisualizationTypeTemplate.html?raw";
 
@@ -16,7 +16,6 @@ export class VisualizationTypeComponent extends BaseComponent {
    */
   constructor() {
     super(HTMLtemplate);
-    this.loadTemplate();
   }
 
   /**
@@ -24,32 +23,70 @@ export class VisualizationTypeComponent extends BaseComponent {
    */
   initialize(): void {
     this.tabs = requireElement<HTMLDivElement>(this, ".tabs");
+    this.tabs.innerHTML = "";
 
     this.addEvent(this.tabs, "change", this.onChange.bind(this));
 
     const currentDisplayType = State.getDisplayType();
+
+    /**
+     * Gets the CSS icon class for a given visualization type.
+     * @param type - The visualization type.
+     * @returns The CSS class name.
+     */
+    function getIconClass(type: VisualizationType): string {
+      switch (type) {
+        case VisualizationType.Tree:
+          return "icon-[material-symbols--account-tree-rounded]";
+        case VisualizationType.Graph:
+          return "icon-[material-symbols--graph-5]";
+        case VisualizationType.Pack:
+          return "icon-[material-symbols--circles]";
+        default:
+          return "icon-[material-symbols--circles]";
+      }
+    }
+
     Object.values(VisualizationType).forEach((type) => {
+      const label = document.createElement("label");
+      label.classList.add(
+        "tab",
+        "animated",
+        "flex",
+        "flex-col",
+        "items-center",
+        "justify-center",
+        "gap-1",
+        "px-4",
+        "py-1",
+        "cursor-pointer",
+        "h-auto",
+        "flex-1",
+      );
+
       const radio = document.createElement("input");
       radio.type = "radio";
       radio.name = "visualization-type";
       radio.value = type;
-      radio.ariaLabel = type;
-      radio.classList.add(
-        "tab",
-        "animated",
-        "capitalize",
-        "inline-flex",
-        "flex-none",
-        "whitespace-nowrap",
-        "px-3",
-        "py-2",
-      );
+      radio.classList.add("hidden"); // hide the actual radio button
 
       if (type === currentDisplayType) {
         radio.checked = true;
+        label.classList.add("tab-active");
       }
 
-      this.tabs.appendChild(radio);
+      const icon = document.createElement("span");
+      icon.className = `${getIconClass(type)} text-2xl`;
+
+      const text = document.createElement("span");
+      text.className = "text-[10px] font-medium capitalize tracking-wider opacity-80";
+      text.textContent = type;
+
+      label.appendChild(radio);
+      label.appendChild(icon);
+      label.appendChild(text);
+
+      this.tabs.appendChild(label);
     });
 
     this.addSubscription(
@@ -64,9 +101,18 @@ export class VisualizationTypeComponent extends BaseComponent {
    * @param displayType - The new display type to select.
    */
   private updateSelectedTab(displayType: VisualizationType): void {
-    const radios = this.tabs.querySelectorAll<HTMLInputElement>('input[name="visualization-type"]');
-    radios.forEach((radio) => {
-      radio.checked = radio.value === (displayType as string);
+    const labels = queryElements<HTMLLabelElement>(this.tabs, "label.tab");
+    labels.forEach((label) => {
+      const radio = optionalElement<HTMLInputElement>(label, 'input[name="visualization-type"]');
+      if (radio) {
+        const isActive = radio.value === (displayType as string);
+        radio.checked = isActive;
+        if (isActive) {
+          label.classList.add("tab-active");
+        } else {
+          label.classList.remove("tab-active");
+        }
+      }
     });
   }
 

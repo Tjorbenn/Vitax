@@ -1,101 +1,246 @@
 <dialog
   id="welcome-modal"
-  class="modal"
+  class="modal modal-middle"
   aria-labelledby="welcome-heading"
   aria-describedby="welcome-description"
 >
-  <div class="modal-box max-h-[90vh] overflow-y-auto p-4 md:p-6" role="document">
-    <hgroup class="flex flex-col">
-      <h1 id="welcome-heading" class="shrink-0 text-2xl md:text-[34px]">
-        Welcome to
-        <span class="gradient-text font-serif drop-shadow-xl">Vitax!</span>
-      </h1>
-      <p id="welcome-description" class="mb-0 ml-1 text-xs text-neutral-500 md:text-sm">
-        Explore. Discover. Understand.
-      </p>
-    </hgroup>
-    <div class="text-base-content mt-4 text-sm leading-relaxed md:mt-6 md:text-base">
-      <p class="text-base-content">
-        Vitax enables you to explore, discover and understand complex taxonomic relationships.
-      </p>
-      <p class="text-base-content">
-        No matter if you are a <b>researcher</b>, <b>student</b> or <b>just curious</b>, Vitax
-        provides the tools you need to navigate and analyze taxonomic data effectively:
-      </p>
-    </div>
-    <ul
-      class="list bg-base-200 card card-border mt-4 text-sm md:mt-6 md:text-base"
-      role="list"
-      aria-label="Key features"
+  <div
+    class="modal-box bg-base-100 flex max-h-[90vh] flex-col overflow-hidden p-0 shadow-2xl"
+    role="document"
+  >
+    <div
+      class="bg-base-200/50 border-base-300 relative shrink-0 border-b px-5 py-4 sm:px-6 sm:py-6"
     >
-      <li class="list-row animated hover:bg-base-300 items-center" role="listitem">
-        <span
-          class="icon-[material-symbols--search-rounded] text-primary mr-4"
-          style="width: 1.5em; height: 1.5em"
-          aria-hidden="true"
-        ></span>
-        <span>Autocompleted & Responsive Search</span>
-        <span class="badge badge-accent badge-xs">Smart Suggestions</span>
-      </li>
-      <li class="list-row animated hover:bg-base-300 items-center" role="listitem">
-        <span
-          class="icon-[material-symbols--imagesmode-rounded] text-primary mr-4"
-          style="width: 1.5em; height: 1.5em"
-          aria-hidden="true"
-        ></span>
-        <span>Tree, Graph and Pack Visualizations</span
-        ><span class="badge badge-accent badge-xs">Quick Switch</span>
-      </li>
-      <li class="list-row animated hover:bg-base-300 items-center" role="listitem">
-        <span
-          class="icon-[material-symbols--list-alt-rounded] text-primary mr-4"
-          style="width: 1.5em; height: 1.5em"
-          aria-hidden="true"
-        ></span>
-        <span>Inspect Taxon Metadata</span
-        ><span class="badge badge-accent badge-xs">Name, ID, Rank ...</span>
-      </li>
-      <li class="list-row animated hover:bg-base-300 items-center" role="listitem">
-        <span
-          class="icon-[material-symbols--newspaper-rounded] text-primary mr-4"
-          style="width: 1.5em; height: 1.5em"
-          aria-hidden="true"
-        ></span>
-        <span>Find Research</span>
-        <span class="badge badge-accent badge-xs">Publications / Citations</span>
-      </li>
-      <li class="list-row animated hover:bg-base-300 items-center" role="listitem">
-        <span
-          class="icon-[material-symbols--download-for-offline-rounded] text-primary mr-4"
-          style="width: 1.5em; height: 1.5em"
-          aria-hidden="true"
-        ></span>
-        <span>Download Accessions</span><span class="badge badge-xs badge-accent">CSV, JSON</span>
-      </li>
-      <li class="list-row animated hover:bg-base-300 items-center" role="listitem">
-        <span
-          class="icon-[material-symbols--share] text-primary mr-4"
-          style="width: 1.5em; height: 1.5em"
-          aria-hidden="true"
-        ></span>
-        <span>Save & Share Visualizations</span
-        ><span class="badge badge-xs badge-accent">Custom URLs</span>
-      </li>
-    </ul>
-    <div class="mt-6 text-sm text-neutral-500">
-      Start the tour or close this window. The tour is available to you at any time from the main
-      screen.
+      <hgroup class="flex flex-col gap-1">
+        <h1
+          id="welcome-heading"
+          class="text-base-content !mb-0 flex items-center gap-2 font-serif text-2xl select-none md:text-3xl"
+        >
+          <span class="gradient-text font-serif">Vitax</span>
+          <div class="divider divider-horizontal mx-1"></div>
+          <span class="text-base-content/70 font-sans text-lg font-light tracking-wide md:text-xl"
+            >Visualizing the NCBI Taxonomy</span
+          >
+        </h1>
+      </hgroup>
     </div>
-    <div class="modal-action">
-      <form method="dialog">
-        <vitax-tutorial
+
+    <div
+      class="bg-base-100 hide-scrollbar flex min-h-0 flex-1 flex-col gap-0 overflow-y-auto overscroll-contain p-4 sm:gap-6 sm:p-8"
+    >
+      <div class="text-base-content/80 font-sans text-sm leading-relaxed font-light md:text-base">
+        <b class="font-bold"
+          >Navigate the <span class="text-primary">NCBI Taxonomy</span> with Ease</b
+        >
+        <p class="mt-1">
+          Vitax helps researchers and students visualize and explore complex taxonomic relationships
+          on an interactive canvas.
+        </p>
+        <p class="mt-2">
+          <b class="shimmer shimmer-speed-100 text-primary">Unlock new insights</b>
+          for biological research by transforming hierarchical taxonomy data into an
+          <b class="shimmer shimmer-speed-150 text-accent">intuitive visual experience</b>.
+        </p>
+      </div>
+
+      <div class="mt-2 flex flex-col gap-0 sm:mt-0 sm:gap-3">
+        <div class="flex items-center justify-between">
+          <h2
+            class="text-base-content/50 !mb-0 ml-1 flex items-center gap-1.5 font-sans text-xs font-semibold"
+          >
+            Features
+          </h2>
+          <div class="flex items-center gap-1.5">
+            <button
+              id="welcome-stack-prev"
+              class="btn btn-xs btn-circle btn-ghost"
+              aria-label="Previous capability"
+            >
+              <span class="icon-[material-symbols--chevron-left-rounded] h-4 w-4"></span>
+            </button>
+            <span
+              id="welcome-stack-indicator"
+              class="text-base-content/55 font-mono text-[10px] select-none"
+              >1/5</span
+            >
+            <button
+              id="welcome-stack-next"
+              class="btn btn-xs btn-circle btn-ghost"
+              aria-label="Next capability"
+            >
+              <span class="icon-[material-symbols--chevron-right-rounded] h-4 w-4"></span>
+            </button>
+          </div>
+        </div>
+
+        <div
+          class="stack features-stack relative mt-0 h-[115px] w-full select-none sm:mt-1 sm:h-[130px]"
+        >
+          <div class="features-card card card-border bg-base-100 border-base-300 p-3 sm:p-4">
+            <div class="mb-1.5 flex items-center gap-2">
+              <span
+                class="icon-[material-symbols--search-rounded] text-primary h-5 w-5"
+                aria-hidden="true"
+              ></span>
+              <h3 class="text-base-content !mb-0 font-sans text-sm font-bold">
+                NCBI Querying & Lineage Resolution
+              </h3>
+            </div>
+            <p class="text-base-content/70 !mb-0 font-sans text-xs leading-normal font-light">
+              Query scientific or common names to fetch full NCBI taxonomy lineage paths, resolving
+              ancestral and descendant taxonomy nodes automatically.
+            </p>
+          </div>
+
+          <div class="features-card card card-border bg-base-100 border-base-300 p-3 sm:p-4">
+            <div class="mb-1.5 flex items-center gap-2">
+              <span
+                class="icon-[material-symbols--imagesmode-rounded] text-primary h-5 w-5"
+                aria-hidden="true"
+              ></span>
+              <h3 class="text-base-content !mb-0 font-sans text-sm font-bold">
+                Interactive Layouts
+              </h3>
+            </div>
+            <p class="text-base-content/70 !mb-0 font-sans text-xs leading-normal font-light">
+              Compare representations using node-link Trees, force-directed Graphs and nested Circle
+              Packs.
+            </p>
+          </div>
+
+          <div class="features-card card card-border bg-base-100 border-base-300 p-3 sm:p-4">
+            <div class="mb-1.5 flex items-center gap-2">
+              <span
+                class="icon-[material-symbols--schema-outline-rounded] text-primary h-5 w-5"
+                aria-hidden="true"
+              ></span>
+              <h3 class="text-base-content !mb-0 font-sans text-sm font-bold">
+                Complex Taxonomic Relationships
+              </h3>
+            </div>
+            <p class="text-base-content/70 !mb-0 font-sans text-xs leading-normal font-light">
+              Investigate and visualize complex relationships: View Descendant Lineages, discover
+              Taxonomic Neighbors, or find the Most Recent Common Ancestor (MRCA).
+            </p>
+          </div>
+
+          <div class="features-card card card-border bg-base-100 border-base-300 p-3 sm:p-4">
+            <div class="mb-1.5 flex items-center gap-2">
+              <span
+                class="icon-[material-symbols--genetics] text-primary h-5 w-5"
+                aria-hidden="true"
+              ></span>
+              <h3 class="text-base-content !mb-0 font-sans text-sm font-bold">Genomic Data</h3>
+            </div>
+            <p class="text-base-content/70 !mb-0 font-sans text-xs leading-normal font-light">
+              Explore and filter genomes associated with taxa in the NCBI database and export the
+              accessions or assemblies directly for downstream analysis.
+            </p>
+          </div>
+
+          <div class="features-card card card-border bg-base-100 border-base-300 p-3 sm:p-4">
+            <div class="mb-1.5 flex items-center gap-2">
+              <span
+                class="icon-[material-symbols--library-books-rounded] text-primary h-5 w-5"
+                aria-hidden="true"
+              ></span>
+              <h3 class="text-base-content !mb-0 font-sans text-sm font-bold">
+                Literature & External Metadata
+              </h3>
+            </div>
+            <p class="text-base-content/70 !mb-0 font-sans text-xs leading-normal font-light">
+              Discover related publications from Semantic Scholar, or explore links to external
+              sources.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="bg-base-200 border-base-300 mt-9 flex flex-col gap-1.5 rounded-xl border p-3 sm:mt-0 sm:gap-2 sm:p-4"
+      >
+        <h2
+          class="text-base-content/80 !mb-0 flex items-center gap-1.5 font-sans text-xs font-bold"
+        >
+          Quick Start
+        </h2>
+        <p class="text-base-content/60 !mb-1 font-sans text-xs leading-normal font-light">
+          Select one of the model organisms to start exploring immediately:
+        </p>
+        <div class="flex flex-wrap gap-1.5 sm:gap-2">
+          <button
+            class="welcome-quick-start btn btn-xs btn-accent rounded-lg px-3 py-1 font-medium normal-case"
+            data-taxon="Clunio"
+          >
+            <span class="icon-[mdi--insect] size-4"></span>
+            Clunio
+          </button>
+          <button
+            class="welcome-quick-start btn btn-xs btn-accent rounded-lg px-3 py-1 font-medium normal-case"
+            data-taxon="Trichophyton"
+          >
+            <span class="icon-[mdi--mushroom]"></span>
+            Trichophyton
+          </button>
+          <button
+            class="welcome-quick-start btn btn-xs btn-accent rounded-lg px-3 py-1 font-medium normal-case"
+            data-taxon="Ustilago"
+          >
+            <span class="icon-[mdi--mushroom]"></span>
+            Ustilago
+          </button>
+          <button
+            class="welcome-quick-start btn btn-xs btn-accent rounded-lg px-3 py-1 font-medium normal-case"
+            data-taxon="Saccharomyces"
+          >
+            <span class="icon-[mdi--yeast] size-3"></span>
+            Saccharomyces
+          </button>
+          <button
+            class="welcome-quick-start btn btn-xs btn-accent rounded-lg px-3 py-1 font-medium normal-case"
+            data-taxon="Drosophila"
+          >
+            <span class="icon-[mdi--insect] size-4"></span>
+            Drosophila
+          </button>
+          <button
+            class="welcome-quick-start btn btn-xs btn-accent rounded-lg px-3 py-1 font-medium normal-case"
+            data-taxon="Hominidae"
+          >
+            <span class="icon-[material-symbols--person-rounded] size-3"></span>
+            Hominidae
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="bg-base-200/50 border-base-300 flex shrink-0 items-center justify-between border-t px-4 py-3 sm:px-8 sm:py-4"
+    >
+      <span class="text-base-content/50 font-sans text-xs leading-tight font-light">
+        First time here? <br class="sm:hidden" />Try the interactive tour.
+      </span>
+      <div class="flex gap-2">
+        <form method="dialog" class="flex gap-2">
+          <button
+            id="welcome-close"
+            class="btn btn-sm btn-ghost"
+            aria-label="Skip welcome and close dialog"
+          >
+            Skip
+          </button>
+        </form>
+        <button
           id="welcome-tutorial"
-          role="button"
-          class="btn btn-primary"
+          class="btn btn-sm btn-primary"
           aria-label="Start tutorial tour"
-        ></vitax-tutorial>
-        <button id="welcome-close" class="btn" aria-label="Close welcome dialog">Close</button>
-      </form>
+        >
+          Start Tour
+        </button>
+      </div>
     </div>
   </div>
+  <form method="dialog" class="modal-backdrop bg-neutral-900/40 backdrop-blur-xs">
+    <button id="welcome-backdrop-close">close</button>
+  </form>
 </dialog>

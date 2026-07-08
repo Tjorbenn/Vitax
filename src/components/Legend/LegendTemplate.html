@@ -1,0 +1,58 @@
+<details
+  id="legend-desktop-details"
+  class="group card card-xs card-border bg-base-100/40 border-base-content/10 bounce collapse absolute right-0 bottom-0 hidden w-full shadow-lg backdrop-blur-sm transition-all duration-300 md:block"
+>
+  <summary
+    class="collapse-title flex !min-h-0 cursor-pointer items-center justify-between py-2.5 pr-4 pl-4 text-sm font-semibold opacity-90"
+  >
+    <div class="flex items-center gap-2">
+      <span class="icon-[material-symbols--legend-toggle-rounded] text-lg"></span>
+      <span>Legend</span>
+    </div>
+    <span
+      class="icon-[material-symbols--keyboard-arrow-up-rounded] text-xl transition-transform duration-300 group-open:rotate-180"
+    ></span>
+  </summary>
+  <div class="collapse-content !p-0">
+    <div class="hide-scrollbar max-h-[50vh] overflow-y-auto">
+      <ul id="legend-entries" class="flex list-none flex-col gap-2.5 px-4 pt-2 pb-4"></ul>
+    </div>
+  </div>
+</details>
+<div class="block md:hidden">
+  <button
+    id="legend-mobile-btn"
+    class="card card-xs card-border bg-base-100/40 border-base-content/10 bounce animated flex size-10 cursor-pointer items-center justify-center shadow-lg backdrop-blur-sm outline-none focus:outline-none"
+    aria-label="Open legend"
+  >
+    <span class="icon-[material-symbols--legend-toggle-rounded] text-2xl"></span>
+  </button>
+
+  <dialog id="legend-mobile-modal" class="modal modal-bottom">
+    <div
+      class="modal-box bg-base-100/95 border-base-content/10 flex max-h-[50vh] flex-col overflow-hidden border-t p-0 shadow-2xl backdrop-blur-md"
+    >
+      <div
+        class="border-base-300 bg-base-200/50 flex shrink-0 items-center justify-between border-b px-6 pt-6 pb-4"
+      >
+        <h3 class="text-base-content flex items-center gap-2 text-lg font-bold">
+          <span class="icon-[material-symbols--legend-toggle-rounded] text-xl"></span>
+          Legend
+        </h3>
+        <button
+          id="legend-modal-close"
+          class="btn btn-sm btn-circle btn-ghost"
+          aria-label="Close legend"
+        >
+          <span class="icon-[material-symbols--close-rounded] text-xl"></span>
+        </button>
+      </div>
+      <div class="hide-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-6 pb-8">
+        <ul id="legend-entries-mobile" class="flex list-none flex-col gap-3.5 py-1"></ul>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop bg-neutral-900/40 backdrop-blur-xs">
+      <button>close</button>
+    </form>
+  </dialog>
+</div>

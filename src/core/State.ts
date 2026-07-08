@@ -17,7 +17,7 @@ const _query = new Observable<Taxon[]>([]); // Currently selected taxa
 const _tree = new Observable<TaxonomyTree | undefined>(undefined); // Current taxonomy tree
 const _status = new Observable<Status>(Status.Idle); // Current status (e.g. loading) of the application
 const _selectedTaxon = new Observable<Taxon | undefined>(undefined); // Currently selected taxa in the search bar
-const _theme = new Observable(getInitialTheme()); // Current theme (light/dark)
+const _theme = new Observable<Theme>(Theme.Light); // Current theme (light/dark)
 const _onlyGenomic = new Observable<boolean>(false); // Whether to show only genomic taxa
 const _resetView = new EventObservable(); // Event to reset the visualization view
 const _focusTaxon = new EventObservable<number>(); // Event to focus on a specific taxon in the visualization
@@ -44,8 +44,6 @@ const _taxonomyType = new Observable(
  * Initializes the state module and subscriptions.
  */
 export function init(): void {
-  document.documentElement.setAttribute("data-theme", _theme.value); // Set initial theme
-
   _query.subscribe((query) => {
     console.debug("Query: ", query);
   });
@@ -67,12 +65,10 @@ export function init(): void {
 
   /**
    * To reflect changes of the theme in the `#gls("ui")`{=typst}, we write the new theme to the `data-theme` attribute of the root document element on every theme change.
-   * Additionally, we persist the user's theme preference in `localStorage` to maintain consistency across sessions.
    */
 
   _theme.subscribe((theme) => {
     document.documentElement.setAttribute("data-theme", theme);
-    localStorage.setItem("vitax-theme", theme);
     console.debug("Theme: ", theme);
   });
 }
@@ -148,22 +144,45 @@ export async function hydrate(spore: StateSpore): Promise<void> {
  * Finally, we provide a set of simple getter, setter, and subscription functions for each core state variable.
  */
 
-//#region -h variable-functions
+//#region Helper Factories
+
 /**
- * Get the current search query.
- * @returns The array of currently selected Taxon objects.
+ * Helper to expose getter, setter, and subscriber of an Observable.
+ * @param observable - The Observable instance.
+ * @returns The exposed get, set, and subscribe functions.
  */
-export function getQuery(): Taxon[] {
-  return _query.value;
+function exposeObservable<T>(observable: Observable<T>) {
+  return {
+    get: () => observable.value,
+    set: (val: T) => {
+      observable.value = val;
+    },
+    subscribe: (callback: (val: T) => void) => observable.subscribe(callback),
+  };
 }
 
 /**
- * Set the current search query.
- * @param query The new array of Taxon objects to set.
+ * Helper to expose emitter and subscriber of an EventObservable.
+ * @param eventObs - The EventObservable instance.
+ * @returns The exposed emit and subscribe functions.
  */
-export function setQuery(query: Taxon[]): void {
-  _query.value = query;
+function exposeEvent<T = void>(eventObs: EventObservable<T>) {
+  return {
+    emit: (val: T) => {
+      eventObs.emit(val);
+    },
+    subscribe: (callback: (val: T) => void) => eventObs.subscribe(callback),
+  };
 }
+
+//#endregion
+
+//#region State Helper Exports
+
+const queryState = exposeObservable(_query);
+export const getQuery = queryState.get;
+export const setQuery = queryState.set;
+export const subscribeToQuery = queryState.subscribe;
 
 /**
  * Add a taxon to the current query if it's not already present.
@@ -184,22 +203,9 @@ export function removeFromQuery(taxon: Taxon): void {
   _query.value = _query.value.filter((existingTaxon) => existingTaxon.id !== taxon.id);
 }
 
-/**
- * Subscribe to changes in the search query.
- * @param callback Function to be called when the query changes.
- * @returns Unsubscribe function.
- */
-export function subscribeToQuery(callback: (query: Taxon[]) => void): () => void {
-  return _query.subscribe(callback);
-}
-
-/**
- * Get the current taxonomy tree.
- * @returns The current TaxonomyTree or undefined if not resolved.
- */
-export function getTree(): TaxonomyTree | undefined {
-  return _tree.value;
-}
+const treeState = exposeObservable(_tree);
+export const getTree = treeState.get;
+export const subscribeToTree = treeState.subscribe;
 
 /**
  * Set the current taxonomy tree.
@@ -207,7 +213,6 @@ export function getTree(): TaxonomyTree | undefined {
  */
 export function setTree(tree: TaxonomyTree | undefined): void {
   _tree.value = tree;
-  treeHasChanged();
 }
 
 /**
@@ -220,213 +225,42 @@ export function treeHasChanged(): void {
   _tree.value = currentValue;
 }
 
-/**
- * Subscribe to changes in the taxonomy tree.
- * @param callback Function to be called when the tree changes.
- * @returns Unsubscribe function.
- */
-export function subscribeToTree(callback: (tree: TaxonomyTree | undefined) => void): () => void {
-  return _tree.subscribe(callback);
-}
+const statusState = exposeObservable(_status);
+export const getStatus = statusState.get;
+export const setStatus = statusState.set;
+export const subscribeToStatus = statusState.subscribe;
 
-/**
- * Get the current application status.
- * @returns The current Status.
- */
-export function getStatus(): Status {
-  return _status.value;
-}
+const displayTypeState = exposeObservable(_displayType);
+export const getDisplayType = displayTypeState.get;
+export const setDisplayType = displayTypeState.set;
+export const subscribeToDisplayType = displayTypeState.subscribe;
 
-/**
- * Set the application status.
- * @param status The new Status to set.
- */
-export function setStatus(status: Status): void {
-  _status.value = status;
-}
+const taxonomyTypeState = exposeObservable(_taxonomyType);
+export const getTaxonomyType = taxonomyTypeState.get;
+export const setTaxonomyType = taxonomyTypeState.set;
+export const subscribeToTaxonomyType = taxonomyTypeState.subscribe;
 
-/**
- * Subscribe to changes in the application status.
- * @param callback Function to be called when the status changes.
- * @returns Unsubscribe function.
- */
-export function subscribeToStatus(callback: (status: Status) => void): () => void {
-  return _status.subscribe(callback);
-}
+const selectedTaxonState = exposeObservable(_selectedTaxon);
+export const getSelectedTaxon = selectedTaxonState.get;
+export const setSelectedTaxon = selectedTaxonState.set;
+export const subscribeToSelectedTaxon = selectedTaxonState.subscribe;
 
-/**
- * Get the current display type (visualization).
- * @returns The current VisualizationType.
- */
-export function getDisplayType(): VisualizationType {
-  return _displayType.value;
-}
+const resetViewEvent = exposeEvent(_resetView);
+export const resetView = resetViewEvent.emit;
+export const subscribeToResetView = resetViewEvent.subscribe;
 
-/**
- * Sets the display type.
- * @param value - The visualization type to enable.
- */
-export function setDisplayType(value: VisualizationType): void {
-  _displayType.value = value;
-}
+const focusTaxonEvent = exposeEvent(_focusTaxon);
+export const focusTaxon = focusTaxonEvent.emit;
+export const subscribeToFocusTaxon = focusTaxonEvent.subscribe;
 
-/**
- * Subscribe to changes in the display type.
- * @param callback Function to be called when the display type changes.
- * @returns Unsubscribe function.
- */
-export function subscribeToDisplayType(
-  callback: (displayType: VisualizationType) => void,
-): () => void {
-  return _displayType.subscribe(callback);
-}
+const themeState = exposeObservable(_theme);
+export const getTheme = themeState.get;
+export const setTheme = themeState.set;
+export const subscribeToTheme = themeState.subscribe;
 
-/**
- * Get the current taxonomy type.
- * @returns The current TaxonomyType.
- */
-export function getTaxonomyType(): TaxonomyType {
-  return _taxonomyType.value;
-}
+const onlyGenomicState = exposeObservable(_onlyGenomic);
+export const getOnlyGenomic = onlyGenomicState.get;
+export const setOnlyGenomic = onlyGenomicState.set;
+export const subscribeToOnlyGenomic = onlyGenomicState.subscribe;
 
-/**
- * Sets the taxonomy type.
- * @param value - The taxonomy mode to enable.
- */
-export function setTaxonomyType(value: TaxonomyType): void {
-  _taxonomyType.value = value;
-}
-
-/**
- * Subscribe to changes in the taxonomy type.
- * @param callback Function to be called when the taxonomy type changes.
- * @returns Unsubscribe function.
- */
-export function subscribeToTaxonomyType(
-  callback: (taxonomyType: TaxonomyType) => void,
-): () => void {
-  return _taxonomyType.subscribe(callback);
-}
-
-/**
- * Get the currently selected taxon (in search).
- * @returns The currently selected Taxon or undefined.
- */
-export function getSelectedTaxon(): Taxon | undefined {
-  return _selectedTaxon.value;
-}
-
-/**
- * Set the currently selected taxon (in search).
- * @param taxon The Taxon to select or undefined to clear.
- */
-export function setSelectedTaxon(taxon: Taxon | undefined): void {
-  _selectedTaxon.value = taxon;
-}
-
-/**
- * Subscribe to changes in the selected taxon.
- * @param callback Function to be called when the selected taxon changes.
- * @returns Unsubscribe function.
- */
-export function subscribeToSelectedTaxon(callback: (taxon: Taxon | undefined) => void): () => void {
-  return _selectedTaxon.subscribe(callback);
-}
-
-/**
- * Subscribe to the reset view event.
- * @param callback Function to be called when the view should be reset.
- * @returns Unsubscribe function.
- */
-export function subscribeToResetView(callback: () => void): () => void {
-  return _resetView.subscribe(callback);
-}
-
-/**
- * Trigger the reset view event.
- */
-export function resetView(): void {
-  _resetView.emit();
-}
-
-/**
- * Subscribe to the focus taxon event.
- * @param callback Function to be called with the taxon ID to focus.
- * @returns Unsubscribe function.
- */
-export function subscribeToFocusTaxon(callback: (id: number) => void): () => void {
-  return _focusTaxon.subscribe(callback);
-}
-
-/**
- * Trigger a focus taxon event.
- * @param id The ID of the taxon to focus.
- */
-export function focusTaxon(id: number): void {
-  _focusTaxon.emit(id);
-}
-
-/**
- * Get the current theme.
- * @returns The current Theme (Light/Dark).
- */
-export function getTheme(): Theme {
-  return _theme.value;
-}
-
-/**
- * Set the application theme.
- * @param theme The new Theme to set.
- */
-export function setTheme(theme: Theme): void {
-  _theme.value = theme;
-}
-
-/**
- * Subscribe to changes in the theme.
- * @param callback Function to be called when the theme changes.
- * @returns Unsubscribe function.
- */
-export function subscribeToTheme(callback: (theme: Theme) => void): () => void {
-  return _theme.subscribe(callback);
-}
-
-/**
- * Determines the initial theme preference.
- * @returns The theme (Light/Dark) to start with.
- */
-function getInitialTheme(): Theme {
-  const stored = localStorage.getItem("vitax-theme");
-  if (stored === Theme.Dark || stored === Theme.Light) {
-    return stored;
-  }
-
-  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-  return prefersDark ? Theme.Dark : Theme.Light;
-}
-
-/**
- * Get the accession filter status.
- * @returns True if only genomic taxa should be shown.
- */
-export function getOnlyGenomic(): boolean {
-  return _onlyGenomic.value;
-}
-
-/**
- * Set the accession filter status.
- * @param value The new boolean value.
- */
-export function setOnlyGenomic(value: boolean): void {
-  _onlyGenomic.value = value;
-}
-
-/**
- * Subscribe to changes in the accession filter.
- * @param callback Function to be called when the filter changes.
- * @returns Unsubscribe function.
- */
-export function subscribeToOnlyGenomic(callback: (onlyGenomic: boolean) => void): () => void {
-  return _onlyGenomic.subscribe(callback);
-}
 //#endregion

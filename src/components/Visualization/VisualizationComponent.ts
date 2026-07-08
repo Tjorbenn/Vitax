@@ -39,25 +39,52 @@ export class VisualizationComponent extends BaseComponent {
   private outsideKeyHandler?: (e: KeyboardEvent) => void;
   private renderToken = 0;
   private didInitialCenter = false;
-  private isInitialized = false;
 
   /**
    * Initialize SVG, subscriptions, and action overlay.
    */
   initialize(): void {
-    if (this.isInitialized) {
-      return;
+    if (!optionalElement(this, "svg")) {
+      this.setupSVG();
+    } else {
+      this.resizeObserver?.observe(this);
     }
-    this.setupSVG();
-    State.subscribeToTree((_tree) => {
-      this.renderVisualization();
-      getOrCreateTaxonModal().refresh();
-    });
-    State.subscribeToDisplayType((_dt) => {
-      this.renderVisualization();
-    });
     this.setupActionOverlay();
-    this.isInitialized = true;
+    this.bindSubscriptions();
+  }
+
+  /**
+   * Bind state and event subscriptions.
+   */
+  private bindSubscriptions(): void {
+    this.addSubscription(
+      State.subscribeToTree((_tree) => {
+        this.renderVisualization();
+        getOrCreateTaxonModal().refresh();
+      }),
+    );
+    this.addSubscription(
+      State.subscribeToDisplayType((_dt) => {
+        this.renderVisualization();
+      }),
+    );
+    this.addSubscription(
+      State.subscribeToResetView(() => {
+        this.onExternalReset();
+      }),
+    );
+    this.addSubscription(
+      State.subscribeToFocusTaxon((id) => {
+        this.focusTaxonById(id);
+        this.highlightTaxon(id);
+        window.setTimeout(() => {
+          this.highlightTaxon(id);
+        }, 750);
+        window.setTimeout(() => {
+          this.highlightTaxon(id);
+        }, 1500);
+      }),
+    );
   }
 
   /**
@@ -128,28 +155,31 @@ export class VisualizationComponent extends BaseComponent {
       })
       .on("zoom", (event: d3.D3ZoomEvent<SVGSVGElement, unknown>) => {
         this.mainGroup.attr("transform", event.transform.toString());
+        const currentScale = event.transform.k || 1;
+        d3.select("#vitax-cursor-circle").attr("r", 120 / currentScale);
       });
 
     (this.svg as unknown as d3.Selection<SVGSVGElement, undefined, null, undefined>).call(
       this.zoomBehavior as unknown as d3.ZoomBehavior<SVGSVGElement, undefined>,
     );
 
-    this.addSubscription(
-      State.subscribeToResetView(() => {
-        this.onExternalReset();
-      }),
+    // Suppress the browsers native context menu on the canvas itself.
+    (this.svg as unknown as d3.Selection<SVGSVGElement, undefined, null, undefined>).on(
+      "contextmenu.vitax",
+      (event: Event) => {
+        event.preventDefault();
+      },
     );
-    this.addSubscription(
-      State.subscribeToFocusTaxon((id) => {
-        this.focusTaxonById(id);
-        this.highlightTaxon(id);
-        window.setTimeout(() => {
-          this.highlightTaxon(id);
-        }, 750);
-        window.setTimeout(() => {
-          this.highlightTaxon(id);
-        }, 1500);
-      }),
+
+    (this.svg as unknown as d3.Selection<SVGSVGElement, undefined, null, undefined>).on(
+      "pointermove",
+      (event: PointerEvent) => {
+        const groupNode = this.gridGroup.node();
+        if (groupNode) {
+          const [x, y] = d3.pointer(event, groupNode);
+          d3.select("#vitax-cursor-circle").attr("cx", x).attr("cy", y);
+        }
+      },
     );
 
     this.resizeObserver = new ResizeObserver(() => {
@@ -180,13 +210,20 @@ export class VisualizationComponent extends BaseComponent {
     const d3Defs = d3.select(defs) as d3.Selection<SVGDefsElement, undefined, null, undefined>;
 
     /**
-     * Upserts a pattern in the defs.
+     * Upserts a dot matrix pattern in the SVG defs.
      * @param id - The unique identifier of the pattern.
-     * @param size - The width and height of the pattern square.
-     * @param strokeOpacity - The opacity value for the pattern lines.
-     * @param strokeWidth - The stroke width for the pattern lines.
+     * @param size - The distance between dots.
+     * @param fillOpacity - The opacity value for the dots.
+     * @param radius - The radius of the dots.
+     * @param fillColor - The color of the dots.
      */
-    function upsertPattern(id: string, size: number, strokeOpacity: number, strokeWidth: number) {
+    function upsertDotPattern(
+      id: string,
+      size: number,
+      fillOpacity: number,
+      radius: number,
+      fillColor = "var(--color-base-content, #555)",
+    ) {
       let pat = d3Defs.select<SVGPatternElement>(`#${id}`);
       if (pat.empty()) {
         pat = d3Defs
@@ -196,25 +233,26 @@ export class VisualizationComponent extends BaseComponent {
           .attr("width", size)
           .attr("height", size);
         pat
-          .append("path")
-          .attr("d", `M ${String(size)} 0 L 0 0 0 ${String(size)}`)
-          .attr("fill", "none")
-          .attr("stroke", "var(--color-base-content, #555)")
-          .attr("stroke-opacity", strokeOpacity)
-          .attr("stroke-width", strokeWidth)
-          .attr("vector-effect", "non-scaling-stroke");
+          .append("circle")
+          .attr("cx", size / 2)
+          .attr("cy", size / 2)
+          .attr("r", radius)
+          .attr("fill", fillColor)
+          .attr("fill-opacity", fillOpacity);
       } else {
         pat.attr("width", size).attr("height", size);
         pat
-          .select("path")
-          .attr("d", `M ${String(size)} 0 L 0 0 0 ${String(size)}`)
-          .attr("stroke-opacity", strokeOpacity)
-          .attr("stroke-width", strokeWidth);
+          .select("circle")
+          .attr("cx", size / 2)
+          .attr("cy", size / 2)
+          .attr("r", radius)
+          .attr("fill", fillColor)
+          .attr("fill-opacity", fillOpacity);
       }
     }
 
-    upsertPattern("vitax-grid-minor", 10, 0.35, 0.3);
-    upsertPattern("vitax-grid-major", 100, 0.5, 0.6);
+    upsertDotPattern("vitax-grid-minor", 16, 0.25, 0.8);
+    upsertDotPattern("vitax-grid-minor-thick", 16, 0.8, 0.8, "var(--color-primary, #22a6f2)");
 
     const GRID_WIDTH = 200000;
     const GRID_HEIGHT = 200000;
@@ -229,13 +267,40 @@ export class VisualizationComponent extends BaseComponent {
       .attr("height", GRID_HEIGHT)
       .attr("fill", "url(#vitax-grid-minor)");
 
+    let grad = d3Defs.select<SVGRadialGradientElement>("#vitax-cursor-gradient");
+    if (grad.empty()) {
+      grad = d3Defs.append("radialGradient").attr("id", "vitax-cursor-gradient");
+      grad.append("stop").attr("offset", "0%").attr("stop-color", "white");
+      grad.append("stop").attr("offset", "100%").attr("stop-color", "black");
+    }
+
+    let mask = d3Defs.select<SVGMaskElement>("#vitax-cursor-mask");
+    if (mask.empty()) {
+      mask = d3Defs.append("mask").attr("id", "vitax-cursor-mask");
+      mask
+        .append("rect")
+        .attr("x", GRID_X)
+        .attr("y", GRID_Y)
+        .attr("width", GRID_WIDTH)
+        .attr("height", GRID_HEIGHT)
+        .attr("fill", "black");
+      mask
+        .append("circle")
+        .attr("id", "vitax-cursor-circle")
+        .attr("r", 120)
+        .attr("fill", "url(#vitax-cursor-gradient)")
+        .attr("cx", -9999)
+        .attr("cy", -9999);
+    }
+
     this.gridGroup
       .append("rect")
       .attr("x", GRID_X)
       .attr("y", GRID_Y)
       .attr("width", GRID_WIDTH)
       .attr("height", GRID_HEIGHT)
-      .attr("fill", "url(#vitax-grid-major)");
+      .attr("fill", "url(#vitax-grid-minor-thick)")
+      .attr("mask", "url(#vitax-cursor-mask)");
   }
 
   /**
@@ -288,7 +353,12 @@ export class VisualizationComponent extends BaseComponent {
     if (!bbox) {
       try {
         const bb = (content as unknown as SVGGraphicsElement).getBBox();
-        bbox = { xCoord: bb.x, yCoord: bb.y, width: bb.width, height: bb.height };
+        bbox = {
+          xCoord: bb.x,
+          yCoord: bb.y,
+          width: bb.width,
+          height: bb.height,
+        };
       } catch {
         bbox = undefined;
       }
@@ -516,18 +586,8 @@ export class VisualizationComponent extends BaseComponent {
    * Initializes the SVG if not already done and sets up event listeners.
    */
   connectedCallback(): void {
-    if (!this.isInitialized) {
-      this.initialize();
-      (this.svg as d3.Selection<SVGSVGElement, undefined, null, undefined>).on(
-        "dblclick.zoom",
-        null,
-      );
-    } else {
-      (this.svg as d3.Selection<SVGSVGElement, undefined, null, undefined>).on(
-        "dblclick.zoom",
-        null,
-      );
-    }
+    super.connectedCallback();
+    (this.svg as d3.Selection<SVGSVGElement, undefined, null, undefined>).on("dblclick.zoom", null);
   }
 
   /**
@@ -542,7 +602,7 @@ export class VisualizationComponent extends BaseComponent {
     if (this.taxonActionEl?.parentElement === this) {
       this.removeChild(this.taxonActionEl);
     }
-    this.destroy();
+    super.disconnectedCallback();
   }
 
   /**
@@ -625,7 +685,10 @@ export class VisualizationComponent extends BaseComponent {
     }
     const circle = optionalElement<SVGCircleElement>(group, "circle");
     const bbox = (circle ?? group).getBoundingClientRect();
-    return { xCoord: bbox.x + bbox.width / 2, yCoord: bbox.y + bbox.height / 2 };
+    return {
+      xCoord: bbox.x + bbox.width / 2,
+      yCoord: bbox.y + bbox.height / 2,
+    };
   }
 
   /**
@@ -711,6 +774,8 @@ export class VisualizationComponent extends BaseComponent {
           modal.openForTaxon(full, { root: tree.root });
         },
       });
+    } else if (!this.contains(this.taxonActionEl)) {
+      this.appendChild(this.taxonActionEl);
     }
   }
 

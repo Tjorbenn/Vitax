@@ -1,7 +1,7 @@
 import * as State from "../../../core/State";
 import { enter, hide, toggleState } from "../../../features/DisplayAnimations";
 import { type Suggestion, sortSuggestions } from "../../../types/Application";
-import { requireElement } from "../../../utility/Dom";
+import { requireElement, optionalElement, queryElements } from "../../../utility/Dom";
 import { BaseComponent } from "../../BaseComponent";
 import { SuggestionSession } from "./SuggestionSession";
 import HTMLtemplate from "./SuggestionsTemplate.html?raw";
@@ -39,30 +39,29 @@ export class SuggestionsComponent extends BaseComponent {
    */
   constructor() {
     super(HTMLtemplate);
-
-    this.classList.add(
-      "pointer-events-auto",
-      "hidden",
-      "opacity-0",
-      "animated",
-      "card",
-      "card-border",
-      "bg-base-100/40",
-      "backdrop-blur-sm",
-      "shadow-lg",
-      "max-h-60",
-      "w-full",
-      "overflow-y-auto",
-    );
-    this.style.scrollbarWidth = "none";
-
-    this.loadTemplate();
   }
 
   /**
    * Initialize elements and scroll listener.
    */
   initialize(): void {
+    this.classList.add(
+      "pointer-events-auto",
+      "hidden",
+      "opacity-0",
+      "animated",
+      "bg-base-100/95",
+      "backdrop-blur-md",
+      "shadow-2xl",
+      "max-h-80",
+      "w-full",
+      "overflow-y-auto",
+      "rounded-2xl",
+      "border",
+      "border-base-300",
+      "z-50",
+      "hide-scrollbar",
+    );
     this.table = requireElement<HTMLTableElement>(this, "#suggestions-table");
     this.loader = requireElement<HTMLElement>(this, "#suggestions-loader");
     this.addEvent(this, "scroll", () => {
@@ -169,7 +168,7 @@ export class SuggestionsComponent extends BaseComponent {
    * Reset the suggestions list.
    */
   private resetSuggestions() {
-    const tbody = this.table.querySelector("#suggestions-body");
+    const tbody = optionalElement(this.table, "#suggestions-body");
     if (tbody) {
       tbody.innerHTML = "";
     }
@@ -182,10 +181,7 @@ export class SuggestionsComponent extends BaseComponent {
   private updateTable() {
     const suggestionsSet = this.session ? this.session.suggestions : [];
     const sortedSuggestions = sortSuggestions(suggestionsSet, this.latestTerm);
-    const tbody = this.table.querySelector("#suggestions-body");
-    if (!tbody) {
-      throw new Error("Suggestions body is not defined");
-    }
+    const tbody = requireElement<HTMLTableSectionElement>(this.table, "#suggestions-body");
 
     const selectedIds = new Set(
       State.getQuery().map((taxon) => {
@@ -203,28 +199,64 @@ export class SuggestionsComponent extends BaseComponent {
         "pointer-events-auto",
         "cursor-pointer",
         "animated",
-        "hover:scale-102",
-        "hover:text-primary",
+        "hover:bg-base-200/50",
+        "transition-colors",
       );
       row.addEventListener("click", this.onClickSuggestion.bind(this));
 
       const nameCell = document.createElement("td");
-      nameCell.textContent = suggestion.name;
-      nameCell.classList.add("pl-6");
+      nameCell.classList.add("pl-4", "py-3", "w-[45%]", "min-w-0");
+      const textWrapper = document.createElement("div");
+      textWrapper.classList.add("flex", "flex-col", "gap-0.5", "justify-center");
+
+      const nameSpan = document.createElement("span");
+      nameSpan.textContent = suggestion.name;
+      nameSpan.classList.add(
+        "font-semibold",
+        "text-base-content/90",
+        "pointer-events-none",
+        "break-words",
+        "whitespace-normal",
+        "w-full",
+        "block",
+      );
+      textWrapper.appendChild(nameSpan);
+      nameCell.appendChild(textWrapper);
       row.appendChild(nameCell);
 
       const commonNameCell = document.createElement("td");
+      commonNameCell.classList.add("py-3", "w-[35%]", "min-w-0");
       if (suggestion.commonName) {
         const nameBadge = document.createElement("span");
-        nameBadge.classList.add("badge", "badge-soft", "badge-primary", "capitalize");
-        nameBadge.textContent = suggestion.commonName || "";
+        nameBadge.classList.add(
+          "badge",
+          "badge-soft",
+          "badge-primary",
+          "badge-sm",
+          "capitalize",
+          "font-medium",
+          "pointer-events-none",
+          "max-w-full",
+        );
+        const badgeText = document.createElement("span");
+        badgeText.textContent = suggestion.commonName;
+        badgeText.classList.add("truncate", "max-w-full");
+        nameBadge.appendChild(badgeText);
         commonNameCell.appendChild(nameBadge);
       }
       row.appendChild(commonNameCell);
 
       const idCell = document.createElement("td");
       idCell.textContent = idStr;
-      idCell.classList.add("pr-6", "text-right");
+      idCell.classList.add(
+        "font-mono",
+        "pr-4",
+        "text-right",
+        "text-xs",
+        "opacity-50",
+        "pointer-events-none",
+        "w-[20%]",
+      );
       row.appendChild(idCell);
 
       const isSelected = selectedIds.has(suggestion.id);
@@ -241,7 +273,7 @@ export class SuggestionsComponent extends BaseComponent {
    * Update the disabled state of rows based on the current query.
    */
   private updateDisabledRows(): void {
-    const tbody = this.table.querySelector("#suggestions-body");
+    const tbody = optionalElement(this.table, "#suggestions-body");
     if (!tbody) {
       return;
     }
@@ -250,7 +282,7 @@ export class SuggestionsComponent extends BaseComponent {
         return taxon.id;
       }),
     );
-    tbody.querySelectorAll<HTMLTableRowElement>("tr").forEach((row) => {
+    queryElements<HTMLTableRowElement>(tbody, "tr").forEach((row) => {
       const idAttr = row.dataset.id;
       if (!idAttr) {
         return;
@@ -299,8 +331,7 @@ export class SuggestionsComponent extends BaseComponent {
    * @param event - The mouse click event.
    */
   private onClickSuggestion(event: MouseEvent): void {
-    const target = event.target as HTMLElement;
-    const row = target.parentElement as HTMLTableRowElement;
+    const row = event.currentTarget as HTMLTableRowElement;
     const name = row.dataset.name;
     const id = row.dataset.id;
 

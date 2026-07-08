@@ -1,6 +1,6 @@
 import * as State from "../../core/State";
 import type { Taxon, TaxonomyTree } from "../../types/Taxonomy";
-import { requireElement } from "../../utility/Dom";
+import { optionalElement, requireElement } from "../../utility/Dom";
 import { BaseComponent } from "../BaseComponent";
 import { getOrCreateTaxonModal } from "../Metadata/MetadataModal/MetadataModal";
 import HTMLtemplate from "./ListTemplate.html?raw";
@@ -12,7 +12,6 @@ export class ListComponent extends BaseComponent {
   private drawerButton!: HTMLLabelElement;
   private listContent!: HTMLUListElement;
   private drawerToggle!: HTMLInputElement;
-  private drawerIcon!: HTMLSpanElement;
   private onlyGenomic = false;
 
   /**
@@ -20,7 +19,6 @@ export class ListComponent extends BaseComponent {
    */
   constructor() {
     super(HTMLtemplate);
-    this.loadTemplate();
   }
 
   /**
@@ -30,9 +28,7 @@ export class ListComponent extends BaseComponent {
     this.drawerButton = requireElement<HTMLLabelElement>(this, "#drawer-button");
     this.listContent = requireElement<HTMLUListElement>(this, "#list-content");
     this.drawerToggle = requireElement<HTMLInputElement>(this, "#list-drawer");
-    this.drawerIcon = requireElement<HTMLSpanElement>(this, "#drawer-icon");
 
-    this.listContent.classList.add("pl-0", "list-none");
     this.addEvent(this.drawerToggle, "change", this.updateDrawerIcon.bind(this));
     this.addSubscription(State.subscribeToTree(this.onTreeChange.bind(this)));
     this.addSubscription(
@@ -48,15 +44,11 @@ export class ListComponent extends BaseComponent {
    * Update the drawer icon based on the drawer state (open/closed).
    */
   private updateDrawerIcon(): void {
-    if (this.drawerToggle.checked) {
-      this.drawerIcon.classList.remove("icon-[material-symbols--left-panel-open-rounded]");
-      this.drawerIcon.classList.add("icon-[material-symbols--left-panel-close-rounded]");
-      this.drawerButton.setAttribute("data-tip", "Close Taxon List");
-    } else {
-      this.drawerIcon.classList.remove("icon-[material-symbols--left-panel-close-rounded]");
-      this.drawerIcon.classList.add("icon-[material-symbols--left-panel-open-rounded]");
-      this.drawerButton.setAttribute("data-tip", "Show Taxon List");
-    }
+    this.drawerButton.setAttribute(
+      "data-tip",
+      this.drawerToggle.checked ? "Close Taxon List" : "Show Taxon List",
+    );
+    this.updateDrawerWidth();
   }
 
   /**
@@ -69,6 +61,11 @@ export class ListComponent extends BaseComponent {
     toggle.classList.toggle("menu-dropdown-show", open);
     dropdown.classList.toggle("menu-dropdown-show", open);
     toggle.setAttribute("aria-expanded", open ? "true" : "false");
+
+    const arrow = optionalElement(toggle, ".menu-dropdown-arrow");
+    if (arrow) {
+      arrow.classList.toggle("rotate-90", open);
+    }
   }
 
   /**
@@ -79,6 +76,20 @@ export class ListComponent extends BaseComponent {
   private handleDropdownToggle(toggle: HTMLElement, dropdown: HTMLElement): void {
     const shouldOpen = !toggle.classList.contains("menu-dropdown-show");
     this.setDropdownState(toggle, dropdown, shouldOpen);
+    this.updateDrawerWidth();
+  }
+
+  /**
+   * Updates the CSS variable for the drawer width based on current content.
+   */
+  private updateDrawerWidth(): void {
+    requestAnimationFrame(() => {
+      const contentDiv = this.listContent.closest(".drawer-side > div");
+      if (contentDiv) {
+        const width = contentDiv.scrollWidth;
+        this.style.setProperty("--drawer-width", `${width.toString()}px`);
+      }
+    });
   }
 
   /**
@@ -93,36 +104,23 @@ export class ListComponent extends BaseComponent {
     }
 
     this.listContent.innerHTML = "";
-    this.listContent.appendChild(this.createListHeader());
     const rootItem = this.recursiveTaxonToList(tree.root);
     if (rootItem) {
       this.listContent.appendChild(rootItem);
     }
     this.expandFirstDropdown();
     this.drawerButton.classList.remove("hidden");
-  }
-
-  /**
-   * Create the list header element.
-   * @returns The list header element.
-   */
-  private createListHeader(): HTMLLIElement {
-    const headerEl = document.createElement("li");
-    headerEl.classList.add("menu-title");
-    const span = document.createElement("span");
-    span.textContent = "Taxon List";
-    headerEl.appendChild(span);
-    return headerEl;
+    this.updateDrawerWidth();
   }
 
   /**
    * Opens the initial list group.
    */
   private expandFirstDropdown(): void {
-    const firstToggle = this.listContent.querySelector<HTMLElement>(".menu-dropdown-toggle");
+    const firstToggle = optionalElement<HTMLElement>(this.listContent, ".menu-dropdown-toggle");
     const dropdownId = firstToggle?.dataset.dropdownId;
     if (dropdownId) {
-      const dropdown = this.listContent.querySelector<HTMLElement>(`#${dropdownId}`);
+      const dropdown = optionalElement<HTMLElement>(this.listContent, `#${dropdownId}`);
       if (dropdown) {
         this.setDropdownState(firstToggle, dropdown, true);
       }
@@ -160,8 +158,8 @@ export class ListComponent extends BaseComponent {
     const dropdownId = `dropdown-${taxon.id.toString()}`;
     const toggle = this.createToggleElement(dropdownId);
     const childList = this.createChildList(dropdownId);
-    const icon = this.createIcon("icon-[material-symbols--account-tree-rounded]");
-    const header = this.createTaxonHeader(taxon, icon);
+
+    const header = this.createTaxonHeader(taxon, true);
 
     toggle.appendChild(header);
     listItem.appendChild(toggle);
@@ -184,10 +182,19 @@ export class ListComponent extends BaseComponent {
   private createLeafNode(listItem: HTMLLIElement, taxon: Taxon): void {
     const anchor = document.createElement("a");
     anchor.dataset.id = taxon.id.toString();
-    anchor.classList.add("block", "w-full", "rounded-lg", "px-3", "py-2");
+    anchor.classList.add(
+      "flex",
+      "items-center",
+      "gap-3",
+      "rounded-xl",
+      "px-3",
+      "py-2",
+      "hover:bg-base-200/50",
+      "transition-colors",
+      "animated",
+    );
 
-    const icon = this.createIcon("icon-[material-symbols--nest-eco-leaf-rounded]");
-    const header = this.createTaxonHeader(taxon, icon);
+    const header = this.createTaxonHeader(taxon, false);
 
     anchor.appendChild(header);
     listItem.appendChild(anchor);
@@ -205,10 +212,14 @@ export class ListComponent extends BaseComponent {
       "flex",
       "items-center",
       "justify-between",
-      "gap-2",
-      "rounded-lg",
+      "gap-3",
+      "rounded-xl",
       "px-3",
       "py-2",
+      "hover:bg-base-200/50",
+      "transition-colors",
+      "animated",
+      "cursor-pointer",
     );
     toggle.tabIndex = 0;
     toggle.setAttribute("role", "button");
@@ -226,63 +237,89 @@ export class ListComponent extends BaseComponent {
   private createChildList(dropdownId: string): HTMLUListElement {
     const childList = document.createElement("ul");
     childList.id = dropdownId;
-    childList.classList.add("menu-dropdown", "pl-0", "list-none");
+    childList.classList.add(
+      "menu-dropdown",
+      "ml-4",
+      "border-l",
+      "border-base-300",
+      "pl-2",
+      "mt-1",
+      "gap-1",
+    );
     childList.setAttribute("role", "group");
     return childList;
   }
 
   /**
-   * Create an icon element.
-   * @param iconClass The CSS class corresponding to the icon.
-   * @returns The icon HTML element.
-   */
-  private createIcon(iconClass: string): HTMLSpanElement {
-    const icon = document.createElement("span");
-    icon.classList.add("text-accent", iconClass);
-    icon.style.width = "1.5em";
-    icon.style.height = "1.5em";
-    return icon;
-  }
-
-  /**
    * Create the header element for a taxon.
    * @param taxon The Taxon object.
-   * @param icon The icon element to display.
+   * @param isBranch Whether it is a branch or leaf.
    * @returns The header HTML element.
    */
-  private createTaxonHeader(taxon: Taxon, icon: HTMLSpanElement): HTMLDivElement {
-    const header = document.createElement("div");
-    header.classList.add("flex", "items-center", "justify-between", "gap-2", "w-full");
+  private createTaxonHeader(taxon: Taxon, isBranch: boolean): HTMLDivElement {
+    const container = document.createElement("div");
+    container.classList.add("flex", "items-center", "justify-between", "gap-3", "w-full");
 
+    // Left side: Icon + Name + Annotation
     const left = document.createElement("div");
-    left.classList.add("flex", "items-center", "gap-2", "min-w-0", "flex-1");
-    left.appendChild(icon);
-    left.appendChild(this.createNameSpan(taxon.name));
+    left.classList.add("flex", "items-center", "gap-3", "flex-1", "min-w-0");
 
-    if (taxon.annotation) {
-      left.appendChild(this.createAnnotationBadge(taxon.annotation.text, taxon.annotation.color));
+    if (isBranch) {
+      const arrow = document.createElement("span");
+      arrow.classList.add(
+        "menu-dropdown-arrow",
+        "icon-[material-symbols--chevron-right-rounded]",
+        "text-base-content/40",
+        "transition-transform",
+        "duration-200",
+        "w-[1.2em]",
+        "h-[1.2em]",
+      );
+      left.appendChild(arrow);
     }
 
+    const icon = document.createElement("span");
+    const iconClass = isBranch
+      ? "icon-[material-symbols--account-tree-rounded]"
+      : "icon-[material-symbols--nest-eco-leaf-rounded]";
+    icon.classList.add(
+      isBranch ? "text-primary/70" : "text-success/70",
+      iconClass,
+      "w-[1.5em]",
+      "h-[1.5em]",
+    );
+    left.appendChild(icon);
+
+    const nameContainer = document.createElement("div");
+    nameContainer.classList.add("flex", "flex-col", "min-w-0");
+
+    const nameSpan = document.createElement("span");
+    nameSpan.textContent = taxon.name;
+    nameSpan.classList.add(
+      "whitespace-normal",
+      "break-words",
+      "font-semibold",
+      "text-sm",
+      "text-base-content/90",
+    );
+    nameContainer.appendChild(nameSpan);
+
+    if (taxon.annotation) {
+      const annotation = this.createAnnotationBadge(taxon.annotation.text, taxon.annotation.color);
+      nameContainer.appendChild(annotation);
+    }
+    left.appendChild(nameContainer);
+
+    // Right side: Quick actions (always visible)
     const right = document.createElement("div");
     right.classList.add("flex", "items-center", "gap-1", "flex-shrink-0");
-    right.appendChild(this.createZoomButton(taxon));
+
     right.appendChild(this.createDetailsButton(taxon));
+    right.appendChild(this.createZoomButton(taxon));
 
-    header.appendChild(left);
-    header.appendChild(right);
-    return header;
-  }
-
-  /**
-   * Create a name span element.
-   * @param name - The name to display.
-   * @returns The span HTML element.
-   */
-  private createNameSpan(name: string): HTMLSpanElement {
-    const span = document.createElement("span");
-    span.textContent = name;
-    span.classList.add("truncate");
-    return span;
+    container.appendChild(left);
+    container.appendChild(right);
+    return container;
   }
 
   /**
@@ -293,15 +330,13 @@ export class ListComponent extends BaseComponent {
    */
   private createAnnotationBadge(text: string, themeColor: string): HTMLSpanElement {
     const badge = document.createElement("span");
-    badge.classList.add("badge", "badge-sm", "shadow-xs");
+    badge.classList.add("badge", "badge-xs", "badge-soft", "font-mono", "mt-0.5", "w-fit");
 
     badge.style.backgroundColor = `var(${themeColor})`;
-
-    const contentColorVar = `${themeColor}-content`;
-    badge.style.color = `var(${contentColorVar})`;
+    badge.style.color = "var(" + themeColor + "-content)";
+    badge.style.borderColor = `var(${themeColor})`;
 
     badge.textContent = text;
-    badge.title = `Annotation: ${text}`;
     return badge;
   }
 
@@ -312,12 +347,10 @@ export class ListComponent extends BaseComponent {
    */
   private createZoomButton(taxon: Taxon): HTMLButtonElement {
     const btn = document.createElement("button");
-    btn.classList.add("btn", "btn-primary", "btn-xs", "tooltip");
-    btn.title = "Focus taxon";
-    btn.setAttribute("aria-label", `Focus ${taxon.name}`);
+    btn.classList.add("btn", "btn-ghost", "btn-xs", "btn-circle", "tooltip", "tooltip-left");
     btn.setAttribute("data-tip", "Focus taxon");
     btn.innerHTML =
-      '<span class="icon-[material-symbols--center-focus-strong-rounded]" style="width: 1.5em; height: 1.5em"></span>';
+      '<span class="icon-[material-symbols--jump-to-element-rounded] text-primary w-[1.5em] h-[1.5em]"></span>';
     btn.addEventListener("click", (ev) => {
       this.handleZoomClick(ev, taxon.id);
     });
@@ -331,12 +364,10 @@ export class ListComponent extends BaseComponent {
    */
   private createDetailsButton(taxon: Taxon): HTMLButtonElement {
     const btn = document.createElement("button");
-    btn.classList.add("btn", "btn-primary", "btn-xs", "tooltip");
-    btn.title = "Details";
-    btn.setAttribute("aria-label", `Show details for ${taxon.name}`);
-    btn.setAttribute("data-tip", "Details");
+    btn.classList.add("btn", "btn-ghost", "btn-xs", "btn-circle", "tooltip", "tooltip-left");
+    btn.setAttribute("data-tip", "Show details");
     btn.innerHTML =
-      '<span class="icon-[material-symbols--more-horiz]" style="width: 1.5em; height: 1.5em"></span>';
+      '<span class="icon-[material-symbols--info-outline-rounded] text-secondary w-[1.5em] h-[1.5em]"></span>';
     btn.addEventListener("click", (ev) => {
       this.handleDetailsClick(ev, taxon);
     });

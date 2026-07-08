@@ -1,6 +1,7 @@
 import * as Routing from "../../core/Routing";
 import * as State from "../../core/State";
 import type { TaxonomyTree } from "../../types/Taxonomy";
+import { FLOATING_CARD_CLASSES } from "../../types/UI";
 import { requireElement } from "../../utility/Dom";
 import { BaseComponent } from "../BaseComponent";
 import HTMLtemplate from "./AccessionFilterTemplate.html?raw";
@@ -17,13 +18,13 @@ export class AccessionFilterComponent extends BaseComponent {
    */
   constructor() {
     super(HTMLtemplate);
-    this.loadTemplate();
   }
 
   /**
    * Initialize the component elements and subscriptions.
    */
   initialize(): void {
+    this.classList.add(...FLOATING_CARD_CLASSES);
     this.toggle = requireElement<HTMLInputElement>(this, "#accession-filter-toggle");
 
     this.toggle.checked = State.getOnlyGenomic();
@@ -35,8 +36,7 @@ export class AccessionFilterComponent extends BaseComponent {
     this.addSubscription(State.subscribeToTree(this.handleTreeChange.bind(this)));
 
     if (!State.getTree()) {
-      this.classList.add("md:hidden");
-      this.classList.remove("md:block");
+      this.classList.add("hidden");
     }
   }
 
@@ -54,11 +54,9 @@ export class AccessionFilterComponent extends BaseComponent {
    */
   private handleTreeChange(tree: TaxonomyTree | undefined): void {
     if (tree) {
-      this.classList.remove("md:hidden");
-      this.classList.add("md:block");
+      this.classList.remove("hidden");
     } else {
-      this.classList.add("md:hidden");
-      this.classList.remove("md:block");
+      this.classList.add("hidden");
     }
   }
 

@@ -1,9 +1,18 @@
 <table
   id="suggestions-table"
-  class="card-body animated table"
+  class="table-zebra table-sm table w-full table-fixed align-middle"
   role="table"
   aria-label="Taxonomy search suggestions"
 >
+  <thead
+    class="text-base-content/60 bg-base-100 sticky top-0 z-10 text-xs font-semibold tracking-wider uppercase"
+  >
+    <tr>
+      <th class="w-[45%] py-3 pl-4 text-left">Scientific Name</th>
+      <th class="w-[35%] py-3 text-left">Common Name</th>
+      <th class="w-[20%] py-3 pr-4 text-right">ID</th>
+    </tr>
+  </thead>
   <tbody id="suggestions-body" class="animated" role="rowgroup"></tbody>
   <tfoot
     id="suggestions-loader"
@@ -12,14 +21,17 @@
     aria-hidden="true"
   >
     <tr id="suggestions-loader-row" class="border-base-300 border-t" role="row">
-      <td role="cell">
-        <div class="skeleton inline-block h-4 w-40" aria-label="Loading"></div>
+      <td class="w-[45%] py-3 pl-4" role="cell">
+        <div class="skeleton bg-base-300/50 h-4 w-4/5 rounded-full" aria-label="Loading"></div>
       </td>
-      <td role="cell">
-        <div class="skeleton inline-block h-4 w-50" aria-label="Loading"></div>
+      <td class="w-[35%] py-3" role="cell">
+        <div class="skeleton bg-base-300/50 h-4 w-3/4 rounded-full" aria-label="Loading"></div>
       </td>
-      <td class="text-right" role="cell">
-        <div class="skeleton inline-block h-4 w-20" aria-label="Loading"></div>
+      <td class="w-[20%] py-3 pr-4 text-right" role="cell">
+        <div
+          class="skeleton bg-base-300/50 ml-auto h-4 w-12 rounded-full"
+          aria-label="Loading"
+        ></div>
       </td>
     </tr>
   </tfoot>

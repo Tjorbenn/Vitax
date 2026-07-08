@@ -1,6 +1,7 @@
 import * as NeverApi from "../api/Never/NeverClient";
 import { Taxon, TaxonomyTree, type Accession, type TaxonAnnotation } from "../types/Taxonomy";
 import { ThemeColor } from "../utility/Theme";
+import * as VisualizationStyle from "../visualizations/VisualizationStyle";
 
 /**
  * Annotate a taxon or array of taxa as "Query" with primary color.
@@ -141,6 +142,9 @@ export async function getTaxonTree(query: Taxon): Promise<TaxonomyTree> {
 
   annotateAsQuery(taxon);
   const tree = new TaxonomyTree(taxon);
+
+  VisualizationStyle.applyQueryStyleRules();
+
   return tree;
 }
 
@@ -152,6 +156,9 @@ export async function getTaxonTree(query: Taxon): Promise<TaxonomyTree> {
 export async function getDescendantsTree(query: Taxon): Promise<TaxonomyTree> {
   const subtree = await NeverApi.getSubtreeByTaxonId(query.id);
   annotateAsQuery(subtree.root);
+
+  VisualizationStyle.applyQueryStyleRules();
+
   return subtree;
 }
 
@@ -170,6 +177,18 @@ export async function getNeighborsTree(query: Taxon[]): Promise<TaxonomyTree> {
   const mrca = await NeverApi.getMrcaByTaxonIds(query.map((taxon) => taxon.id));
   const targetSubtree = await NeverApi.getSubtreeByTaxonId(mrca.id);
   const parent = await getParent(mrca);
+
+  if (parent.id === mrca.id) {
+    annotateById(targetSubtree, Array.from(initialQueryIds), {
+      text: "Query",
+      color: ThemeColor.Primary,
+    });
+
+    VisualizationStyle.applyNeighborStyleRules();
+
+    return targetSubtree;
+  }
+
   const parentSubtree = await NeverApi.getSubtreeByTaxonId(parent.id);
   parentSubtree.root.children = parentSubtree.root.children.filter((child) => {
     return child.id !== mrca.id;
@@ -184,6 +203,8 @@ export async function getNeighborsTree(query: Taxon[]): Promise<TaxonomyTree> {
     text: "Query",
     color: ThemeColor.Primary,
   });
+
+  VisualizationStyle.applyNeighborStyleRules();
 
   return parentSubtree;
 }
@@ -228,6 +249,17 @@ export async function getMrcaTree(query: Taxon[]): Promise<TaxonomyTree> {
       }
     }
   }
+
+  annotateById(
+    mrcaTree,
+    query.map((taxon) => taxon.id),
+    {
+      text: "Query",
+      color: ThemeColor.Primary,
+    },
+  );
+
+  VisualizationStyle.applyQueryStyleRules();
 
   return mrcaTree;
 }

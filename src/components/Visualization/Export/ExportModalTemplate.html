@@ -1,0 +1,61 @@
+<dialog class="modal modal-bottom sm:modal-middle" aria-labelledby="export-modal-title">
+  <div
+    class="modal-box flex max-h-[calc(100vh-5em)] max-w-md flex-col overflow-hidden p-0 shadow-2xl"
+    role="document"
+  >
+    <div
+      class="border-base-300 bg-base-200/50 flex shrink-0 items-center justify-between border-b px-6 pt-6 pb-4"
+    >
+      <h3 id="export-modal-title" class="m-0 flex items-center gap-2.5">
+        <span class="icon-[material-symbols--image-rounded] text-primary text-2xl"></span>
+        <span class="text-primary font-sans text-xl font-bold">Export Image</span>
+      </h3>
+      <form method="dialog">
+        <button
+          id="export-modal-close"
+          class="btn btn-ghost btn-sm btn-circle"
+          aria-label="Close export dialog"
+        >
+          <span class="icon-[material-symbols--close-rounded] text-lg opacity-60"></span>
+        </button>
+      </form>
+    </div>
+
+    <div
+      class="hide-scrollbar min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-contain px-6 pt-6 pb-6"
+    >
+      <section>
+        <span class="mb-2 ml-1 block text-xs font-semibold opacity-40">Area</span>
+        <div class="join w-full" role="radiogroup" aria-label="Export area">
+          <label
+            class="join-item btn border-base-300 has-[:checked]:btn-primary flex-1 justify-center gap-2 shadow-sm"
+          >
+            <input type="radio" name="export-area" value="full" class="sr-only" checked />
+            <span class="icon-[material-symbols--fit-screen-rounded] text-xl"></span>
+            Full tree
+          </label>
+          <label
+            class="join-item btn border-base-300 has-[:checked]:btn-primary flex-1 justify-center gap-2 shadow-sm"
+          >
+            <input type="radio" name="export-area" value="viewport" class="sr-only" />
+            <span class="icon-[material-symbols--crop-rounded] text-xl"></span>
+            Current view
+          </label>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <button id="export-download-btn" class="btn btn-primary w-full shadow-sm">
+        <span
+          id="export-download-icon"
+          class="icon-[material-symbols--download-rounded] text-xl"
+        ></span>
+        <span id="export-download-label">Download</span>
+      </button>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop bg-neutral-900/40 backdrop-blur-xs">
+    <button aria-label="Close export dialog">close</button>
+  </form>
+</dialog>
