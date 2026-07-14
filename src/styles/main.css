@@ -389,3 +389,11 @@ vitax-canvas svg,
     height: 6rem;
   }
 }
+
+/* daisyUI reduced-motion bug workaround */
+@media (prefers-reduced-motion: reduce) {
+  .collapse:is(details)[open]::details-content {
+    height: auto;
+    overflow: visible;
+  }
+}
